@@ -60,7 +60,8 @@
       ],
       "claims": [
         "ledger.double-entry",
-        "ledger.idempotent"
+        "ledger.idempotent",
+        "tenant.isolation"
       ]
     },
     {
@@ -192,7 +193,10 @@
         }
       ],
       "claims": [
-        "templates.four-piece"
+        "templates.four-piece",
+        "connector.single-egress",
+        "connector.three-state",
+        "templates.extension-packs"
       ]
     },
     {
@@ -216,7 +220,10 @@
         }
       ],
       "claims": [
-        "templates.four-piece"
+        "templates.four-piece",
+        "connector.single-egress",
+        "connector.three-state",
+        "templates.extension-packs"
       ]
     },
     {
@@ -259,7 +266,9 @@
         }
       ],
       "claims": [
-        "templates.four-piece"
+        "templates.four-piece",
+        "connector.single-egress",
+        "connector.three-state"
       ]
     },
     {
@@ -436,5 +445,9 @@
     }
   ],
   "claim_source": "fd-erp-vertical-templates/claims/claims.json",
-  "claims_note": "每个模块可引用 claims 里的 id；not_doing 模块不得引用任何 status=delivered 的 claim（否则「不做」与「宣称已做」矛盾）。反向不强制：delivered 模块可以没有对外 claim（例如库存数量面尚未进入对外口径）。"
+  "claims_note": "每个模块可引用 claims 里的 id；not_doing 模块不得引用任何 status=delivered 的 claim（否则「不做」与「宣称已做」矛盾）。反向不强制：delivered 模块可以没有对外 claim（例如库存数量面尚未进入对外口径）。",
+  "board_level_claims": {
+    "market.connector-packs": "市场在架是发布状态（三个行业连接器包的版本与 packId），不是任何单一子模块的能力；它的真源是 publish-record.json，由发布闸核，不由矩阵核。"
+  },
+  "board_level_note": "板块级宣称：不落到单一子模块，故不参与「必须被某个可用模块背书」的判定。豁免必须逐条给理由——没有理由的豁免就是漏洞。"
 }
