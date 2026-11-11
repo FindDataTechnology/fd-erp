@@ -148,3 +148,13 @@ curl -s -o /dev/null -w 'lawbench/healthz %{http_code} %{size_download}\n' \
    jenkins 一直如此（服务早已下线，WAF 站点 27 还在转发），状态码巡检永远看不见。
    现已在该 host 上显式 `respond ... 410`，让残留书签和监控立刻看到「已删除」。
    判断口诀：**200 但 body 为 0，先问是"上游真回了空"还是"根本没有路由"**。
+6. **显式回错误时，必须给 ACME 挑战路径开白闸** —— 给 jenkins 加 410 之后，
+   `/.well-known/acme-challenge/*` 同属该 block，一起被 410 吃掉，于是 acme.sh 的
+   HTTP-01 失败、每晚 cron 报错（实测撞过）。正确顺序是 challenge 的 `handle` 在前、
+   `respond ... 410` 在后；改完立刻验一次：挑战路径应是 file_server 的 404（不是 410），
+   根路径才是 410。同理适用于任何 403/404/维护页。
+7. **多域证书里有一个死域名，整张证书都续不了** —— `file.finddatatech.cloud` 那张证书
+   曾挂着 `rancher`/`harbor`（既无雷池站点、也无 Caddy 块，打过去是雷池自己的
+   404/14591B），HTTP-01 永远失败 → 连续几晚 `Error renewing`，而证书 12-04 就到期。
+   排查口诀：**续期失败先逐个域名 `curl http://<d>/`，回 `404/14591` 的就是没有 WAF 站点的
+   死 SAN，从证书里摘掉**。
