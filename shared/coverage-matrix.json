@@ -234,7 +234,7 @@
       "name_zh": "库存（数量面）",
       "name_en": "Inventory",
       "state": "delivered",
-      "boundary": "数量面由事件 + 对象投影回答：数量/单位/批次/序列号/仓库/在途均可表达，余额可全量重算并带水位。上游 WMS 读取仍需一次接入（provider 缺口另记，不在本矩阵）。",
+      "boundary": "数量面由事件 + 对象投影回答：数量/单位/批次/序列号/仓库/在途均可表达，余额可全量重算并带水位；REST 面经 `GET /sp/inventory` 只读暴露该余额（按供货范围收口，不是跨供应商全表）。上游 WMS 读取仍需一次接入（provider 缺口另记，不在本矩阵）。",
       "evidence": [
         {
           "kind": "file",
@@ -248,6 +248,10 @@
         {
           "kind": "tool",
           "ref": "project_event"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "GET /erp/supply-chain/v1/sp/inventory"
         }
       ],
       "claims": [
