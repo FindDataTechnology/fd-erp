@@ -34,6 +34,8 @@ CROSS_REPO_GATES = [
     ("跨仓语义（错误码/指标）", "check_semantics_contract.py"),
     ("环境变量契约", "check_config_contract.py"),
     ("日志打码向量", "check_log_redaction.py"),
+    # 全覆盖矩阵要跨仓核证据（工具面/端点/连接器事实），兄弟仓不在场时它只做仓内部分
+    ("全覆盖矩阵", "check_coverage_matrix.py"),
 ]
 
 #: 工作区里才有意义的外仓闸（不在 fd-erp 内）
