@@ -61,7 +61,9 @@
       "claims": [
         "ledger.double-entry",
         "ledger.idempotent",
-        "tenant.isolation"
+        "tenant.isolation",
+        "event.append-only-facts",
+        "posting.versioned-rules"
       ]
     },
     {
@@ -129,7 +131,8 @@
         }
       ],
       "claims": [
-        "recon.readonly-four-diffs"
+        "recon.readonly-four-diffs",
+        "recon.event-vs-entry"
       ]
     },
     {
@@ -247,7 +250,9 @@
           "ref": "project_event"
         }
       ],
-      "claims": []
+      "claims": [
+        "inventory.quantity-face"
+      ]
     },
     {
       "id": "warehousing-logistics",
