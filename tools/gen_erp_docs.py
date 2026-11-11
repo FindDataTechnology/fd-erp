@@ -323,7 +323,7 @@ h1 .sub{display:block;font-size:.58em;font-weight:500;color:var(--ink-2);margin-
 table{width:100%;border-collapse:collapse;font:400 14px/1.6 var(--sans)}
 caption{caption-side:top;text-align:left;font:500 12px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);padding-bottom:10px}
 th,td{text-align:left;padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);vertical-align:top}
-th{font-weight:600;font-size:.82rem;color:var(--ink-2);border-bottom:1px solid var(--rule-3)}
+th{font-weight:600;font-size:.82rem;color:var(--ink-2);border-bottom:1px solid var(--rule-3);white-space:nowrap}
 tbody tr:hover td{background:#e6ece4}
 td.num,th.num{white-space:nowrap;text-align:right;font-family:var(--serif);font-variant-numeric:tabular-nums lining-nums;font-size:1rem;padding-right:18px}
 .num.big{font-size:1.35rem;line-height:1.3}
@@ -372,7 +372,7 @@ code{font:12.5px/1.5 var(--mono);background:var(--paper-2);padding:1px 5px;borde
 .rw{font:600 11px/1 var(--sans);letter-spacing:.08em}
 .rw.w{color:var(--red)}
 .rw.r{color:var(--green)}
-.st{font:600 11.5px/1 var(--sans);letter-spacing:.04em}
+.st{font:600 12.5px/1 var(--sans);letter-spacing:.04em;white-space:nowrap}
 .st.ok{color:var(--green)}
 .st.no{color:var(--red)}
 
