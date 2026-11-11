@@ -97,7 +97,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 工作负载 | 类型 | 镜像 | Ready | 暴露面 |
 |---|---|---|---|---|
 | `fd-erp-ledger-mcp` | Deployment | `ccr.ccs.tencentyun.com/finddata-business/fd-erp-ledger-mcp:sha-e67fa40` | 1 | NodePort 31910（MCP over HTTP） |
-| `fd-erp-vertical-api` | Deployment | `ccr.ccs.tencentyun.com/finddata-business/fd-erp-vertical-api:sha-8370a3c` | 1 | ClusterIP only（唯一入口是 paas 网关 /erp/supply-chain/v1/*；网关侧 ERP_API_UPSTREAM 钉 ClusterIP http://10.43.153.194，因 platform pod 解不了集群 DNS） |
+| `fd-erp-vertical-api` | Deployment | `ccr.ccs.tencentyun.com/finddata-business/fd-erp-vertical-api:sha-f9a92c6` | 1 | ClusterIP only（唯一入口是 paas 网关 /erp/supply-chain/v1/*；网关侧 ERP_API_UPSTREAM 钉 ClusterIP http://10.43.153.194，因 platform pod 解不了集群 DNS） |
 
 | CronJob | 计划 | 时区 | 挂起 | 上次触发 | 说明 |
 |---|---|---|---|---|---|

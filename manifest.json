@@ -192,10 +192,10 @@
    {
     "name": "fd-erp-vertical-api",
     "kind": "Deployment",
-    "image": "ccr.ccs.tencentyun.com/finddata-business/fd-erp-vertical-api:sha-8370a3c",
+    "image": "ccr.ccs.tencentyun.com/finddata-business/fd-erp-vertical-api:sha-f9a92c6",
     "ready": 1,
     "exposure": "ClusterIP only（唯一入口是 paas 网关 /erp/supply-chain/v1/*；网关侧 ERP_API_UPSTREAM 钉 ClusterIP http://10.43.153.194，因 platform pod 解不了集群 DNS）",
-    "note": "2026-11-11 换片：补请求级 JSON 访问日志（默认 errors 档只写 status>=400）。源码 22835c5，vendor 快照 api=22835c58/templates=8e75666d，镜像 tag sha-8370a3c（ccr 实拉核过片内模块）。上线当口撞上宿主机磁盘压力（见 open_tasks），换片完成后实测：pod 内 401 AUTH_REQUIRED / 403 TENANT_DENIED 各落一行 JSON（路由模板 + tenant_hash + detail_keys），200 不落盘；网关 upstream 200。注意 Service 端口是 80（targetPort http=8100），集群内探活要打 :80 不是 :8100。"
+    "note": "2026-11-11 换片两次：①sha-8370a3c 补请求级 JSON 访问日志（默认 errors 档只写 status>=400）；②sha-f9a92c6 关掉 uvicorn 自带 access log —— 否则每个请求写两遍、探针 200 每天 8640 行，「errors 档=正常流量零日志行」成假话。源码 ea88ec3，快照 f9a92c6（vendor api=ea88ec3/templates=8e75666d）。pod 内实测：401 AUTH_REQUIRED / 403 TENANT_DENIED 各落一行 JSON（路由模板 + tenant_hash + detail_keys），200 与探针不落盘；网关（platform pod → ClusterIP 10.43.153.194）upstream 200。注意 Service 是 port 80 → targetPort http(8100)，集群内探活打 :8100 会假超时。"
    }
   ],
   "cronjobs": [
