@@ -481,6 +481,23 @@ def render_site(d: dict) -> str:
     return "\n".join(o)
 
 
+LOCK = FD_ERP / "shared" / "artifact-lock.json"
+
+
+def _lock_payload(targets: dict) -> dict:
+    """生成物指纹：CI 里看不到兄弟仓，仍能识别「有人手改了生成物」。"""
+    import hashlib
+
+    return {
+        "schema": "erp-artifact-lock/v1",
+        "note": "生成物指纹。gen_erp_docs.py 写入，check_all.py 校验；手改生成物会在这里露馅。",
+        "artifacts": {
+            str(p.relative_to(FD_ERP)): hashlib.sha256(text.encode("utf-8")).hexdigest()
+            for p, text in sorted(targets.items())
+        },
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="只比对不落盘")
@@ -510,6 +527,9 @@ def main() -> int:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text, encoding="utf-8")
         print(f"写入 {p.relative_to(ROOT)}")
+    LOCK.write_text(json.dumps(_lock_payload(targets), ensure_ascii=False, indent=1) + "\n",
+                    encoding="utf-8")
+    print(f"写入 {LOCK.relative_to(ROOT)}")
     return 0
 
 

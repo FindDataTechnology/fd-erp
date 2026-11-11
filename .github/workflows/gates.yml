@@ -1,0 +1,25 @@
+name: erp-gates
+
+# 单仓能自证的那部分：契约 schema 自洽 + 生成物指纹。
+#
+# 为什么不在这里跑跨仓闸（工具面/语义/配置/日志向量）：它们要读
+# fd-erp-ledger-mcp / fd-erp-vertical-api / fd-erp-vertical-templates 的源码，
+# 而本仓 CI 只能 checkout 自己。**没有输入时判"通过"的闸，比没有闸更糟**——
+# 所以 check_all.py --ci 会把它们显式标成 SKIP 并说明原因，不伪装成绿灯。
+# 完整套件在 finddata 工作区里跑：python3 fd-erp/tools/check_all.py
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: ERP single-repo gates
+        run: python3 -I tools/check_all.py --ci
