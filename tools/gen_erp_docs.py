@@ -243,8 +243,16 @@ def render_readme(d: dict) -> str:
         a(f"| 源站 | `{o['ssh_alias']}`（{o['ip']}）`{o['path']}` | nginx `{o['nginx_conf']}` |")
         a(f"| 边缘 | {e['role']}（{e['ip']}） | Caddy `{e['caddy_conf']}`，upstream `{e['upstream']}` |")
         a("")
-        a(f"**公网状态：{site['public_status']}** —— {site['blocked_by']}")
+        a(f"**公网状态：{site['public_status']}**")
         a("")
+        a("| 公开地址 | 状态 | 形态 | 验收 |")
+        a("|---|---|---|---|")
+        for u in site.get("public_urls", []):
+            a(f"| {u['url']} | **{u['status']}** | {u['how']} | {u.get('verified', '—')} |")
+        a("")
+        if site.get("blocked_by"):
+            a(f"未打通的地址：{site['blocked_by']}")
+            a("")
         a("已验证：")
         for v in site["verified"]:
             a(f"- {v}")

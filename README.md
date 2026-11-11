@@ -114,12 +114,20 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 源站 | `fd-deploy`（124.220.7.175）`/opt/fd/erp/site` | nginx `/etc/nginx/sites-enabled/erp.finddatatech.cloud` |
 | 边缘 | 雷池 WAF（终止 TLS）+ 同机 Caddy（按 Host 分发）（103.236.89.212） | Caddy `/etc/caddy/Caddyfile`，upstream `124.220.7.175:80` |
 
-**公网状态：blocked** —— 雷池控制台需新增站点 erp.finddatatech.cloud（端口 80 + 443_ssl，upstream http://172.22.222.1:8080，并申请含该域名的证书）。该机无 OpenAPI token，控制台需登录凭据，故此项不由本仓代办。
+**公网状态：live（经 www.finddatatech.cloud/erp-docs/）**
+
+| 公开地址 | 状态 | 形态 | 验收 |
+|---|---|---|---|
+| https://www.finddatatech.cloud/erp-docs/ | **live** | www 站点 nginx 加 location /erp-docs/ → alias /opt/fd/erp/site/（复用 www 现成证书，经腾讯 CDN） | 2026-11-11 curl 200 / 19087 字节 / md5 与生成物一致 |
+| https://erp.finddatatech.cloud/ | **blocked** | 源站与边缘 Caddy 已就绪（md5 已验证），缺雷池站点与证书 | — |
+
+未打通的地址：雷池控制台需新增站点 erp.finddatatech.cloud（端口 80 + 443_ssl，upstream http://172.22.222.1:8080，并申请含该域名的证书）。该机无 OpenAPI token，控制台需登录凭据，故此项不由本仓代办。
 
 已验证：
-- 源站：curl --resolve erp.finddatatech.cloud:80:124.220.7.175 → 200，正文与生成物逐字节一致（2026-11-11）
-- 边缘：curl -H 'Host: erp.finddatatech.cloud' http://172.22.222.1:8080/ → 200，正文同上（2026-11-11）
-- 公网：http 404（雷池自身页面）/ https 握手失败（无该域名证书）
+- 源站：curl --resolve erp.finddatatech.cloud:80:124.220.7.175 → 200，正文与生成物 md5 一致（2026-11-11）
+- 边缘：curl -H 'Host: erp.finddatatech.cloud' http://172.22.222.1:8080/ → 200，md5 同上（2026-11-11）
+- 公网（子域）：http 404（雷池自身页面）/ https 握手失败（无该域名证书）—— 见未打通说明
+- 公网（官网子路径）：https://www.finddatatech.cloud/erp-docs/ → 200 / 19087 字节 / md5 与生成物一致（经腾讯 CDN）
 
 ## 7. 能力与缺口（派生，勿手写）
 
@@ -136,6 +144,6 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - [ ] REST 面（fd-erp-vertical-api）无结构化日志：501/403/额度不足只能靠指标聚合，回答不了「这一单为何被拒」——需裁决是否补请求级事件日志
 - [ ] histogram 桶集统一（当前 api 少 10.0 上界，已在契约里声明为偏差）
 - [ ] ERP 独立介绍/文档站的英文版
-- [ ] 公网打通：雷池控制台新增站点 erp.finddatatech.cloud + 含该域名的证书（无控制台凭据，待用户）
 - [ ] erp-daily-billing 启用前置：WMS 日终快照只读 provider 接通（open-connector-mt 侧）
 - [ ] 两个 ERP 备份都只落单节点/同机：账本备份在集群 local-path（节点整机故障即与生产同亡），事件档备份已外发备份机
+- [ ] erp.finddatatech.cloud 子域仍 blocked：雷池控制台需新增站点（80 + 443_ssl，upstream http://172.22.222.1:8080，含该域名证书）。当前公开访问走 www.finddatatech.cloud/erp-docs/
