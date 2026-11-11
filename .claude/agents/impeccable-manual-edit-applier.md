@@ -60,7 +60,7 @@ Mark an entry applied only when every op in that entry is applied.
 
 If one op in an entry fails:
 
-- Undo any source edits already made for that same entry.
+- Undo any source edits already made for that same entry by restoring the exact bytes the file held when that entry started. Capture those bytes before your first write to it — in memory, or in a temp file whose name is unique to this run and this path; a fixed-name backup is shared state, and restoring it can put one file's content into another. Never undo with `git checkout --`, `git restore`, `git stash`, or any VCS revert: the file may carry another writer's uncommitted work, and a VCS revert discards it silently. Then compare the restored file against the captured bytes and report the entry failed only once they are identical — a revert you did not verify is a second edit, not an undo.
 - Mark the entry failed with a concrete reason.
 - Include candidate file/line evidence when available.
 - Continue with other entries.
