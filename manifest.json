@@ -117,6 +117,14 @@
    "versioned": true,
    "owner_repo": "fd-erp（本根仓）",
    "note": "闸：check_config_contract.py；变量清单与默认值从源码 AST 现读"
+  },
+  {
+   "id": "log-contract",
+   "what": "结构化日志契约（信封字段 + 打码规则 + 可执行向量）",
+   "path": "fd-erp/shared/log-contract.json",
+   "versioned": true,
+   "owner_repo": "fd-erp（本根仓）",
+   "note": "闸：check_log_redaction.py —— 拿真函数跑真向量，不靠读源码判断有没有保护"
   }
  ],
  "couplings": [
@@ -157,7 +165,7 @@
     "fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py",
     "fd-erp-vertical-api/fd_erp_vertical_api/observability.py"
    ],
-   "problem": "指标/结构化日志两套实现，指标名与字段不保证同形。已落指标命名式 + 跨服务重名闸 + 桶集偏差声明；日志字段名仍待对齐"
+   "problem": "指标/结构化日志两套实现，指标名与字段不保证同形。指标已闸（命名式 + 跨服务重名 + 桶集偏差声明）；日志打码已用 12 条向量闸（并修掉 apiKey 漏拦与顶层 list 抛异常）；但 REST 面与模板层仍无结构化日志（已声明为缺口）"
   },
   {
    "component": "config",
@@ -251,14 +259,15 @@
   "templates": "fd-erp-vertical-templates/templates",
   "kernel_client_contract": "fd-erp/shared/kernel-client-contract.json",
   "semantics_contract": "fd-erp/shared/semantics-contract.json",
-  "config_contract": "fd-erp/shared/config-contract.json"
+  "config_contract": "fd-erp/shared/config-contract.json",
+  "log_contract": "fd-erp/shared/log-contract.json"
  },
  "open_tasks": [
   "把 collateral-erp 与 docs/erp 纳入版本控制（当前不在任何 git 仓内）",
   "为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根",
   "kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）",
   "错误码 / 指标名 / 环境变量收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）",
-  "日志字段名对齐（指标名已闸，日志键名尚未）",
+  "REST 面（fd-erp-vertical-api）无结构化日志：501/403/额度不足只能靠指标聚合，回答不了「这一单为何被拒」——需裁决是否补请求级事件日志",
   "histogram 桶集统一（当前 api 少 10.0 上界，已在契约里声明为偏差）",
   "ERP 独立介绍/文档站的英文版",
   "公网打通：雷池控制台新增站点 erp.finddatatech.cloud + 含该域名的证书（无控制台凭据，待用户）",

@@ -41,6 +41,8 @@ def collect() -> dict:
         "contract": load("fd-erp/shared/kernel-client-contract.json"),
         "semantics": _semantics(),
         "config": _gate("check_config_contract.py"),
+        "logs": _gate("check_log_redaction.py"),
+        "log_contract": load("fd-erp/shared/log-contract.json"),
         "claims": load(src["claims"]),
         "gaps": load(src["gaps"]),
         "publish": load(src["publish_record"]),
@@ -194,6 +196,23 @@ def render_readme(d: dict) -> str:
     a("- 含凭据的 Settings 字段必须 `field(repr=False)`：日志层打码不覆盖异常栈 / pprint / REPL")
     cfg_state = "通过" if cfg["ok"] else f"阻断（{len(cfg['violations'])} 处）"
     a(f"- 闸门状态：{cfg_state}")
+    a("")
+    a("### 4.4 结构化日志与打码向量")
+    a("")
+    logs = d["logs"]
+    a("只看源码里有没有 `password` 关键字不算验证 —— 本闸把向量喂给内核**真的** `redact()`，"
+      "断言凭据值不出现在输出里、非敏感值不被过度打码、任何形态都不许抛异常。"
+      "闸：`fd-erp/tools/check_log_redaction.py`。")
+    a("")
+    a("| 服务 | 结构化日志 | 说明 |")
+    a("|---|---|---|")
+    for name, spec in d["log_contract"]["services"].items():
+        mark = "有" if spec.get("structured_logs") else "**无**"
+        note = spec.get("gap") or f"{len(spec.get('events', []))} 个事件"
+        a(f"| `{name}` | {mark} | {note} |")
+    a("")
+    log_state = "通过" if logs["ok"] else f"阻断（{len(logs['violations'])} 处）"
+    a(f"- 打码向量：**{logs.get('vector_count', 0)}** 条；闸门状态：{log_state}")
     a("")
     a("## 5. 部署实况")
     a("")

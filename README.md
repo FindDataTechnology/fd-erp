@@ -25,6 +25,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 内核工具面 × 客户端覆盖面声明（谁盖哪些、哪些故意不盖及理由） | `fd-erp/shared/kernel-client-contract.json` | 是 | `fd-erp（本根仓）` | 跨仓契约：声明 ≠ 实际即被 check_kernel_client_contract.py 判红 |
 | 跨仓语义契约（错误码封闭集 + 指标命名；码表不抄写，从源码 AST 现读） | `fd-erp/shared/semantics-contract.json` | 是 | `fd-erp（本根仓）` | 闸：check_semantics_contract.py；新增仓自有码必须在 service_specific_codes 声明并给理由 |
 | 环境变量契约（跨仓同名变量的默认值/必填性 + 含凭据字段的 repr 保护） | `fd-erp/shared/config-contract.json` | 是 | `fd-erp（本根仓）` | 闸：check_config_contract.py；变量清单与默认值从源码 AST 现读 |
+| 结构化日志契约（信封字段 + 打码规则 + 可执行向量） | `fd-erp/shared/log-contract.json` | 是 | `fd-erp（本根仓）` | 闸：check_log_redaction.py —— 拿真函数跑真向量，不靠读源码判断有没有保护 |
 
 ## 3. 跨仓耦合点（ERP 代码活在别人仓里）
 
@@ -39,7 +40,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 |---|---|---|---|
 | `kernel_client` | 2 | `fd-erp-vertical-templates/fd_erp_vertical_templates/kernel_client.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/kernel_client.py` | 同一 21 工具面在两仓各写一份（Protocol+Mcp 版 vs InProcess+ReconProxy 版）。已落声明式契约 + 覆盖面闸（声明覆盖 19/11），签名不再靠人肉对齐；真正收敛为单一共享包仍待办（需先解决跨仓依赖的 CI 可见性） |
 | `errors / error_codes` | 3 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/errors.py`<br>`fd-erp-vertical-templates/fd_erp_vertical_templates/errors.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/errors.py` | 错误码封闭集三处各维护，新增码要改三仓。已落跨仓语义契约 + 闸（内核封闭集=镜像、7 个共享码语义逐字一致、仓自有码须声明），仍未收敛为单一常量源 |
-| `observability` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/observability.py` | 指标/结构化日志两套实现，指标名与字段不保证同形。已落指标命名式 + 跨服务重名闸 + 桶集偏差声明；日志字段名仍待对齐 |
+| `observability` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/observability.py` | 指标/结构化日志两套实现，指标名与字段不保证同形。指标已闸（命名式 + 跨服务重名 + 桶集偏差声明）；日志打码已用 12 条向量闸（并修掉 apiKey 漏拦与顶层 list 抛异常）；但 REST 面与模板层仍无结构化日志（已声明为缺口） |
 | `config` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/config.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/config.py` | 环境变量名与默认值分散，无单一契约。已落配置契约 + 闸（4 个共享变量默认值逐字一致、命名式、含凭据字段必须 repr=False）；仍未收敛为单一常量源 |
 
 ### 4.1 内核工具面 × 客户端覆盖面（声明式契约）
@@ -76,6 +77,18 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - 共享变量默认值必须逐字一致（同名不同默认值 = 同一份部署清单在两个进程里两种行为）
 - 含凭据的 Settings 字段必须 `field(repr=False)`：日志层打码不覆盖异常栈 / pprint / REPL
 - 闸门状态：通过
+
+### 4.4 结构化日志与打码向量
+
+只看源码里有没有 `password` 关键字不算验证 —— 本闸把向量喂给内核**真的** `redact()`，断言凭据值不出现在输出里、非敏感值不被过度打码、任何形态都不许抛异常。闸：`fd-erp/tools/check_log_redaction.py`。
+
+| 服务 | 结构化日志 | 说明 |
+|---|---|---|
+| `fd-erp-ledger-mcp` | 有 | 9 个事件 |
+| `fd-erp-vertical-api` | **无** | REST 面只有 Prometheus 计数（route/method/status/code），没有逐请求或逐业务事件的日志行。出现 501 / 403 / 额度不足时无法回答「这一单为什么被拒」——只能靠指标聚合。属已知缺口，未在本轮实施（会改部署形态与日志量，需单独裁决）。 |
+| `fd-erp-vertical-templates` | **无** | 模板层不写日志（审计靠 JSONL 事件档与内核日志）。事件档本身是业务事实，不等同运行日志。 |
+
+- 打码向量：**12** 条；闸门状态：通过
 
 ## 5. 部署实况
 
@@ -120,7 +133,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - [ ] 为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根
 - [ ] kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）
 - [ ] 错误码 / 指标名 / 环境变量收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）
-- [ ] 日志字段名对齐（指标名已闸，日志键名尚未）
+- [ ] REST 面（fd-erp-vertical-api）无结构化日志：501/403/额度不足只能靠指标聚合，回答不了「这一单为何被拒」——需裁决是否补请求级事件日志
 - [ ] histogram 桶集统一（当前 api 少 10.0 上界，已在契约里声明为偏差）
 - [ ] ERP 独立介绍/文档站的英文版
 - [ ] 公网打通：雷池控制台新增站点 erp.finddatatech.cloud + 含该域名的证书（无控制台凭据，待用户）

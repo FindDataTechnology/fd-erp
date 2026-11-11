@@ -1,0 +1,51 @@
+{
+ "schema": "erp-log-contract/v1",
+ "updated_at": "2026-11-11",
+ "note": "ERP 结构化日志契约。做两件事：①声明信封字段与服务覆盖现状；②把「打码必须有效」变成可执行向量（只看源码里有没有 password 关键字不算验证）。由 fd-erp/tools/check_log_redaction.py 执行。",
+ "envelope": {
+  "required": ["ts", "event"],
+  "tenant_rule": "租户明文一律不入日志：tenant_id（含 tenantId / Tenant-ID 等分隔符变体）必须落成 tenant_hash（sha256 前 12 位）；同一 payload 里多个租户字段会归并成一个 tenant_hash",
+  "ts_format": "ISO-8601 UTC，毫秒精度"
+ },
+ "services": {
+  "fd-erp-ledger-mcp": {
+   "structured_logs": true,
+   "emitter": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py",
+   "events": [
+    "tool_call", "proposal_submitted", "proposal_confirmed", "proposal_rejected",
+    "fees_billed", "billing_failed", "recon_task_finished",
+    "recon_startup_disposition", "recon_restart_disposition"
+   ]
+  },
+  "fd-erp-vertical-api": {
+   "structured_logs": false,
+   "gap": "REST 面只有 Prometheus 计数（route/method/status/code），没有逐请求或逐业务事件的日志行。出现 501 / 403 / 额度不足时无法回答「这一单为什么被拒」——只能靠指标聚合。属已知缺口，未在本轮实施（会改部署形态与日志量，需单独裁决）。"
+  },
+  "fd-erp-vertical-templates": {
+   "structured_logs": false,
+   "gap": "模板层不写日志（审计靠 JSONL 事件档与内核日志）。事件档本身是业务事实，不等同运行日志。"
+  }
+ },
+ "redaction": {
+  "rules": [
+   "键名命中敏感标记即整值打码：标记按「去掉所有非字母数字后的小写」比对，故 api_key / apiKey / api-key / API_KEY 等价",
+   "值形状像连接串（scheme://…）即打码，不依赖键名——防止调用方把 DSN 塞进 msg 或陌生字段",
+   "递归到 dict / list / tuple 的叶子；顶层非 dict（list/标量）同样处理，不得抛异常",
+   "非敏感标量（int / bool / 普通中文文本）必须原样保留——过度打码会让日志失去价值"
+  ],
+  "vectors": [
+   {"id": "flat_password", "input": {"password": "p@ss"}, "must_not_contain": ["p@ss"]},
+   {"id": "camel_api_key", "input": {"apiKey": "sk-live-SECRET"}, "must_not_contain": ["sk-live-SECRET"]},
+   {"id": "kebab_api_key", "input": {"api-key": "sk-SECRET"}, "must_not_contain": ["sk-SECRET"]},
+   {"id": "upper_api_key", "input": {"API_KEY": "sk-SECRET"}, "must_not_contain": ["sk-SECRET"]},
+   {"id": "nested_dsn", "input": {"detail": {"dsn": "postgresql://u:secret@h/db"}}, "must_not_contain": ["secret"]},
+   {"id": "list_of_dicts", "input": {"items": [{"api_key": "k1"}, {"note": "ok"}]}, "must_not_contain": ["k1"], "must_contain": ["ok"]},
+   {"id": "dsn_in_message", "input": {"msg": "conn failed postgresql://u:secret@h/db"}, "must_not_contain": ["secret"]},
+   {"id": "authorization_header", "input": {"headers": {"authorization": "Bearer abc123"}}, "must_not_contain": ["abc123"]},
+   {"id": "tenant_plaintext", "input": {"tenant_id": "acme-corp"}, "must_not_contain": ["acme-corp"], "must_contain": ["tenant_hash"]},
+   {"id": "top_level_list", "input": [{"password": "deep"}], "must_not_contain": ["deep"]},
+   {"id": "nested_list_list", "input": {"items": [[{"password": "deep"}]]}, "must_not_contain": ["deep"]},
+   {"id": "harmless_preserved", "input": {"count": 3, "ok": true, "ratio": 0.5, "note": "正常"}, "must_contain": ["正常"]}
+  ]
+ }
+}
