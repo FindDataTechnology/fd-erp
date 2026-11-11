@@ -166,6 +166,14 @@ def main() -> int:
         for label, _ in CROSS_REPO_GATES:
             rows.append((label, "SKIP", "CI 单仓模式：兄弟仓不在场，不假装通过"))
 
+    # 子代理补丁：`impeccable install` 会整体覆盖 .claude/agents/，补丁随之丢失。
+    # 退出 2 = 没装过 impeccable：记 SKIP，不当作通过。
+    code, out = _run([sys.executable, "-I", str(TOOLS / "patch_impeccable_agents.py"), "--check"])
+    tail = (out.splitlines() or ["（无输出）"])[-1]
+    agent_state = "PASS" if code == 0 else ("SKIP" if code == 2 else "FAIL")
+    rows.append(("子代理补丁（impeccable）", agent_state, tail))
+    failed = failed or code not in (0, 2)
+
     schema_problems = check_contract_schema()
     rows.append(("契约 schema 自洽", "FAIL" if schema_problems else "PASS",
                  f"{len(schema_problems)} 处问题" if schema_problems else "全部契约结构合法"))
