@@ -1,0 +1,43 @@
+{
+ "schema": "erp-config-contract/v1",
+ "updated_at": "2026-11-11",
+ "note": "ERP 三仓环境变量的跨仓契约。变量清单与默认值一律从源码 AST 现读，本文件只声明「哪些是共享的」「哪些名字允许不只出现在一处」以及约定本身。由 fd-erp/tools/check_config_contract.py 执行。",
+ "naming": {
+  "pattern": "^ERP_[A-Z0-9_]+$",
+  "why": "ERP_ 前缀让 k8s Secret/ConfigMap 与 shell 里一眼可辨；FD_ 前缀留给平台级，不混用"
+ },
+ "rules": {
+  "shared_defaults_identical": "同一变量出现在两个以上仓时，其默认值必须逐字一致——同名不同默认值会让同一份部署清单在两个进程里表现不同",
+  "credential_fields_must_not_repr": "含连接串/凭据的 Settings 字段必须 field(repr=False)：日志层有打码，但异常栈、pprint、REPL 不走日志层",
+  "undeclared_shared_forbidden": "跨仓出现的同名变量必须在 shared 里登记（含各自角色），否则视为偶然撞名而非契约"
+ },
+ "shared": {
+  "ERP_TENANT_ID": {
+   "role": "一进程一租户（内核与 api 同语义）；模板层由客户端绑定，不直接读环境变量",
+   "default": "default",
+   "consumers": ["fd-erp-ledger-mcp", "fd-erp-vertical-api"]
+  },
+  "ERP_LEDGER_DATABASE_URL": {
+   "role": "内核库 DSN。api 在 mcp 传输形态下不参与（api 不直连内核库）",
+   "default": null,
+   "consumers": ["fd-erp-ledger-mcp", "fd-erp-vertical-api"]
+  },
+  "ERP_BASE_CURRENCY": {
+   "role": "本位币；折算目标币种",
+   "default": "CNY",
+   "consumers": ["fd-erp-ledger-mcp", "fd-erp-vertical-api"]
+  },
+  "ERP_CREDIT_RESERVATION_MAX_DAYS": {
+   "role": "信用占用失效时点上限（天）；两侧必须同值，否则受理方按 90 天截断而查询侧按另一值判定",
+   "default": "90",
+   "consumers": ["fd-erp-ledger-mcp", "fd-erp-vertical-api"]
+  }
+ },
+ "credential_field_names": [
+  "database_url",
+  "kernel_url",
+  "pageset_auth_json",
+  "pageset_auth_file",
+  "connector_base_url"
+ ]
+}

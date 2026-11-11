@@ -40,6 +40,7 @@ def collect() -> dict:
         "manifest": m,
         "contract": load("fd-erp/shared/kernel-client-contract.json"),
         "semantics": _semantics(),
+        "config": _gate("check_config_contract.py"),
         "claims": load(src["claims"]),
         "gaps": load(src["gaps"]),
         "publish": load(src["publish_record"]),
@@ -53,15 +54,19 @@ def collect() -> dict:
     }
 
 
-def _semantics() -> dict:
-    """跨仓语义契约的实况，直接复用契约闸的计算——不在这里重新实现一遍 AST 读取。"""
+def _gate(script: str) -> dict:
+    """复用契约闸的计算跑一遍 check()——不在这里重新实现一遍 AST 读取。"""
     import importlib.util
 
-    path = Path(__file__).with_name("check_semantics_contract.py")
-    spec = importlib.util.spec_from_file_location("_erp_semantics_gate", path)
+    path = Path(__file__).with_name(script)
+    spec = importlib.util.spec_from_file_location(f"_erp_gate_{path.stem}", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)  # type: ignore[union-attr]
     return mod.check()
+
+
+def _semantics() -> dict:
+    return _gate("check_semantics_contract.py")
 
 
 def route_stats(evidence: dict) -> dict:
@@ -171,6 +176,24 @@ def render_readme(d: dict) -> str:
     a(f"- 闸门状态：{gate_state}")
     for dev in sem["declared_deviations"]:
         a(f"- 已声明偏差（{dev['kind']}，{dev['service']}）：{dev['detail']}；待办 `{dev.get('task','-')}`")
+    a("")
+    a("### 4.3 环境变量契约")
+    a("")
+    cfg = d["config"]
+    a("变量清单与默认值从源码 AST 现读；契约只声明「哪些是跨仓共享的」与约定本身。"
+      "闸：`fd-erp/tools/check_config_contract.py`。")
+    a("")
+    a("| 仓 | 读取的 `ERP_` 变量数 |")
+    a("|---|---|")
+    for repo, names in cfg["per_repo"].items():
+        a(f"| `{repo}` | {len(names)} |")
+    a("")
+    a(f"- 跨仓共享且已登记：**{len(cfg['shared'])}** 个 —— "
+      + "、".join(f"`{n}`" for n in cfg["shared"]))
+    a("- 共享变量默认值必须逐字一致（同名不同默认值 = 同一份部署清单在两个进程里两种行为）")
+    a("- 含凭据的 Settings 字段必须 `field(repr=False)`：日志层打码不覆盖异常栈 / pprint / REPL")
+    cfg_state = "通过" if cfg["ok"] else f"阻断（{len(cfg['violations'])} 处）"
+    a(f"- 闸门状态：{cfg_state}")
     a("")
     a("## 5. 部署实况")
     a("")

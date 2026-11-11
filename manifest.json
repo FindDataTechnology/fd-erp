@@ -109,6 +109,14 @@
    "versioned": true,
    "owner_repo": "fd-erp（本根仓）",
    "note": "闸：check_semantics_contract.py；新增仓自有码必须在 service_specific_codes 声明并给理由"
+  },
+  {
+   "id": "config-contract",
+   "what": "环境变量契约（跨仓同名变量的默认值/必填性 + 含凭据字段的 repr 保护）",
+   "path": "fd-erp/shared/config-contract.json",
+   "versioned": true,
+   "owner_repo": "fd-erp（本根仓）",
+   "note": "闸：check_config_contract.py；变量清单与默认值从源码 AST 现读"
   }
  ],
  "couplings": [
@@ -157,7 +165,7 @@
     "fd-erp-ledger-mcp/fd_erp_ledger_mcp/config.py",
     "fd-erp-vertical-api/fd_erp_vertical_api/config.py"
    ],
-   "problem": "环境变量名与默认值分散，无单一契约"
+   "problem": "环境变量名与默认值分散，无单一契约。已落配置契约 + 闸（4 个共享变量默认值逐字一致、命名式、含凭据字段必须 repr=False）；仍未收敛为单一常量源"
   }
  ],
  "deploy": {
@@ -242,13 +250,14 @@
   "matrices": "fd-erp-vertical-templates/coverage/matrices",
   "templates": "fd-erp-vertical-templates/templates",
   "kernel_client_contract": "fd-erp/shared/kernel-client-contract.json",
-  "semantics_contract": "fd-erp/shared/semantics-contract.json"
+  "semantics_contract": "fd-erp/shared/semantics-contract.json",
+  "config_contract": "fd-erp/shared/config-contract.json"
  },
  "open_tasks": [
   "把 collateral-erp 与 docs/erp 纳入版本控制（当前不在任何 git 仓内）",
   "为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根",
   "kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）",
-  "错误码 / 指标名收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）",
+  "错误码 / 指标名 / 环境变量收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）",
   "日志字段名对齐（指标名已闸，日志键名尚未）",
   "histogram 桶集统一（当前 api 少 10.0 上界，已在契约里声明为偏差）",
   "ERP 独立介绍/文档站的英文版",
