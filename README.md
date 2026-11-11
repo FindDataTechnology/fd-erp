@@ -72,9 +72,9 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 | CronJob | 计划 | 时区 | 挂起 | 上次触发 | 说明 |
 |---|---|---|---|---|---|
-| `erp-daily-billing` | `10 0 * * *` | Asia/Shanghai | **是** | 从未 | 日终计费快照，当前挂起且从未触发 |
-| `erp-event-archive-backup` | `37 3 * * *` | 未声明 | 否 | 2026-11-10T19:37:00Z | 事件档备份；清单未写 timeZone（按集群本地时区解释） |
-| `erp-ledger-backup` | `12 4 * * *` | Asia/Shanghai | 否 | 2026-11-10T20:12:00Z | 账本库备份 |
+| `erp-daily-billing` | `10 0 * * *` | Asia/Shanghai | **是** | 从未 | 日终计费快照。suspend=true 是**有意挂账**（清单头已写明）：--snapshot-file 需要 WMS 日终库存快照，而 WMS 只读 provider 未接通（connector-status.json: wms candidates=[]/install_blocked=true）；接通后改 false 并指向 WMS 同步产出 |
+| `erp-event-archive-backup` | `37 3 * * *` | Asia/Shanghai | 否 | 2026-11-10T19:37:00Z | 事件档备份。实测 lastScheduleTime 19:37Z = 03:37 CST（集群 controller 按 CST解释未声明 timeZone 的任务）；2026-11-11 已补显式 timeZone，去掉隐式依赖 |
+| `erp-ledger-backup` | `12 4 * * *` | Asia/Shanghai | 否 | 2026-11-10T20:12:00Z | 账本库备份。与事件档备份实际相隔 35 分钟（03:37/04:12 CST），原注释「差 8 小时」已订正；两者均为秒级，不构成 IO 争抢 |
 
 ## 6. 独立站发布
 
@@ -106,5 +106,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - [ ] 错误码 / 指标名收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）
 - [ ] 日志字段名对齐（指标名已闸，日志键名尚未）
 - [ ] histogram 桶集统一（当前 api 少 10.0 上界，已在契约里声明为偏差）
-- [ ] ERP 独立介绍/文档站（本仓 site/）的英文版与发布通道
-- [ ] 确认 erp-daily-billing 挂起是否为预期（当前 suspend=true 且从未触发）
+- [ ] ERP 独立介绍/文档站的英文版
+- [ ] 公网打通：雷池控制台新增站点 erp.finddatatech.cloud + 含该域名的证书（无控制台凭据，待用户）
+- [ ] erp-daily-billing 启用前置：WMS 日终快照只读 provider 接通（open-connector-mt 侧）
+- [ ] 两个 ERP 备份都只落单节点/同机：账本备份在集群 local-path（节点整机故障即与生产同亡），事件档备份已外发备份机
