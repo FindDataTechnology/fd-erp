@@ -26,7 +26,7 @@
    "src_loc": 4456,
    "tests_loc": 2895,
    "surface": "MCP 工具面",
-   "boundary": "行业无关；不存行业逻辑；写路径只出 proposal"
+   "boundary": "行业无关；不存行业逻辑；agent 写路径只出 proposal，外部事实经导入车道直收"
   },
   {
    "id": "vertical-templates",

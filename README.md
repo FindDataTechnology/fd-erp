@@ -1,7 +1,7 @@
 # fd-erp — ERP 板块独立维护根
 
 > 本文件由 `fd-erp/tools/gen_erp_docs.py` 从 `fd-erp/manifest.json` 与各仓机器可读产物派生，**不要手改**。
-> 生成日期：2026-11-11。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
+> 生成日期：2026-11-12。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
 
 ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线。章程 `openspec/specs/erp-board/spec.md`；对外口径唯一出处 `docs/erp/README.md`。
 
@@ -9,7 +9,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 | 角色 | 目录 | 远端 | 形态 | 源码 / 测试 | 边界 |
 |---|---|---|---|---|---|
-| 账本内核（行业无关） | `fd-erp-ledger-mcp` | `git@github.com:scs001/fd-erp-ledger-mcp.git` | MCP 工具面 | 4456 / 2895 行 | 行业无关；不存行业逻辑；写路径只出 proposal |
+| 账本内核（行业无关） | `fd-erp-ledger-mcp` | `git@github.com:scs001/fd-erp-ledger-mcp.git` | MCP 工具面 | 4456 / 2895 行 | 行业无关；不存行业逻辑；agent 写路径只出 proposal，外部事实经导入车道直收 |
 | 行业模板工厂（差异全部上移至此） | `fd-erp-vertical-templates` | `git@github.com:scs001/fd-erp-vertical-templates.git` | 模板资产 + 连接器绑定 + 能力矩阵 | 10715 / 8536 行 | 零旁路账务、零直连库表、回写仅经内核白名单车道、对外部系统零写入（boundary.py 机械审计） |
 | 纵向 REST 服务面 | `fd-erp-vertical-api` | `git@github.com:scs001/fd-erp-vertical-api.git` | REST 65 路由（含 20 placeholder） | 3174 / 1797 行 | 单副本；闸序 租户→页面集→grant→身份域；不直连内核库 |
 
@@ -58,7 +58,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 码表与指标名一律从源码 AST 现读，契约文件只写「必须逐字一致的部分」与「允许不同但必须声明的部分」。闸：`fd-erp/tools/check_semantics_contract.py`。
 
-- 错误码：内核封闭集 **22** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **7** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 9 个、模板层自有 9 个，均须在契约里声明并给理由
+- 错误码：内核封闭集 **22** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **12** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 9 个、模板层自有 9 个，均须在契约里声明并给理由
 - 指标：内核 11 个 / api 3 个，同一 Prometheus 下不得跨服务重名
 - 闸门状态：通过
 - 已声明偏差（histogram_buckets，fd-erp-vertical-api）：erp_api_request_seconds 的桶集比内核 erp_tool_latency_seconds 少一个 10.0 上界；待办 `establish-erp-independent-root 3.5`
