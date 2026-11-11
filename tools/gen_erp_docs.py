@@ -517,7 +517,7 @@ def render_site(d: dict) -> str:
     # ── 科目索引 ────────────────────────────────────────────────────────
     a('<nav class="index" aria-label="科目索引"><h2>科目索引</h2><ol>')
     for anchor, label, hint in (
-        ("form", "形态", "四层"),
+        ("form", "形态", "五层"),
         ("capability", "能力面", f"{len(delivered)} 条"),
         ("not-claimable", "明确不宣称", f"{len(not_claimable)} 条"),
         ("tools", "MCP 工具面", f"{len(ann)} 个"),
@@ -532,7 +532,7 @@ def render_site(d: dict) -> str:
     a("</ol></nav>")
 
     # ── 1 形态 ──────────────────────────────────────────────────────────
-    a('<section id="form"><h2>形态：四层，各自独立升级</h2>')
+    a('<section id="form"><h2>形态：五层，各自独立升级</h2>')
     a('<ul class="stack">'
       '<li><span class="layer">客户端<em>壹座 miniapp 四端</em></span>'
       '<span class="what">UE / SE / SP / CP 四端页面集</span>'

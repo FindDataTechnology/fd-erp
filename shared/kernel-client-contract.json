@@ -34,7 +34,18 @@
    ],
    "intentionally_absent": {
     "bill_period_snapshot": "日终期间快照计费是内核侧的运维/计费车道，模板层不做期间快照；模板层只按事件计费（bill_event）",
-    "list_billing_rules": "规则查询由运维/计费侧使用，模板层只提交与审批规则，不列规则清单"
+    "list_billing_rules": "规则查询由运维/计费侧使用，模板层只提交与审批规则，不列规则清单",
+    "ingest_event": "事件导入车道是内核面：外部系统原始事实由采集侧直写，模板层不代外部系统提交事实",
+    "submit_event": "事件拟稿车道未接入模板层：模板层现有写路径一律走 proposal（submit_proposal），不另开事件拟稿",
+    "decide_event": "确认门由内核/拍板席位持有；模板层不代任何一方过门（模板只产出 proposal 等确认）",
+    "query_events": "事件查询面未接入：模板对账读的是余额与分录（query_balance/query_entries），不读事件明细",
+    "project_event": "对象投影是内核派生面；模板层不做投影，只读派生结果",
+    "post_event": "过账由内核按规则派生，不由模板层逐笔触发；模板层的落账入口是 proposal 过确认门",
+    "submit_posting_rule": "过账规则归运维/内核侧登记：模板层不定义科目与金额算法，避免把业务分支搬进规则",
+    "approve_posting_rule": "过账规则审批是人工确认门，归内核/运维侧；模板层无审批权",
+    "list_posting_rules": "规则清单查询由运维侧使用，模板层不列规则",
+    "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单",
+    "query_object_balance": "对象余额是内核数量面派生结果；模板层读科目余额（query_balance）"
    }
   },
   {
@@ -67,7 +78,18 @@
     "list_fees": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
     "reverse_fee": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
     "simulate_billing": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
-    "submit_billing_rule": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点"
+    "submit_billing_rule": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "ingest_event": "事件导入车道是内核面：外部系统原始事实由采集侧直写，模板层不代外部系统提交事实",
+    "submit_event": "事件拟稿车道未接入模板层：模板层现有写路径一律走 proposal（submit_proposal），不另开事件拟稿",
+    "decide_event": "确认门由内核/拍板席位持有；模板层不代任何一方过门（模板只产出 proposal 等确认）",
+    "query_events": "事件查询面未接入：模板对账读的是余额与分录（query_balance/query_entries），不读事件明细",
+    "project_event": "对象投影是内核派生面；模板层不做投影，只读派生结果",
+    "post_event": "过账由内核按规则派生，不由模板层逐笔触发；模板层的落账入口是 proposal 过确认门",
+    "submit_posting_rule": "过账规则归运维/内核侧登记：模板层不定义科目与金额算法，避免把业务分支搬进规则",
+    "approve_posting_rule": "过账规则审批是人工确认门，归内核/运维侧；模板层无审批权",
+    "list_posting_rules": "规则清单查询由运维侧使用，模板层不列规则",
+    "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单",
+    "query_object_balance": "对象余额是内核数量面派生结果；模板层读科目余额（query_balance）"
    }
   }
  ]

@@ -172,7 +172,7 @@ a{border:0}
 <p class="basis">本页所有数字均由 <code>claims.json</code> / <code>gaps.json</code> / <code>tool-surface.json</code> / <code>coverage/</code> / 模板 manifest 在构建时派生，与 <code>claim_gate</code> 同源；不写价格、客户数、用量或上线日期。</p>
 <table class="tb"><caption>本页口径</caption>
 <thead><tr><th scope="col">项目</th><th scope="col" class="num">数量</th><th scope="col">出处</th></tr></thead><tbody>
-<tr><td>MCP 工具</td><td class="num big">21<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td><td class="prov">tool-surface.json</td></tr>
+<tr><td>MCP 工具</td><td class="num big">32<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td><td class="prov">tool-surface.json</td></tr>
 <tr><td>业务路由</td><td class="num big">63<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td><td class="prov">coverage/ <span class="dim">（另有 2 条健康探针；其中 20 条未实施）</span></td></tr>
 <tr><td>行业模板</td><td class="num big">3<sup><a class="fn" href="#src" data-src="templates/*/manifest.json">3</a></sup></td><td class="prov">templates/*/manifest.json</td></tr>
 <tr><td>可宣称能力</td><td class="num big">12<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td><td class="prov">claims.json</td></tr>
@@ -186,17 +186,17 @@ a{border:0}
 </nav>
 </div>
 <nav class="index" aria-label="科目索引"><h2>科目索引</h2><ol>
-<li><a href="#form"><span class="k">形态</span><span class="v">四层</span></a></li>
+<li><a href="#form"><span class="k">形态</span><span class="v">五层</span></a></li>
 <li><a href="#capability"><span class="k">能力面</span><span class="v">12 条</span></a></li>
 <li><a href="#not-claimable"><span class="k">明确不宣称</span><span class="v">7 条</span></a></li>
-<li><a href="#tools"><span class="k">MCP 工具面</span><span class="v">21 个</span></a></li>
+<li><a href="#tools"><span class="k">MCP 工具面</span><span class="v">32 个</span></a></li>
 <li><a href="#routes"><span class="k">REST 接口面</span><span class="v">63 条</span></a></li>
 <li><a href="#templates"><span class="k">行业模板</span><span class="v">3 套</span></a></li>
 <li><a href="#matrix"><span class="k">功能覆盖矩阵</span><span class="v">35 点</span></a></li>
 <li><a href="#gaps"><span class="k">连接器缺口</span><span class="v">4 条</span></a></li>
 <li><a href="#edges"><span class="k">边界</span><span class="v">四项</span></a></li>
 </ol></nav>
-<section id="form"><h2>形态：四层，各自独立升级</h2>
+<section id="form"><h2>形态：五层，各自独立升级</h2>
 <ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">63 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；确认门是唯一落账路径；借贷必平由 DB 约束强制</span></li></ul>
 <table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th><th scope="col">面</th><th scope="col" class="num">源码行</th><th scope="col" class="num">测试行</th></tr></thead><tbody>
 <tr><td>账本内核（行业无关）</td><td><code>fd-erp-ledger-mcp</code></td><td class="muted">MCP 工具面</td><td class="num">4456</td><td class="num">2895</td></tr>
@@ -229,7 +229,7 @@ a{border:0}
 <tr><td><span class="st no">不宣称：</span>网关已上线</td><td class="muted">gateway rollout 需真实凭据与集群变更，属独立发布步骤</td></tr>
 <tr><td><span class="st no">不宣称：</span>registry 快照已写入</td><td class="muted">registry 写入属独立发布步骤，需真实凭据</td></tr>
 </tbody></table></section>
-<section id="tools"><h2>MCP 工具面（21 个）</h2>
+<section id="tools"><h2>MCP 工具面（32 个）</h2>
 <h3>proposal</h3>
 <table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
 <tr><td><code>submit_proposal</code></td><td class="rw w">写</td><td class="muted">write · 只创建 proposals 行、绝不直接落账；同 stable_id 重复提交返回首次结果（唯一索引去重）</td></tr>
@@ -265,6 +265,26 @@ a{border:0}
 <tr><td><code>release_credit</code></td><td class="rw w">写</td><td class="muted">write · 释放信用占用（reserved→released，幂等；备忘表状态推进，非账本事实）</td></tr>
 <tr><td><code>query_credit</code></td><td class="rw r">读</td><td class="muted">read · 查询额度位：limit / ar_balance（1300 分录确定性重算）/ reserved / available</td></tr>
 <tr><td><code>list_credit_reservations</code></td><td class="rw r">读</td><td class="muted">read · 列出信用占用明细（含派生状态 reserved/expired/released 与 expires_at）；不释放、不修改任何占用</td></tr>
+</tbody></table>
+<h3>event</h3>
+<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
+<tr><td><code>ingest_event</code></td><td class="rw w">写</td><td class="muted">write · 导入车道：写入来自外部系统的原始事实，写入即成为事实（accepted）。同 (租户, 车道, stable_id) 幂等；事件只追加，定型后不可改写，更正只走冲正</td></tr>
+<tr><td><code>submit_event</code></td><td class="rw w">写</td><td class="muted">write · 拟稿车道：agent 产出的事件，落为 pending，未过确认门不算事实（不进对象投影、不过账）；同 stable_id 幂等</td></tr>
+<tr><td><code>decide_event</code></td><td class="rw w">写</td><td class="muted">write · 确认门：把 pending 的拟稿事件置 accepted 或 rejected（唯一改变事件状态的人工入口）；ingest 车道事件不需要确认</td></tr>
+<tr><td><code>query_events</code></td><td class="rw r">读</td><td class="muted">read · 查询事件并返回完整性声明（declared_total/returned/truncated/watermark）；truncated 为真时不得把结果当成全部</td></tr>
+</tbody></table>
+<h3>object</h3>
+<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
+<tr><td><code>query_object_balance</code></td><td class="rw r">读</td><td class="muted">read · 数量面余额（含单位/维度/水位）+ 重算对照；drift 为真表示物化值与事件重算不一致，以事件为准。账本面不提供数量查询</td></tr>
+<tr><td><code>project_event</code></td><td class="rw w">写</td><td class="muted">write · 把已接受事件投影到对象数量面；同 (事件, 对象, 维度) 幂等不叠加。余额是投影产物，不可直写；未过确认门的事件不算事实，不得投影</td></tr>
+</tbody></table>
+<h3>posting</h3>
+<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
+<tr><td><code>submit_posting_rule</code></td><td class="rw w">写</td><td class="muted">write · 提交过账规则草稿（版本化，不参与过账）；科目必须落在机器车道白名单内，且必须同时含借贷两侧</td></tr>
+<tr><td><code>approve_posting_rule</code></td><td class="rw w">写</td><td class="muted">write · 审批上线过账规则：退役旧 active 版本，本版本生效；升版不重写历史分录</td></tr>
+<tr><td><code>list_posting_rules</code></td><td class="rw r">读</td><td class="muted">read · 列过账规则各版本与状态（draft/active/retired）</td></tr>
+<tr><td><code>post_event</code></td><td class="rw w">写</td><td class="muted">write · 按生效规则把已接受事件过一次账；同一事件只过一次。缺规则时抛 POSTING_RULE_MISSING 并把事件挂入待补清单，账本余额不变（不猜科目）</td></tr>
+<tr><td><code>list_posting_gaps</code></td><td class="rw r">读</td><td class="muted">read · 缺规则待补清单：哪些事件在等哪条规则（未解除的缺口）</td></tr>
 </tbody></table>
 </section>
 <section id="routes"><h2>REST 接口面（63 条业务路由，20 条未实施）</h2>
