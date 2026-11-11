@@ -131,11 +131,13 @@ def main() -> int:
 
     # 边缘宿主机配置：纯本地文件检查，CI 与 workspace 都跑。
     # 它守的是 2026-11-11 两次全站白屏的根因（单站点 bind 抢走共享监听地址）。
+    # 退出 2 = 线上连不上：记 SKIP（不伪装通过），与跨仓闸同一口径。
     host_args = [sys.executable, "-I", str(TOOLS / "check_host_configs.py")]
     code, out = _run(host_args + ([] if args.ci else ["--live"]))
     tail = (out.splitlines() or ["（无输出）"])[-1]
-    rows.append(("边缘配置（bind 不抢地址）", "PASS" if code == 0 else "FAIL", tail))
-    failed = failed or code != 0
+    host_state = "PASS" if code == 0 else ("SKIP" if code == 2 else "FAIL")
+    rows.append(("边缘配置（bind 不抢地址）", host_state, tail))
+    failed = failed or code not in (0, 2)
 
     if not args.ci:
         ok, missing = _siblings_present()

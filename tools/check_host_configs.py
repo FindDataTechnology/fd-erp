@@ -302,17 +302,23 @@ def main() -> int:
         return self_test()
 
     problems = check_fragments()
+    live_unknown = None
     if args.live:
         try:
             problems.extend(check_live(_read_live()))
         except RuntimeError as exc:
-            print(f"  SKIP 线上校验（{exc}）——没有输入时不算通过", file=sys.stderr)
+            # 连不上时**既不算通过也不算失败**：显式退出 2，由调用方记成 SKIP 并说明原因。
+            # 这里判"绿"就是"没有输入时的绿灯"，比没有闸更糟。
+            live_unknown = str(exc)
 
     for p in problems:
         print(f"  x [{p['code']}] {p['message']}")
     if problems:
         print("\n边缘配置：阻断")
         return 1
+    if live_unknown:
+        print(f"边缘配置：本地片段通过；线上未校验（{live_unknown}）")
+        return 2
     print("边缘配置：通过（片段无单站点 bind" + ("，线上地址集未分叉" if args.live else "") + "）")
     return 0
 
