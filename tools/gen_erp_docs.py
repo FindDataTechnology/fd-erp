@@ -546,7 +546,7 @@ def render_site(d: dict) -> str:
       '<span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span>'
       '<span class="hop">仅 proposal，不直写</span></li>'
       '<li><span class="layer">账本内核<em>fact ledger kernel</em></span>'
-      '<span class="what">复式事件账；确认门是唯一落账路径；借贷必平由 DB 约束强制</span></li>'
+      '<span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li>'
       "</ul>")
     a('<table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th>'
       '<th scope="col">面</th><th scope="col" class="num">源码行</th>'

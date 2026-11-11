@@ -197,7 +197,7 @@ a{border:0}
 <li><a href="#edges"><span class="k">边界</span><span class="v">四项</span></a></li>
 </ol></nav>
 <section id="form"><h2>形态：五层，各自独立升级</h2>
-<ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">63 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；确认门是唯一落账路径；借贷必平由 DB 约束强制</span></li></ul>
+<ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">63 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li></ul>
 <table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th><th scope="col">面</th><th scope="col" class="num">源码行</th><th scope="col" class="num">测试行</th></tr></thead><tbody>
 <tr><td>账本内核（行业无关）</td><td><code>fd-erp-ledger-mcp</code></td><td class="muted">MCP 工具面</td><td class="num">4456</td><td class="num">2895</td></tr>
 <tr><td>行业模板工厂（差异全部上移至此）</td><td><code>fd-erp-vertical-templates</code></td><td class="muted">模板资产 + 连接器绑定 + 能力矩阵</td><td class="num">10715</td><td class="num">8536</td></tr>
@@ -205,7 +205,7 @@ a{border:0}
 </tbody></table></section>
 <section id="capability"><h2>能力面（可宣称，逐条带证据）</h2>
 <table><thead><tr><th scope="col">能力</th><th scope="col">标识</th><th scope="col">证据</th></tr></thead><tbody>
-<tr><td>复式事件账（写路径只出 proposal，确认门唯一落账；借贷必平由数据库约束强制；分录 append-only；余额确定性重算）</td><td><code>ledger.double-entry</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×4</span></td></tr>
+<tr><td>复式事件账（agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；事实按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由数据库约束强制；分录 append-only；余额确定性重算）</td><td><code>ledger.double-entry</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×4</span></td></tr>
 <tr><td>stable_id 幂等去重（同源重推只落一次）</td><td><code>ledger.idempotent</code></td><td><span class=tag>code</span><span class="cnt">×1</span></td></tr>
 <tr><td>多币种：原币 + 本位币折算，汇率带 as_of 与出处，无出处拒绝</td><td><code>ledger.fx-provenance</code></td><td><span class=tag>code</span><span class="cnt">×2</span></td></tr>
 <tr><td>对账只读滩头：四类差异含双侧原始引用，对外部系统零写入</td><td><code>recon.readonly-four-diffs</code></td><td><span class=tag>mcp_tool</span><span class=tag>test</span><span class="cnt">×3</span></td></tr>
