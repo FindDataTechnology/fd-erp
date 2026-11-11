@@ -204,7 +204,34 @@
     "last_schedule": "2026-11-10T20:12:00Z",
     "note": "账本库备份"
    }
-  ]
+  ],
+  "site": {
+   "host": "erp.finddatatech.cloud",
+   "content": "fd-erp/site/index.html",
+   "origin": {
+    "role": "内容源站（与官网同一台）",
+    "ssh_alias": "fd-deploy",
+    "ip": "124.220.7.175",
+    "path": "/opt/fd/erp/site",
+    "nginx_conf": "/etc/nginx/sites-enabled/erp.finddatatech.cloud",
+    "deploy_step": "scp fd-erp/site/index.html fd-deploy:/opt/fd/erp/site/index.html"
+   },
+   "edge": {
+    "role": "雷池 WAF（终止 TLS）+ 同机 Caddy（按 Host 分发）",
+    "ip": "103.236.89.212",
+    "caddy_conf": "/etc/caddy/Caddyfile",
+    "caddy_backup": "/etc/caddy/Caddyfile.bak-20261111-erp",
+    "upstream": "124.220.7.175:80",
+    "note": "边缘只转发，不持有内容副本"
+   },
+   "public_status": "blocked",
+   "verified": [
+    "源站：curl --resolve erp.finddatatech.cloud:80:124.220.7.175 → 200，正文与生成物逐字节一致（2026-11-11）",
+    "边缘：curl -H 'Host: erp.finddatatech.cloud' http://172.22.222.1:8080/ → 200，正文同上（2026-11-11）",
+    "公网：http 404（雷池自身页面）/ https 握手失败（无该域名证书）"
+   ],
+   "blocked_by": "雷池控制台需新增站点 erp.finddatatech.cloud（端口 80 + 443_ssl，upstream http://172.22.222.1:8080，并申请含该域名的证书）。该机无 OpenAPI token，控制台需登录凭据，故此项不由本仓代办。"
+  }
  },
  "sources": {
   "claims": "fd-erp-vertical-templates/claims/claims.json",

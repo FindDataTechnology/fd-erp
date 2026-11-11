@@ -76,13 +76,29 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | `erp-event-archive-backup` | `37 3 * * *` | 未声明 | 否 | 2026-11-10T19:37:00Z | 事件档备份；清单未写 timeZone（按集群本地时区解释） |
 | `erp-ledger-backup` | `12 4 * * *` | Asia/Shanghai | 否 | 2026-11-10T20:12:00Z | 账本库备份 |
 
-## 6. 能力与缺口（派生，勿手写）
+## 6. 独立站发布
+
+站点 `erp.finddatatech.cloud`，内容 `fd-erp/site/index.html`（生成物，勿手改）。
+
+| 环节 | 位置 | 备注 |
+|---|---|---|
+| 源站 | `fd-deploy`（124.220.7.175）`/opt/fd/erp/site` | nginx `/etc/nginx/sites-enabled/erp.finddatatech.cloud` |
+| 边缘 | 雷池 WAF（终止 TLS）+ 同机 Caddy（按 Host 分发）（103.236.89.212） | Caddy `/etc/caddy/Caddyfile`，upstream `124.220.7.175:80` |
+
+**公网状态：blocked** —— 雷池控制台需新增站点 erp.finddatatech.cloud（端口 80 + 443_ssl，upstream http://172.22.222.1:8080，并申请含该域名的证书）。该机无 OpenAPI token，控制台需登录凭据，故此项不由本仓代办。
+
+已验证：
+- 源站：curl --resolve erp.finddatatech.cloud:80:124.220.7.175 → 200，正文与生成物逐字节一致（2026-11-11）
+- 边缘：curl -H 'Host: erp.finddatatech.cloud' http://172.22.222.1:8080/ → 200，正文同上（2026-11-11）
+- 公网：http 404（雷池自身页面）/ https 握手失败（无该域名证书）
+
+## 7. 能力与缺口（派生，勿手写）
 
 - 可宣称能力：**12** 条（每条带仓内可解析证据）
 - 不可宣称：**7** 条（对外材料出现肯定句式即被 `claim_gate.py` 判红）
 - 连接器缺口：**4** 条（每项带机器判据）
 
-## 7. 待办（结构性）
+## 8. 待办（结构性）
 
 - [ ] 把 collateral-erp 与 docs/erp 纳入版本控制（当前不在任何 git 仓内）
 - [ ] 为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根

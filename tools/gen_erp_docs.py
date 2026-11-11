@@ -189,7 +189,27 @@ def render_readme(d: dict) -> str:
             f"| {'**是**' if cj['suspend'] else '否'} | {cj['last_schedule'] or '从未'} | {cj['note']} |"
         )
     a("")
-    a("## 6. 能力与缺口（派生，勿手写）")
+    a("## 6. 独立站发布")
+    a("")
+    site = m["deploy"].get("site")
+    if site:
+        a(f"站点 `{site['host']}`，内容 `{site['content']}`（生成物，勿手改）。")
+        a("")
+        a("| 环节 | 位置 | 备注 |")
+        a("|---|---|---|")
+        o, e = site["origin"], site["edge"]
+        a(f"| 源站 | `{o['ssh_alias']}`（{o['ip']}）`{o['path']}` | nginx `{o['nginx_conf']}` |")
+        a(f"| 边缘 | {e['role']}（{e['ip']}） | Caddy `{e['caddy_conf']}`，upstream `{e['upstream']}` |")
+        a("")
+        a(f"**公网状态：{site['public_status']}** —— {site['blocked_by']}")
+        a("")
+        a("已验证：")
+        for v in site["verified"]:
+            a(f"- {v}")
+    else:
+        a("（未登记站点）")
+    a("")
+    a("## 7. 能力与缺口（派生，勿手写）")
     a("")
     claims = d["claims"]["claims"]
     delivered = [c for c in claims if c["status"] == "delivered"]
@@ -198,7 +218,7 @@ def render_readme(d: dict) -> str:
     a(f"- 不可宣称：**{len(not_claimable)}** 条（对外材料出现肯定句式即被 `claim_gate.py` 判红）")
     a(f"- 连接器缺口：**{len(d['gaps']['gaps'])}** 条（每项带机器判据）")
     a("")
-    a("## 7. 待办（结构性）")
+    a("## 8. 待办（结构性）")
     a("")
     for t in m["open_tasks"]:
         a(f"- [ ] {t}")
