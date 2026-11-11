@@ -183,9 +183,10 @@
    {
     "name": "fd-erp-ledger-mcp",
     "kind": "Deployment",
-    "image": "ccr.ccs.tencentyun.com/finddata-business/fd-erp-ledger-mcp:sha-64bd819",
+    "image": "ccr.ccs.tencentyun.com/finddata-business/fd-erp-ledger-mcp:sha-e67fa40",
     "ready": 1,
-    "exposure": "NodePort 31910（MCP over HTTP）"
+    "exposure": "NodePort 31910（MCP over HTTP）",
+    "note": "2026-11-11 换片：DSN repr 保护（8fde13f）+ 日志打码加固（757a83e）。digest sha256:df3f4591e68b；rollout 后 pod 内实测两处修复均生效，/mcp 200"
    },
    {
     "name": "fd-erp-vertical-api",
