@@ -52,13 +52,45 @@ curl -s https://www.finddatatech.cloud/erp-docs/ | sha256sum
 # 三者都必须等于本地 site/index.html 的 sha256
 ```
 
+**外加一条：旁证一个别的域名。** 只验 erp 自己 200 是不够的——上面坑 2 的故障下
+erp 恰恰仍是 200，而其它全站是空 200，所以"只验自己"的验收会给出假绿（2026-11-11
+就是这么放了两次故障上线）。每次改完边缘配置，必须同时验一条**共享 :8080 的邻居**：
+
+```bash
+curl -s -o /dev/null -w 'lawbench/healthz %{http_code} %{size_download}\n' \
+  https://lawbench.finddatatech.cloud/healthz   # 必须 200 且有非零 body（约 53B）
+```
+
+`tools/check_host_configs.py --live` 把这条和"地址集是否分叉"一起自动判。
+
 ## 坑（都踩过）
 
 1. **nginx 备份不能留在 `sites-enabled/`** —— 该目录下所有文件都会被 include，
    备份会被当成第二份配置加载，`nginx -t` 报 `duplicate listen options`。
    备份放 `/root/` 或 `/etc/nginx/backups/`。
-2. **Caddy 块要写 `bind 127.0.0.1 172.22.222.1`** —— 不写就在所有网卡应答 :8080，
-   暴露面比需要的宽。雷池转发目标就是 `172.22.222.1:8080`。
+2. **绝对不要给单站点写 `bind 127.0.0.1 172.22.222.1`** —— 这行曾两次把整个平台打白。
+
+   Caddy 按**监听地址集**分组 server，不是按端口。给 erp 这一个站点写
+   `bind 127.0.0.1 172.22.222.1`，Caddy 会为这组地址单开一个 server（`srv1`），
+   并把 `172.22.222.1:8080` **从共享的 `:8080` server 里抢走**（更具体的地址胜出）。
+   而雷池的转发目标恰好就是 `172.22.222.1:8080` —— 于是所有
+   `*.finddatatech.cloud` 的请求都落到 srv1 上，那里只有 erp 一条路由，
+   其余 37 条路由的 host 匹配不上 → 返回**空 200**（`http=200 size=0`，不是 404、
+   不是 502，所以任何"看状态码"的巡检都会说它是健康的）。
+
+   实测：`srv1 ['127.0.0.1:8080','172.22.222.1:8080'] routes=1` vs
+   `srv2 [':8080'] routes=37`。
+
+   **想让 :8080 少暴露**，用这两个办法之一，别用单站点 bind：
+   - 不动 Caddy，在防火墙上收口：
+     `iptables -I INPUT -p tcp --dport 8080 ! -s 172.22.222.1 -j DROP`（雷池同机，
+       源地址就是本机对外地址）；
+   - 或者给**每一个** :8080 站点块写**同一组** bind（这样仍是一个 server）——
+     38 个块要一起改，漏一个就复现上面的故障，所以不推荐。
+
+   正本守卫：`tools/check_host_configs.py`（本地静态检查 `deploy/host/*.conf`，
+   `--live` 还能连上边缘校验线上 Caddyfile 有没有出现地址集分叉）。
+   `:9000` 那个 `bind 100.64.0.11` 是安全的——该端口上只有它一个站点。
 3. **`erp.finddatatech.cloud` 的公网入口在雷池** —— 雷池里没有该站点时，`:80` 返回
    雷池自己的 404 页、`:443` 因 SNI 无匹配证书而握手失败。这一段本仓代办不了
    （控制台需登录凭据，且那台没有 OpenAPI token）。

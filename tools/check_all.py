@@ -129,6 +129,14 @@ def main() -> int:
     rows: list[tuple[str, str, str]] = []   # (名称, 状态, 备注)
     failed = False
 
+    # 边缘宿主机配置：纯本地文件检查，CI 与 workspace 都跑。
+    # 它守的是 2026-11-11 两次全站白屏的根因（单站点 bind 抢走共享监听地址）。
+    host_args = [sys.executable, "-I", str(TOOLS / "check_host_configs.py")]
+    code, out = _run(host_args + ([] if args.ci else ["--live"]))
+    tail = (out.splitlines() or ["（无输出）"])[-1]
+    rows.append(("边缘配置（bind 不抢地址）", "PASS" if code == 0 else "FAIL", tail))
+    failed = failed or code != 0
+
     if not args.ci:
         ok, missing = _siblings_present()
         for label, script in CROSS_REPO_GATES:
