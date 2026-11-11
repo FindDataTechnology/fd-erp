@@ -1,0 +1,74 @@
+{
+ "schema": "erp-kernel-client-contract/v1",
+ "note": "内核 21 工具面 × 各消费仓客户端覆盖面的声明。工具面真源是 fd-erp-ledger-mcp/tool-surface.json；本文件只声明「谁必须盖哪些、哪些故意不盖及理由」。任何一侧漂移由 fd-erp/tools/check_kernel_client_contract.py 判红。",
+ "source": "fd-erp-ledger-mcp/tool-surface.json",
+ "consumers": [
+  {
+   "repo": "fd-erp-vertical-templates",
+   "client": "fd-erp-vertical-templates/fd_erp_vertical_templates/kernel_client.py",
+   "classes": [
+    "KernelClient",
+    "McpKernelClient"
+   ],
+   "note": "模板层是内核的主要消费方。tenant 由客户端绑定、不逐个方法透传（一进程一租户）；approved_by/submitted_by/reversed_by 不透传，由内核按默认值填（'human'/'ops'）——这是审计口径的已知取舍，不是漏参。",
+   "must_cover": [
+    "approve_billing_rule",
+    "bill_event",
+    "confirm_proposal",
+    "get_fee_detail",
+    "get_recon_report",
+    "list_credit_reservations",
+    "list_fees",
+    "list_proposals",
+    "query_balance",
+    "query_credit",
+    "query_entries",
+    "reject_proposal",
+    "release_credit",
+    "reserve_credit",
+    "reverse_fee",
+    "run_reconciliation",
+    "simulate_billing",
+    "submit_billing_rule",
+    "submit_proposal"
+   ],
+   "intentionally_absent": {
+    "bill_period_snapshot": "日终期间快照计费是内核侧的运维/计费车道，模板层不做期间快照；模板层只按事件计费（bill_event）",
+    "list_billing_rules": "规则查询由运维/计费侧使用，模板层只提交与审批规则，不列规则清单"
+   }
+  },
+  {
+   "repo": "fd-erp-vertical-api",
+   "client": "fd-erp-vertical-api/fd_erp_vertical_api/kernel_client.py",
+   "classes": [
+    "InProcessKernelClient"
+   ],
+   "note": "REST 服务面只覆盖四端页面集需要的工具（proposal / ledger / recon / credit）。",
+   "must_cover": [
+    "confirm_proposal",
+    "get_recon_report",
+    "list_proposals",
+    "query_balance",
+    "query_credit",
+    "query_entries",
+    "reject_proposal",
+    "release_credit",
+    "reserve_credit",
+    "run_reconciliation",
+    "submit_proposal"
+   ],
+   "intentionally_absent": {
+    "approve_billing_rule": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "bill_event": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "bill_period_snapshot": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "get_fee_detail": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "list_billing_rules": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "list_credit_reservations": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "list_fees": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "reverse_fee": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "simulate_billing": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
+    "submit_billing_rule": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点"
+   }
+  }
+ ]
+}

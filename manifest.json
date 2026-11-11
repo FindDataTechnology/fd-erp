@@ -1,0 +1,219 @@
+{
+ "schema": "erp-ownership/v1",
+ "updated_at": "2026-11-11",
+ "note": "ERP 板块归属的唯一机器可读出处。README.md 与 site/ 均由 tools/gen_erp_docs.py 从本文件 + 各仓实况派生，不手写。新增/搬迁 ERP 资产先改这里，再跑生成器。",
+ "board": {
+  "name": "ERP",
+  "bilingual_same_form": true,
+  "tag_zh": "板块",
+  "tag_en": "Board",
+  "position": "一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线",
+  "spec": "openspec/specs/erp-board/spec.md",
+  "official_routes": [
+   "/erp",
+   "/zh/erp"
+  ],
+  "charter_doc": "docs/erp/README.md"
+ },
+ "repos": [
+  {
+   "id": "ledger-kernel",
+   "role": "账本内核（行业无关）",
+   "path": "fd-erp-ledger-mcp",
+   "remote": "git@github.com:scs001/fd-erp-ledger-mcp.git",
+   "package": "fd_erp_ledger_mcp",
+   "lang": "python",
+   "src_loc": 4456,
+   "tests_loc": 2895,
+   "surface": "MCP 工具面",
+   "boundary": "行业无关；不存行业逻辑；写路径只出 proposal"
+  },
+  {
+   "id": "vertical-templates",
+   "role": "行业模板工厂（差异全部上移至此）",
+   "path": "fd-erp-vertical-templates",
+   "remote": "git@github.com:scs001/fd-erp-vertical-templates.git",
+   "package": "fd_erp_vertical_templates",
+   "lang": "python",
+   "src_loc": 10715,
+   "tests_loc": 8536,
+   "surface": "模板资产 + 连接器绑定 + 能力矩阵",
+   "boundary": "零旁路账务、零直连库表、回写仅经内核白名单车道、对外部系统零写入（boundary.py 机械审计）"
+  },
+  {
+   "id": "vertical-api",
+   "role": "纵向 REST 服务面",
+   "path": "fd-erp-vertical-api",
+   "remote": "git@github.com:scs001/fd-erp-vertical-api.git",
+   "package": "fd_erp_vertical_api",
+   "lang": "python",
+   "src_loc": 3174,
+   "tests_loc": 1797,
+   "surface": "REST 65 路由（含 20 placeholder）",
+   "boundary": "单副本；闸序 租户→页面集→grant→身份域；不直连内核库"
+  }
+ ],
+ "assets": [
+  {
+   "id": "fleet-packs",
+   "what": "ERP 舰队/角色/技能包（3 个）",
+   "path": "fleet-packs/erp",
+   "versioned": true,
+   "owner_repo": "git@gitee.com:FindDataTechnology/fleet-packs.git",
+   "note": "与 ERP 仓分离维护，漂移风险高"
+  },
+  {
+   "id": "collateral",
+   "what": "客户演示包（跨境 / 餐饮，可复跑）",
+   "path": "collateral-erp",
+   "versioned": false,
+   "owner_repo": null,
+   "note": "不在任何 git 仓内 —— 改动无历史、无法回滚"
+  },
+  {
+   "id": "charter-doc",
+   "what": "对外口径唯一出处（章程 + 不可宣称清单 + 发布状态）",
+   "path": "docs/erp",
+   "versioned": false,
+   "owner_repo": null,
+   "note": "不在任何 git 仓内；claims 的 surfaces 直接引用此路径"
+  },
+  {
+   "id": "specs",
+   "what": "ERP 全部主规格（15 erp-* + 4 ecommerce-*）",
+   "path": "openspec/specs",
+   "versioned": true,
+   "owner_repo": "git@gitee.com:FindDataTechnology/finddata-openspec.git",
+   "note": "与全仓 358 条规格共用一个根；ERP 无自己的 openspec 根"
+  },
+  {
+   "id": "official-landing",
+   "what": "官网 ERP 板块落地页（双语）",
+   "path": "fd-official-web/src/components/ErpLanding.astro",
+   "versioned": true,
+   "owner_repo": "git@gitee.com:FindDataTechnology/fd-official-web.git",
+   "note": "在官网仓内，与五线共用布局与 LineTabs"
+  },
+  {
+   "id": "kernel-client-contract",
+   "what": "内核工具面 × 客户端覆盖面声明（谁盖哪些、哪些故意不盖及理由）",
+   "path": "fd-erp/shared/kernel-client-contract.json",
+   "versioned": true,
+   "owner_repo": "fd-erp（本根仓）",
+   "note": "跨仓契约：声明 ≠ 实际即被 check_kernel_client_contract.py 判红"
+  }
+ ],
+ "couplings": [
+  {
+   "what": "同源入口代理（剥 X-ERP-* → 按会话重注入 → 无会话 401）",
+   "path": "paas/server/routes/erp-proxy.js",
+   "owner_repo": "git@gitee.com:FindDataTechnology/fd-craw-private.git",
+   "why": "必须挂在网关进程（3100）而非 server.js，且早于 SPA 兜底"
+  },
+  {
+   "what": "四端页面集客户端接线（UE/SE/SP/CP）",
+   "path": "paas/miniapp/src/pagesets",
+   "owner_repo": "git@gitee.com:FindDataTechnology/fd-craw-private.git",
+   "why": "ERP 唯一前端形态；必须建在壹座 miniapp 底座上，不另起框架"
+  }
+ ],
+ "shared_component_debt": [
+  {
+   "component": "kernel_client",
+   "implementations": [
+    "fd-erp-vertical-templates/fd_erp_vertical_templates/kernel_client.py",
+    "fd-erp-vertical-api/fd_erp_vertical_api/kernel_client.py"
+   ],
+   "problem": "同一 21 工具面在两仓各写一份（Protocol+Mcp 版 vs InProcess+ReconProxy 版）。已落声明式契约 + 覆盖面闸（声明覆盖 19/11），签名不再靠人肉对齐；真正收敛为单一共享包仍待办（需先解决跨仓依赖的 CI 可见性）"
+  },
+  {
+   "component": "errors / error_codes",
+   "implementations": [
+    "fd-erp-ledger-mcp/fd_erp_ledger_mcp/errors.py",
+    "fd-erp-vertical-templates/fd_erp_vertical_templates/errors.py",
+    "fd-erp-vertical-api/fd_erp_vertical_api/errors.py"
+   ],
+   "problem": "错误码封闭集三处各维护，新增码要改三仓"
+  },
+  {
+   "component": "observability",
+   "implementations": [
+    "fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py",
+    "fd-erp-vertical-api/fd_erp_vertical_api/observability.py"
+   ],
+   "problem": "指标/结构化日志两套实现，指标名与字段不保证同形"
+  },
+  {
+   "component": "config",
+   "implementations": [
+    "fd-erp-ledger-mcp/fd_erp_ledger_mcp/config.py",
+    "fd-erp-vertical-api/fd_erp_vertical_api/config.py"
+   ],
+   "problem": "环境变量名与默认值分散，无单一契约"
+  }
+ ],
+ "deploy": {
+  "cluster_context": "fd-prod",
+  "namespace": "fd-prod",
+  "workloads": [
+   {
+    "name": "fd-erp-ledger-mcp",
+    "kind": "Deployment",
+    "image": "ccr.ccs.tencentyun.com/finddata-business/fd-erp-ledger-mcp:sha-64bd819",
+    "ready": 1,
+    "exposure": "NodePort 31910（MCP over HTTP）"
+   },
+   {
+    "name": "fd-erp-vertical-api",
+    "kind": "Deployment",
+    "image": "ccr.ccs.tencentyun.com/finddata-business/fd-erp-vertical-api:sha-a07c97c",
+    "ready": 1,
+    "exposure": "ClusterIP only（唯一入口是 paas 网关 /erp/supply-chain/v1/*）"
+   }
+  ],
+  "cronjobs": [
+   {
+    "name": "erp-daily-billing",
+    "schedule": "10 0 * * *",
+    "timezone": "Asia/Shanghai",
+    "suspend": true,
+    "last_schedule": null,
+    "note": "日终计费快照，当前挂起且从未触发"
+   },
+   {
+    "name": "erp-event-archive-backup",
+    "schedule": "37 3 * * *",
+    "timezone": null,
+    "suspend": false,
+    "last_schedule": "2026-11-10T19:37:00Z",
+    "note": "事件档备份；清单未写 timeZone（按集群本地时区解释）"
+   },
+   {
+    "name": "erp-ledger-backup",
+    "schedule": "12 4 * * *",
+    "timezone": "Asia/Shanghai",
+    "suspend": false,
+    "last_schedule": "2026-11-10T20:12:00Z",
+    "note": "账本库备份"
+   }
+  ]
+ },
+ "sources": {
+  "claims": "fd-erp-vertical-templates/claims/claims.json",
+  "gaps": "fd-erp-vertical-templates/gaps.json",
+  "publish_record": "fd-erp-vertical-templates/publish-record.json",
+  "tool_surface": "fd-erp-ledger-mcp/tool-surface.json",
+  "evidence": "fd-erp-vertical-templates/coverage/evidence.json",
+  "matrices": "fd-erp-vertical-templates/coverage/matrices",
+  "templates": "fd-erp-vertical-templates/templates",
+  "kernel_client_contract": "fd-erp/shared/kernel-client-contract.json"
+ },
+ "open_tasks": [
+  "把 collateral-erp 与 docs/erp 纳入版本控制（当前不在任何 git 仓内）",
+  "为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根",
+  "kernel_client 收敛为单一共享包（当前仅做到声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）",
+  "errors / observability / config 三组同样收敛到声明式契约",
+  "ERP 独立介绍/文档站（本仓 site/）的英文版与发布通道",
+  "确认 erp-daily-billing 挂起是否为预期（当前 suspend=true 且从未触发）"
+ ]
+}
