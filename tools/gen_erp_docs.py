@@ -39,6 +39,7 @@ def collect() -> dict:
     return {
         "manifest": m,
         "contract": load("fd-erp/shared/kernel-client-contract.json"),
+        "semantics": _semantics(),
         "claims": load(src["claims"]),
         "gaps": load(src["gaps"]),
         "publish": load(src["publish_record"]),
@@ -50,6 +51,17 @@ def collect() -> dict:
             for v in ("crossborder", "restaurant-chain", "supply-chain")
         },
     }
+
+
+def _semantics() -> dict:
+    """跨仓语义契约的实况，直接复用契约闸的计算——不在这里重新实现一遍 AST 读取。"""
+    import importlib.util
+
+    path = Path(__file__).with_name("check_semantics_contract.py")
+    spec = importlib.util.spec_from_file_location("_erp_semantics_gate", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    return mod.check()
 
 
 def route_stats(evidence: dict) -> dict:
@@ -142,6 +154,23 @@ def render_readme(d: dict) -> str:
     a("> 注：tenant 由客户端绑定、不逐方法透传（一进程一租户）；"
       "`approved_by` / `submitted_by` / `reversed_by` 不透传，由内核按默认值填 "
       "（`human` / `ops` / `human`）—— 这是审计口径的已知取舍，不是漏参。")
+    a("")
+    a("### 4.2 跨仓语义契约（错误码 / 指标名）")
+    a("")
+    sem = d["semantics"]
+    s = sem["summary"]
+    a("码表与指标名一律从源码 AST 现读，契约文件只写「必须逐字一致的部分」与"
+      "「允许不同但必须声明的部分」。闸：`fd-erp/tools/check_semantics_contract.py`。")
+    a("")
+    a(f"- 错误码：内核封闭集 **{s['kernel_codes']}** 个，与 `tool-surface.json` 镜像逐一对照；"
+      f"跨仓共享 **{s['shared_codes']}** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；"
+      f"api 自有 {s['api_codes'] - s['shared_codes']} 个、模板层自有 9 个，均须在契约里声明并给理由")
+    a(f"- 指标：内核 {s['metrics']['fd-erp-ledger-mcp']} 个 / api {s['metrics']['fd-erp-vertical-api']} 个，"
+      f"同一 Prometheus 下不得跨服务重名")
+    gate_state = "通过" if sem["ok"] else f"阻断（{len(sem['violations'])} 处）"
+    a(f"- 闸门状态：{gate_state}")
+    for dev in sem["declared_deviations"]:
+        a(f"- 已声明偏差（{dev['kind']}，{dev['service']}）：{dev['detail']}；待办 `{dev.get('task','-')}`")
     a("")
     a("## 5. 部署实况")
     a("")

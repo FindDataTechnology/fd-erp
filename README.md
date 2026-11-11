@@ -23,6 +23,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | ERP 全部主规格（15 erp-* + 4 ecommerce-*） | `openspec/specs` | 是 | `git@gitee.com:FindDataTechnology/finddata-openspec.git` | 与全仓 358 条规格共用一个根；ERP 无自己的 openspec 根 |
 | 官网 ERP 板块落地页（双语） | `fd-official-web/src/components/ErpLanding.astro` | 是 | `git@gitee.com:FindDataTechnology/fd-official-web.git` | 在官网仓内，与五线共用布局与 LineTabs |
 | 内核工具面 × 客户端覆盖面声明（谁盖哪些、哪些故意不盖及理由） | `fd-erp/shared/kernel-client-contract.json` | 是 | `fd-erp（本根仓）` | 跨仓契约：声明 ≠ 实际即被 check_kernel_client_contract.py 判红 |
+| 跨仓语义契约（错误码封闭集 + 指标命名；码表不抄写，从源码 AST 现读） | `fd-erp/shared/semantics-contract.json` | 是 | `fd-erp（本根仓）` | 闸：check_semantics_contract.py；新增仓自有码必须在 service_specific_codes 声明并给理由 |
 
 ## 3. 跨仓耦合点（ERP 代码活在别人仓里）
 
@@ -36,8 +37,8 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 组件 | 实现数 | 位置 | 问题 |
 |---|---|---|---|
 | `kernel_client` | 2 | `fd-erp-vertical-templates/fd_erp_vertical_templates/kernel_client.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/kernel_client.py` | 同一 21 工具面在两仓各写一份（Protocol+Mcp 版 vs InProcess+ReconProxy 版）。已落声明式契约 + 覆盖面闸（声明覆盖 19/11），签名不再靠人肉对齐；真正收敛为单一共享包仍待办（需先解决跨仓依赖的 CI 可见性） |
-| `errors / error_codes` | 3 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/errors.py`<br>`fd-erp-vertical-templates/fd_erp_vertical_templates/errors.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/errors.py` | 错误码封闭集三处各维护，新增码要改三仓 |
-| `observability` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/observability.py` | 指标/结构化日志两套实现，指标名与字段不保证同形 |
+| `errors / error_codes` | 3 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/errors.py`<br>`fd-erp-vertical-templates/fd_erp_vertical_templates/errors.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/errors.py` | 错误码封闭集三处各维护，新增码要改三仓。已落跨仓语义契约 + 闸（内核封闭集=镜像、7 个共享码语义逐字一致、仓自有码须声明），仍未收敛为单一常量源 |
+| `observability` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/observability.py` | 指标/结构化日志两套实现，指标名与字段不保证同形。已落指标命名式 + 跨服务重名闸 + 桶集偏差声明；日志字段名仍待对齐 |
 | `config` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/config.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/config.py` | 环境变量名与默认值分散，无单一契约 |
 
 ### 4.1 内核工具面 × 客户端覆盖面（声明式契约）
@@ -50,6 +51,15 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | `fd-erp-vertical-api` | 11 | 10 |
 
 > 注：tenant 由客户端绑定、不逐方法透传（一进程一租户）；`approved_by` / `submitted_by` / `reversed_by` 不透传，由内核按默认值填 （`human` / `ops` / `human`）—— 这是审计口径的已知取舍，不是漏参。
+
+### 4.2 跨仓语义契约（错误码 / 指标名）
+
+码表与指标名一律从源码 AST 现读，契约文件只写「必须逐字一致的部分」与「允许不同但必须声明的部分」。闸：`fd-erp/tools/check_semantics_contract.py`。
+
+- 错误码：内核封闭集 **17** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **7** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 9 个、模板层自有 9 个，均须在契约里声明并给理由
+- 指标：内核 11 个 / api 3 个，同一 Prometheus 下不得跨服务重名
+- 闸门状态：通过
+- 已声明偏差（histogram_buckets，fd-erp-vertical-api）：erp_api_request_seconds 的桶集比内核 erp_tool_latency_seconds 少一个 10.0 上界；待办 `establish-erp-independent-root 3.5`
 
 ## 5. 部署实况
 
@@ -76,7 +86,9 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 - [ ] 把 collateral-erp 与 docs/erp 纳入版本控制（当前不在任何 git 仓内）
 - [ ] 为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根
-- [ ] kernel_client 收敛为单一共享包（当前仅做到声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）
-- [ ] errors / observability / config 三组同样收敛到声明式契约
+- [ ] kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）
+- [ ] 错误码 / 指标名收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）
+- [ ] 日志字段名对齐（指标名已闸，日志键名尚未）
+- [ ] histogram 桶集统一（当前 api 少 10.0 上界，已在契约里声明为偏差）
 - [ ] ERP 独立介绍/文档站（本仓 site/）的英文版与发布通道
 - [ ] 确认 erp-daily-billing 挂起是否为预期（当前 suspend=true 且从未触发）

@@ -1,0 +1,62 @@
+{
+ "schema": "erp-shared-semantics/v1",
+ "updated_at": "2026-11-11",
+ "note": "ERP 三仓之间的跨仓语义契约（错误码 + 指标名）。本文件只写「必须逐字一致的部分」和「允许不同但必须声明的部分」，码表与指标名本身不抄写——一律从源码 AST 现读，避免第二份真相。由 fd-erp/tools/check_semantics_contract.py 执行。",
+ "error_codes": {
+  "sources": {
+   "kernel_catalog": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/error_codes.py",
+   "kernel_mirror": "fd-erp-ledger-mcp/tool-surface.json",
+   "api_catalog": "fd-erp-vertical-api/fd_erp_vertical_api/errors.py",
+   "templates_codes": "fd-erp-vertical-templates/fd_erp_vertical_templates/errors.py"
+  },
+  "rules": {
+   "kernel_catalog_equals_mirror": "内核 CATALOG 的码名必须与 tool-surface.json 的 error_codes.codes 逐字相等。镜像由人工同步（新码先在运行时常量登记再同步清单），是最容易漏的一环",
+   "shared_semantics_identical": "同一码在内核与 api 两侧的 semantic_class、retryable、default_hint 必须逐字一致——这三项决定调用方该不该重试，两侧说法不同就是误导",
+   "templates_namespace": "模板层码必须全部是我们已知的码名集合的子集；账务语义错误一律透传内核封闭集合，不在模板层另造"
+  },
+  "service_specific_codes": {
+   "fd-erp-vertical-templates": {
+    "MAPPING_INVALID": "科目映射 pack 非法（目标不在内核通用科目集等）",
+    "MANIFEST_INVALID": "模板四件套清单非法",
+    "MATRIX_INVALID": "能力矩阵非法（schema/状态/证据形状/缺格）",
+    "RUNTIME_UNREACHABLE": "连接器运行时不可达（不得回退直连）",
+    "ACTION_NOT_FOUND": "动作不在目录（目录缺口，不得自建通道）",
+    "AUTH_FAILED": "凭据无效或权限不足（去连接器重授权）",
+    "RATE_LIMITED": "上游配额（可退避重试，归因「配额」非「无数据」）",
+    "BAD_RESPONSE": "动作返回结构不符契约（契约漂移）",
+    "BOUNDARY_VIOLATION": "模板边界审计发现违规"
+   },
+   "fd-erp-vertical-api": {
+    "CREDIT_NOT_REGISTERED": "该客户未在内核登记信用额度，无法受理订单；请运维登记额度（set_credit_limit）后重试。",
+    "WORKFLOW_STATE": "编排工作流状态不允许该操作。",
+    "MASTER_DATA_STATE": "主数据状态非法（如已停售商品不可下单）。",
+    "AUTH_REQUIRED": "请求缺少身份上下文：请携带租户与客户身份（底座登录态落地后由网关注入）。",
+    "PAGESET_FORBIDDEN": "当前租户未授权该页面集（fail-closed：未授权即不可见、不可调）。",
+    "GRANT_REQUIRED": "页面集已授权但当前账号缺该端点所需权限码；请联系管理员开通。",
+    "NOT_IMPLEMENTED": "契约端点已定义、后端能力未就绪（如实 501，无假实现）；详见 README 未实现清单。",
+    "SHARE_EXECUTION_DENIED": "试图输出资金执行面（红线），拒绝。",
+    "DATA_SCOPE_DENIED": "越权操作非名下/非本域数据（业务员-客户归属、代理身份越权校验失败）。"
+   }
+  }
+ },
+ "metrics": {
+  "sources": {
+   "kernel": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py",
+   "api": "fd-erp-vertical-api/fd_erp_vertical_api/observability.py"
+  },
+  "rules": {
+   "name_pattern": "^erp_(api_)?[a-z0-9_]+_(total|seconds)$",
+   "no_cross_service_duplicate": "各服务导出到同一个 Prometheus，指标名不得跨服务重名（标签集不同更要命）"
+  },
+  "declared_deviations": [
+   {
+    "kind": "histogram_buckets",
+    "service": "fd-erp-vertical-api",
+    "detail": "erp_api_request_seconds 的桶集比内核 erp_tool_latency_seconds 少一个 10.0 上界",
+    "reason": "两处 histogram 各自手写桶集，无共同出处",
+    "close_when": "两侧桶集统一（由同一常量生成），或明确声明两份桶集服务不同监控口径",
+    "task": "establish-erp-independent-root 3.5"
+   }
+  ]
+ }
+}
