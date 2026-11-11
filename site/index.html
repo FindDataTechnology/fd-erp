@@ -175,7 +175,7 @@ a{border:0}
 <tr><td>MCP 工具</td><td class="num big">32<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td><td class="prov">tool-surface.json</td></tr>
 <tr><td>业务路由</td><td class="num big">63<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td><td class="prov">coverage/ <span class="dim">（另有 2 条健康探针；其中 20 条未实施）</span></td></tr>
 <tr><td>行业模板</td><td class="num big">3<sup><a class="fn" href="#src" data-src="templates/*/manifest.json">3</a></sup></td><td class="prov">templates/*/manifest.json</td></tr>
-<tr><td>可宣称能力</td><td class="num big">12<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td><td class="prov">claims.json</td></tr>
+<tr><td>可宣称能力</td><td class="num big">16<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td><td class="prov">claims.json</td></tr>
 <tr><td>明确不宣称</td><td class="num big">7<sup><a class="fn" href="#src" data-src="claims.json">5</a></sup></td><td class="prov">claims.json</td></tr>
 </tbody></table>
 <nav class="acts" aria-label="页内入口">
@@ -187,7 +187,7 @@ a{border:0}
 </div>
 <nav class="index" aria-label="科目索引"><h2>科目索引</h2><ol>
 <li><a href="#form"><span class="k">形态</span><span class="v">五层</span></a></li>
-<li><a href="#capability"><span class="k">能力面</span><span class="v">12 条</span></a></li>
+<li><a href="#capability"><span class="k">能力面</span><span class="v">16 条</span></a></li>
 <li><a href="#not-claimable"><span class="k">明确不宣称</span><span class="v">7 条</span></a></li>
 <li><a href="#tools"><span class="k">MCP 工具面</span><span class="v">32 个</span></a></li>
 <li><a href="#routes"><span class="k">REST 接口面</span><span class="v">63 条</span></a></li>
@@ -217,6 +217,10 @@ a{border:0}
 <tr><td>事件计费与计费规则审批（bill_event / approve_billing_rule）</td><td><code>billing.event</code></td><td><span class=tag>mcp_tool</span><span class="cnt">×2</span></td></tr>
 <tr><td>双客群租户隔离：经营数据按租户（cell）隔离，查询闸强制租户列</td><td><code>tenant.isolation</code></td><td><span class=tag>code</span><span class="cnt">×1</span></td></tr>
 <tr><td>三个行业连接器包已在市场（supply-chain v3 / restaurant-chain v2 / crossborder v2）</td><td><code>market.connector-packs</code></td><td><span class=tag>release</span><span class="cnt">×3</span></td></tr>
+<tr><td>业务事件层：经营事实只追加，定型按事件自身周期（日/月/年 + 修订窗）推导而非全局秒数；定型前的修订保留旧值、修订来源与时点；定型后更正只走冲正并与原事件关联；两条车道——外部原始事实写入即是事实，agent 拟稿未过确认门不算事实。</td><td><code>event.append-only-facts</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×4</span></td></tr>
+<tr><td>数量面：库存/在途/占用等余额由事件确定性重算，物化值带水位（as_of_event_id）且可全量重算校验；余额是投影产物、不可直写；同一对象维度下单位冲突（kg 与 pcs）拒写而非静默相加。数量只在对象面，账本面只记金额。</td><td><code>inventory.quantity-face</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×3</span></td></tr>
+<tr><td>过账规则：事件经版本化规则确定性映射为复式分录；规则须审批上线、同一事件类型仅一条生效、升版不重写历史分录；未命中规则的事件挂待补清单、不猜科目、余额不变。</td><td><code>posting.versioned-rules</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×3</span></td></tr>
+<tr><td>事件与分录互为两套真相，二者逐笔对齐可核：以同一 stable_id 比两侧，差异四类（缺失/多余/金额不符/状态不符）各带双侧引用；只读、对外部系统零写入。</td><td><code>recon.event-vs-entry</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×2</span></td></tr>
 </tbody></table></section>
 <section id="not-claimable"><h2>明确不宣称（对外如实守界）</h2>
 <p class="muted">以下条目以否定口径出现在本页与官网；任何肯定句式都会被 <code>claim_gate.py</code> 判红。</p>
