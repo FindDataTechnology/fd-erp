@@ -10,7 +10,9 @@
 用法：
   python3 tools/patch_impeccable_agents.py                # 就地补齐（幂等）
   python3 tools/patch_impeccable_agents.py --check        # 只判在不在位（给闸用）
-  python3 tools/patch_impeccable_agents.py --dir <path>   # 指定 .claude/agents 目录
+  python3 tools/patch_impeccable_agents.py --dir <path>   # 指定目录（跨仓可用）
+                                                          # Claude: <repo>/.claude/agents
+                                                          # Copilot: <repo>/.github/agents
 
 退出码：
   0 已到位 / 本次补齐成功
@@ -34,7 +36,7 @@ DEFAULT_DIR = Path(__file__).resolve().parents[1] / ".claude" / "agents"
 # edits:  [(anchor, replacement), ...]  anchor 必须在上游原文里恰好出现一次
 
 FINISH_REVIEWER = {
-    "file": "impeccable-finish-reviewer.md",
+    "stem": "impeccable-finish-reviewer",
     "why": "截图看不见横向溢出 / 新增 GEOMETRY 行 / 审的字节必须是发出的字节",
     "marker": "GEOMETRY: at every captured width",
     "edits": [
@@ -82,7 +84,7 @@ FINISH_REVIEWER = {
 }
 
 DOCUMENTER = {
-    "file": "impeccable-documenter.md",
+    "stem": "impeccable-documenter",
     "why": "记测量不记形容词（并顺延编号）",
     "marker": "Record measurements, not adjectives",
     "edits": [
@@ -108,16 +110,19 @@ PATCHES = [FINISH_REVIEWER, DOCUMENTER]
 
 def apply_patch(target: Path, spec: dict, *, check: bool) -> tuple[str, str]:
     """返回 (状态, 说明)。状态：applied / missing / drifted / absent。"""
-    path = target / spec["file"]
-    if not path.is_file():
-        return "absent", f"{spec['file']} 不在（没有装过 impeccable？）"
+    # 两种安装形态：Claude 系 `*.md`、Copilot 系 `*.agent.md`，正文相同、只差 frontmatter。
+    # 只认一种会把另一种误判成「没装」——那是把缺输入当成通过。
+    candidates = [target / f"{spec['stem']}.md", target / f"{spec['stem']}.agent.md"]
+    path = next((c for c in candidates if c.is_file()), None)
+    if path is None:
+        return "absent", f"{spec['stem']}.md / .agent.md 都不在（没有装过 impeccable？）"
 
     text = path.read_text(encoding="utf-8")
     if spec["marker"] in text:
-        return "applied", f"{spec['file']}：已在位（{spec['why']}）"
+        return "applied", f"{path.name}：已在位（{spec['why']}）"
 
     if check:
-        return "missing", f"{spec['file']}：缺补丁（{spec['why']}）"
+        return "missing", f"{path.name}：缺补丁（{spec['why']}）"
 
     # 打之前先整份验证所有锚点，避免打一半留下半成品
     work = text
@@ -125,12 +130,12 @@ def apply_patch(target: Path, spec: dict, *, check: bool) -> tuple[str, str]:
         n = work.count(anchor)
         if n != 1:
             return ("drifted",
-                    f"{spec['file']}：锚点命中 {n} 次（应为 1）——上游文案变了，"
+                    f"{path.name}：锚点命中 {n} 次（应为 1）——上游文案变了，"
                     f"先看新文案再改锚点：{anchor[:60]}…")
         work = work.replace(anchor, replacement)
 
     path.write_text(work, encoding="utf-8")
-    return "applied", f"{spec['file']}：已补齐（{spec['why']}）"
+    return "applied", f"{path.name}：已补齐（{spec['why']}）"
 
 
 def main() -> int:
