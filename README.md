@@ -97,7 +97,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 工作负载 | 类型 | 镜像 | Ready | 暴露面 |
 |---|---|---|---|---|
 | `fd-erp-ledger-mcp` | Deployment | `ccr.ccs.tencentyun.com/finddata-business/fd-erp-ledger-mcp:sha-e67fa40` | 1 | NodePort 31910（MCP over HTTP） |
-| `fd-erp-vertical-api` | Deployment | `ccr.ccs.tencentyun.com/finddata-business/fd-erp-vertical-api:sha-a07c97c` | 1 | ClusterIP only（唯一入口是 paas 网关 /erp/supply-chain/v1/*） |
+| `fd-erp-vertical-api` | Deployment | `ccr.ccs.tencentyun.com/finddata-business/fd-erp-vertical-api:sha-8370a3c` | 1 | ClusterIP only（唯一入口是 paas 网关 /erp/supply-chain/v1/*；网关侧 ERP_API_UPSTREAM 钉 ClusterIP http://10.43.153.194，因 platform pod 解不了集群 DNS） |
 
 | CronJob | 计划 | 时区 | 挂起 | 上次触发 | 说明 |
 |---|---|---|---|---|---|
@@ -145,3 +145,4 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - [ ] erp-daily-billing 启用前置：WMS 日终快照只读 provider 接通（open-connector-mt 侧）
 - [ ] 备份机（103.236.89.174）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used
 - [ ] 源站 fd-deploy 上 certbot 为 erp 域名留了一张用不上的证书（TLS 在雷池终止），其 timer 仍每 60 天穿到雷池验域；清理需人工确认：sudo certbot delete --cert-name erp.finddatatech.cloud
+- [ ] ERP API 的单副本 + Recreate + local-path PV 钉在 liuliangjkiimypbdzxa：该机一旦 DiskPressure，Pod 无处调度即整服务不可用（2026-11-11 19:34–19:52 实际发生 18 分钟）。缓解=该机 kubelet 已加 ephemeral 预留+软硬阈值；根治=把事件档 PVC 换成可跨节点的存储，或允许双副本（需先解决 JSONL 双写）
