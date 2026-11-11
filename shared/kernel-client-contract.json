@@ -10,19 +10,23 @@
     "KernelClient",
     "McpKernelClient"
    ],
-   "note": "模板层是内核的主要消费方。tenant 由客户端绑定、不逐个方法透传（一进程一租户）；approved_by/submitted_by/reversed_by 不透传，由内核按默认值填（'human'/'ops'）——这是审计口径的已知取舍，不是漏参。",
+   "note": "模板层是内核的主要消费方。tenant 由客户端绑定、不逐个方法透传（一进程一租户）；approved_by/submitted_by/reversed_by 不透传，由内核按默认值填（'human'/'ops'）——这是审计口径的已知取舍，不是漏参。2026-11-12 订正（establish-erp-event-kernel 7.1）：ingest_event / project_event / post_event / query_object_balance 由「故意不盖」转入必须覆盖——供应商到货预告是外部系统原始事实（供应商门户回流），模板层就是它的接收方；不落事件层则「到货 → 库存 → 分录」只有前段一笔 jsonl。规则、科目与金额仍在内核侧：模板层只提交事实并触发一次幂等派生，缺规则时内核挂待补并回 posted=false。",
    "must_cover": [
     "approve_billing_rule",
     "bill_event",
     "confirm_proposal",
     "get_fee_detail",
     "get_recon_report",
+    "ingest_event",
     "list_credit_reservations",
     "list_fees",
     "list_proposals",
+    "post_event",
+    "project_event",
     "query_balance",
     "query_credit",
     "query_entries",
+    "query_object_balance",
     "reject_proposal",
     "release_credit",
     "reserve_credit",
@@ -35,17 +39,13 @@
    "intentionally_absent": {
     "bill_period_snapshot": "日终期间快照计费是内核侧的运维/计费车道，模板层不做期间快照；模板层只按事件计费（bill_event）",
     "list_billing_rules": "规则查询由运维/计费侧使用，模板层只提交与审批规则，不列规则清单",
-    "ingest_event": "事件导入车道是内核面：外部系统原始事实由采集侧直写，模板层不代外部系统提交事实",
     "submit_event": "事件拟稿车道未接入模板层：模板层现有写路径一律走 proposal（submit_proposal），不另开事件拟稿",
     "decide_event": "确认门由内核/拍板席位持有；模板层不代任何一方过门（模板只产出 proposal 等确认）",
     "query_events": "事件查询面未接入：模板对账读的是余额与分录（query_balance/query_entries），不读事件明细",
-    "project_event": "对象投影是内核派生面；模板层不做投影，只读派生结果",
-    "post_event": "过账由内核按规则派生，不由模板层逐笔触发；模板层的落账入口是 proposal 过确认门",
     "submit_posting_rule": "过账规则归运维/内核侧登记：模板层不定义科目与金额算法，避免把业务分支搬进规则",
     "approve_posting_rule": "过账规则审批是人工确认门，归内核/运维侧；模板层无审批权",
     "list_posting_rules": "规则清单查询由运维侧使用，模板层不列规则",
-    "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单",
-    "query_object_balance": "对象余额是内核数量面派生结果；模板层读科目余额（query_balance）"
+    "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单"
    }
   },
   {
@@ -54,14 +54,18 @@
    "classes": [
     "InProcessKernelClient"
    ],
-   "note": "REST 服务面只覆盖四端页面集需要的工具（proposal / ledger / recon / credit）。",
+   "note": "REST 服务面覆盖四端页面集需要的工具（proposal / ledger / recon / credit + 事件层）。2026-11-12 订正（同 7.1）：事件层四工具经 InProcessKernelClient 暴露给 REST 面，用于到货事实落事件、投影库存、触发过账与只读库存查询；REST 面仍不直连库表、不算金额、不猜科目。",
    "must_cover": [
     "confirm_proposal",
     "get_recon_report",
+    "ingest_event",
     "list_proposals",
+    "post_event",
+    "project_event",
     "query_balance",
     "query_credit",
     "query_entries",
+    "query_object_balance",
     "reject_proposal",
     "release_credit",
     "reserve_credit",
@@ -79,17 +83,13 @@
     "reverse_fee": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
     "simulate_billing": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
     "submit_billing_rule": "计费能力走 MCP 面（claims billing.event，证据类型 mcp_tool）；REST 四端页面集无计费端点",
-    "ingest_event": "事件导入车道是内核面：外部系统原始事实由采集侧直写，模板层不代外部系统提交事实",
     "submit_event": "事件拟稿车道未接入模板层：模板层现有写路径一律走 proposal（submit_proposal），不另开事件拟稿",
     "decide_event": "确认门由内核/拍板席位持有；模板层不代任何一方过门（模板只产出 proposal 等确认）",
     "query_events": "事件查询面未接入：模板对账读的是余额与分录（query_balance/query_entries），不读事件明细",
-    "project_event": "对象投影是内核派生面；模板层不做投影，只读派生结果",
-    "post_event": "过账由内核按规则派生，不由模板层逐笔触发；模板层的落账入口是 proposal 过确认门",
     "submit_posting_rule": "过账规则归运维/内核侧登记：模板层不定义科目与金额算法，避免把业务分支搬进规则",
     "approve_posting_rule": "过账规则审批是人工确认门，归内核/运维侧；模板层无审批权",
     "list_posting_rules": "规则清单查询由运维侧使用，模板层不列规则",
-    "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单",
-    "query_object_balance": "对象余额是内核数量面派生结果；模板层读科目余额（query_balance）"
+    "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单"
    }
   }
  ]
