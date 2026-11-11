@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: erp-ledger-restore-drill
+  namespace: fd-prod
+  labels:
+    app.kubernetes.io/name: erp-ledger-restore-drill
+    app.kubernetes.io/part-of: finddata
+spec:
+  restartPolicy: Never
+  # 演练用一次性实例：完全隔离，不连生产库、不占生产 PVC
+  containers:
+    - name: drill
+      image: postgres:16-alpine
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          set -eu
+          echo "=== 1) 取最近一份异地备份 ==="
+          echo "https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.20/main" > /etc/apk/repositories
+          echo "https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.20/community" >> /etc/apk/repositories
+          apk add --quiet --no-cache openssh-client rsync >/dev/null 2>&1 || { echo "FATAL: 装不上 ssh/rsync"; exit 1; }
+          install -m 600 /keys/ssh_key /tmp/ssh_key
+          SSH="ssh -i /tmp/ssh_key -p 40925 -o UserKnownHostsFile=/keys/known_hosts -o StrictHostKeyChecking=yes"
+          LATEST=$($SSH root@103.236.89.174 "ls -1t /opt/backups/erp-ledger/*.dump 2>/dev/null | head -1")
+          [ -n "$LATEST" ] || { echo "FATAL: 备份机上没有 dump"; exit 1; }
+          echo "latest=$LATEST"
+          rsync -az -e "$SSH" "root@103.236.89.174:$LATEST" /tmp/drill.dump
+          rsync -az -e "$SSH" "root@103.236.89.174:$LATEST.baseline" /tmp/drill.baseline || echo "WARN: 基线取不到"
+          ls -l /tmp/drill.dump
+
+          echo "=== 2) 起一个空的临时实例（隔离，不碰生产）==="
+          mkdir -p /tmp/pgdata && chown postgres:postgres /tmp/pgdata /tmp
+          su postgres -s /bin/sh -c 'initdb -D /tmp/pgdata -U postgres --no-sync >/tmp/initdb.log 2>&1' \
+            || { echo "FATAL: initdb 失败"; tail -5 /tmp/initdb.log; exit 1; }
+          su postgres -s /bin/sh -c 'pg_ctl -D /tmp/pgdata -o "-p 5433 -k /tmp" -l /tmp/pg.log -w start' \
+            || { echo "FATAL: 临时实例起不来"; tail -10 /tmp/pg.log; exit 1; }
+
+          echo "=== 3) 恢复 dump ==="
+          su postgres -s /bin/sh -c 'createdb -h /tmp -p 5433 -U postgres drill'
+          su postgres -s /bin/sh -c 'pg_restore -h /tmp -p 5433 -U postgres -d drill --no-owner /tmp/drill.dump' \
+            || echo "WARN: pg_restore 有非致命告警（下面用基线核对真伪）"
+
+          echo "=== 4) 用与备份时点相同的口径重算 ==="
+          su postgres -s /bin/sh -c "psql -At -F'=' -h /tmp -p 5433 -U postgres -d drill -c \"
+              select 'entries', count(*)::text from journal_entries
+              union all select 'debit_total_base',
+                coalesce(sum(amount_base) filter (where direction='debit'), 0)::text from journal_entries
+              union all select 'credit_total_base',
+                coalesce(sum(amount_base) filter (where direction='credit'), 0)::text from journal_entries
+              union all select 'accounts', count(*)::text from accounts
+              union all select 'proposals_confirmed',
+                count(*)::text from proposals where status='confirmed'
+              union all select 'balance_fingerprint', coalesce(md5(string_agg(t, '|' order by t)), 'empty')
+                from (select account_code||':'||direction||':'||sum(amount_base) t
+                      from journal_entries group by account_code, direction) s
+            \"" > /tmp/restored.baseline
+
+          echo "--- 恢复后 ---"; cat /tmp/restored.baseline
+          if [ -f /tmp/drill.baseline ]; then
+            echo "--- 备份时点 ---"; cat /tmp/drill.baseline
+            if diff -u /tmp/drill.baseline /tmp/restored.baseline; then
+              echo "RESULT: PASS —— 恢复出的账与备份时点基线逐项一致"
+            else
+              echo "RESULT: FAIL —— 恢复出的账与基线不一致"
+              exit 1
+            fi
+          else
+            echo "RESULT: INCONCLUSIVE —— 没有基线可比（dump 已恢复但无法核对数值）"
+          fi
+      volumeMounts:
+        - { mountPath: /keys, name: ssh-keys, readOnly: true }
+      resources:
+        requests: { cpu: 100m, memory: 256Mi }
+        limits: { cpu: "1", memory: 1Gi }
+  volumes:
+    - name: ssh-keys
+      secret: { secretName: wanxing-backup-ssh }

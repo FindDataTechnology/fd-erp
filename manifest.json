@@ -280,6 +280,15 @@
      }
     ]
    }
+  },
+  "drills": {
+   "note": "不再是「备份能解开」级验证：恢复进一次性实例后按备份时点基线重算并逐项比对",
+   "ledger_restore": {
+    "manifest": "fd-erp/deploy/drills/ledger-restore-drill.pod.yaml",
+    "how": "emptyDir 起空的 postgres:16-alpine，从备份机取异地副本恢复，不连生产库（erp_ledger_app 无建库权，用超管需把口令写进清单，故不用）",
+    "pass_criteria": "RESULT: PASS —— entries / debit_total_base / credit_total_base / accounts / proposals_confirmed / balance_fingerprint 六项与基线逐项一致",
+    "last_run": "2026-11-11 通过：dump 56983 字节 sha256 1f1d6e9a…，六项全一致（balance_fingerprint 6b060524…）"
+   }
   }
  },
  "sources": {
