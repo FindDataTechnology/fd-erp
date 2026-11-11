@@ -24,6 +24,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 FD_ERP = ROOT / "fd-erp"
 
+#: 全覆盖四态：标签与顺序与 fd-erp-vertical-templates/scripts/claim_gate.py 同源。
+#: 第五态不存在——矩阵里出现别的值由 check_coverage_matrix.py 判红，本脚本若读到
+#: 未知态会直接 MissingKeyError，不会把它印成空白。
+COVERAGE_STATE_LABELS = {
+    "delivered": "已实现",
+    "template_configured": "模板可配",
+    "needs_onboarding": "需一次接入",
+    "not_doing": "明确不做",
+}
+COVERAGE_STATE_ORDER = ("delivered", "template_configured",
+                        "needs_onboarding", "not_doing")
+
 
 # ── 读数据 ────────────────────────────────────────────────────────────────────
 def load(rel: str):
@@ -49,6 +61,8 @@ def collect() -> dict:
         "surface": load(src["tool_surface"]),
         "evidence": load(src["evidence"]),
         "matrix": load(f"{src['matrices']}/supply-chain.json"),
+        #: 板块级全覆盖矩阵（21 格四态，唯一出处；站点覆盖栏由它派生）
+        "coverage": load("fd-erp/shared/coverage-matrix.json"),
         "templates": {
             v: load(f"{src['templates']}/{v}/manifest.json")
             for v in ("crossborder", "restaurant-chain", "supply-chain")
@@ -452,6 +466,11 @@ def render_site(d: dict) -> str:
     points = d["matrix"]["points"]
     cls = Counter(p["classification"] for p in points)
     packs = d["publish"]["packs"]
+    # 板块级全覆盖（21 格四态）：覆写页面上「覆盖」这一栏的口径——客户问「某子模块
+    # 有没有」，答案必须落在这四种之一，不是「客户功能清单命中了几点」。
+    cells = d["coverage"]["modules"]
+    by_state = Counter(c["state"] for c in cells)
+    state_labels = COVERAGE_STATE_LABELS
 
     o: list[str] = []
     a = o.append
@@ -523,7 +542,7 @@ def render_site(d: dict) -> str:
         ("tools", "MCP 工具面", f"{len(ann)} 个"),
         ("routes", "REST 接口面", f"{rs['business']} 条"),
         ("templates", "行业模板", f"{len(d['templates'])} 套"),
-        ("matrix", "功能覆盖矩阵", f"{len(points)} 点"),
+        ("matrix", "子模块全覆盖", f"{len(cells)} 格四态"),
         ("gaps", "连接器缺口", f"{len(gaps)} 条"),
         ("edges", "边界", "四项"),
     ):
@@ -628,25 +647,42 @@ def render_site(d: dict) -> str:
           f"<td>{parts}</td><td>{status}</td></tr>")
     a("</tbody></table></section>")
 
-    # ── 7 覆盖矩阵 ──────────────────────────────────────────────────────
-    total = max(len(points), 1)
-    order = ("直接命中", "模式复用", "新建", "不做")
-    a(f'<section id="matrix"><h2>功能覆盖矩阵（{esc(d["matrix"]["vertical"])}，'
-      f'{len(points)} 个功能点）</h2>')
+    # ── 7 全覆盖（21 格四态）──────────────────────────────────────────────
+    total = max(len(cells), 1)
+    a(f'<section id="matrix"><h2>子模块全覆盖（{len(cells)} 格，四态封闭）</h2>')
     a('<div class="matrix">')
-    a('<div class="bar" role="img" aria-label="' +
-      "、".join(f"{k} {cls.get(k, 0)} 个" for k in order) + '">')
-    for i, k in enumerate(order, start=1):
-        pct = 100.0 * cls.get(k, 0) / total
+    a('<div class="bar" role="img" aria-label="'
+      + "、".join(f"{state_labels[k]} {by_state.get(k, 0)} 格"
+                  for k in COVERAGE_STATE_ORDER) + '">')
+    for i, k in enumerate(COVERAGE_STATE_ORDER, start=1):
+        pct = 100.0 * by_state.get(k, 0) / total
         if pct > 0:
             a(f'<span class="s{i}" style="width:{pct:.3f}%"></span>')
     a("</div>")
     a('<ul class="legend">')
-    for i, k in enumerate(order, start=1):
-        a(f'<li><i class="s{i}"></i>{k} <b>{cls.get(k, 0)}</b></li>')
+    for i, k in enumerate(COVERAGE_STATE_ORDER, start=1):
+        a(f'<li><i class="s{i}"></i>{state_labels[k]} <b>{by_state.get(k, 0)}</b></li>')
     a("</ul></div>")
-    a('<p class="muted">矩阵由客户功能清单导入后重算生成（幂等），每个功能点带至少一条实现证据；'
-      "清单本体不进规格与模板资产，只以脱敏编号引用。</p></section>")
+    a('<table><thead><tr><th scope="col">子模块</th><th scope="col">状态</th>'
+      '<th scope="col">边界 / 需客户提供</th></tr></thead><tbody>')
+    for cell in cells:
+        note = esc(cell["boundary"])
+        if cell["state"] == "needs_onboarding":
+            note += f'<br><span class="muted">需客户提供：{esc(cell.get("blocker", ""))}</span>'
+        elif cell["state"] == "not_doing":
+            note += (f'<br><span class="muted">理由：{esc(cell.get("reason", ""))}'
+                     f'（复核 {esc(cell.get("review_by", ""))}）</span>')
+        a(f'<tr><td>{esc(cell["name_zh"])}</td>'
+          f'<td><code>{esc(cell["state"])}</code><br>'
+          f'<span class="muted">{state_labels[cell["state"]]}</span></td>'
+          f'<td class="muted">{note}</td></tr>')
+    a("</tbody></table>")
+    a('<p class="muted">「全覆盖」指决策空间全覆盖：每格恰好一态、一据、一理由，'
+      "对外不问「做了几个模块」，只答这四种之一。判据 <code>tools/check_coverage_matrix.py</code>；"
+      "矩阵漂移、不做格被宣称、宣称无模块背书都判红。</p>")
+    a(f'<p class="muted">另有一份按客户功能清单导入的行业点矩阵（'
+      f'{esc(d["matrix"]["vertical"])}，{len(points)} 点，按实现证据分类），'
+      "用于单客户范围的实施盘点，不构成本页的四态口径。</p></section>")
 
     # ── 8 缺口 ──────────────────────────────────────────────────────────
     a(f'<section id="gaps"><h2>连接器缺口（{len(gaps)} 条，每项带机器判据）</h2>')

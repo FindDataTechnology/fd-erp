@@ -192,7 +192,7 @@ a{border:0}
 <li><a href="#tools"><span class="k">MCP 工具面</span><span class="v">32 个</span></a></li>
 <li><a href="#routes"><span class="k">REST 接口面</span><span class="v">63 条</span></a></li>
 <li><a href="#templates"><span class="k">行业模板</span><span class="v">3 套</span></a></li>
-<li><a href="#matrix"><span class="k">功能覆盖矩阵</span><span class="v">35 点</span></a></li>
+<li><a href="#matrix"><span class="k">子模块全覆盖</span><span class="v">21 格四态</span></a></li>
 <li><a href="#gaps"><span class="k">连接器缺口</span><span class="v">4 条</span></a></li>
 <li><a href="#edges"><span class="k">边界</span><span class="v">四项</span></a></li>
 </ol></nav>
@@ -306,19 +306,45 @@ a{border:0}
 <tr><td>餐饮连锁对账模板 <span class="muted">v1.0.0</span></td><td><span class=tag>connector_pack</span><span class=tag>fleet_blueprint</span><span class=tag>account_mapping_pack</span><span class=tag>report_preset</span></td><td><span class="st ok">已上架：市场 v2</span></td></tr>
 <tr><td>仓配分销模板 <span class="muted">v1.0.0</span></td><td><span class=tag>connector_pack</span><span class=tag>fleet_blueprint</span><span class=tag>account_mapping_pack</span><span class=tag>report_preset</span><span class=tag>pricing_rules_pack</span><span class=tag>pagesets_pack</span></td><td><span class="st ok">已上架：市场 v3</span></td></tr>
 </tbody></table></section>
-<section id="matrix"><h2>功能覆盖矩阵（supply-chain，35 个功能点）</h2>
+<section id="matrix"><h2>子模块全覆盖（21 格，四态封闭）</h2>
 <div class="matrix">
-<div class="bar" role="img" aria-label="直接命中 23 个、模式复用 12 个、新建 0 个、不做 0 个">
-<span class="s1" style="width:65.714%"></span>
-<span class="s2" style="width:34.286%"></span>
+<div class="bar" role="img" aria-label="已实现 9 格、模板可配 4 格、需一次接入 4 格、明确不做 4 格">
+<span class="s1" style="width:42.857%"></span>
+<span class="s2" style="width:19.048%"></span>
+<span class="s3" style="width:19.048%"></span>
+<span class="s4" style="width:19.048%"></span>
 </div>
 <ul class="legend">
-<li><i class="s1"></i>直接命中 <b>23</b></li>
-<li><i class="s2"></i>模式复用 <b>12</b></li>
-<li><i class="s3"></i>新建 <b>0</b></li>
-<li><i class="s4"></i>不做 <b>0</b></li>
+<li><i class="s1"></i>已实现 <b>9</b></li>
+<li><i class="s2"></i>模板可配 <b>4</b></li>
+<li><i class="s3"></i>需一次接入 <b>4</b></li>
+<li><i class="s4"></i>明确不做 <b>4</b></li>
 </ul></div>
-<p class="muted">矩阵由客户功能清单导入后重算生成（幂等），每个功能点带至少一条实现证据；清单本体不进规格与模板资产，只以脱敏编号引用。</p></section>
+<table><thead><tr><th scope="col">子模块</th><th scope="col">状态</th><th scope="col">边界 / 需客户提供</th></tr></thead><tbody>
+<tr><td>总账</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">复式事件账：借贷必平由 DB 约束强制、余额确定性重算、已落账 append-only、更正只走冲正。分录由事件经版本化过账规则产出，不是原始入口。</td></tr>
+<tr><td>应收应付</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。未做账龄分析、坏账计提与催收流程。</td></tr>
+<tr><td>多币种与汇率</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">分录记原币 + 本位币折算，汇率带 as_of 与出处；无出处汇率由 DB 约束拒绝。汇率事实做种走 fx_facts（可复用既有观测流）。</td></tr>
+<tr><td>对账</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">只读滩头：两源流水逐笔对齐，四类差异（缺失/多余/金额不符/状态不符）各带双侧原始引用，对外部系统零写入。可指向外部两源，也可指向内部「事件流 vs 分录流」。</td></tr>
+<tr><td>计费</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">规则版本化 + 人工审批上线 + 冲突拦截 + 事件/期间快照计费（幂等可重算）+ 红冲留痕 + 四层溯源 + 无出处费率拒绝。落账走 billing-engine 机器车道 proposal，不绕过确认门。</td></tr>
+<tr><td>信用额度</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">available = limit − 1300 应收余额（分录重算）− active 占用；占用为备忘性质不写复式分录；额度不足带明细拒绝。</td></tr>
+<tr><td>销售与订单</td><td><code>template_configured</code><br><span class="muted">模板可配</span></td><td class="muted">订单与销售面在行业模板的页面集与端点里（UE 商城 23/23、SE 业务员台 10/15）；内核只记 order_placed 事件与据此产生的金额事实，不实现行业订单规则。</td></tr>
+<tr><td>采购</td><td><code>template_configured</code><br><span class="muted">模板可配</span></td><td class="muted">采购单与到货通知在 SP 供应商面（实现 7/13，其余如实 501）。到货落 goods_received 事件后可投影库存并可过账。</td></tr>
+<tr><td>库存（数量面）</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">数量面由事件 + 对象投影回答：数量/单位/批次/序列号/仓库/在途均可表达，余额可全量重算并带水位。上游 WMS 读取仍需一次接入（provider 缺口另记，不在本矩阵）。</td></tr>
+<tr><td>仓储与物流</td><td><code>template_configured</code><br><span class="muted">模板可配</span></td><td class="muted">运单、月台预约、提货打卡、签收上报在 CP 承运商面（实现 8/12，其余如实 501）。仓储作业（库位/拣货/盘点路径）不在内核。</td></tr>
+<tr><td>发票</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">只记发票类事件（invoice_requested）并参与对账；票据本体由客户既有合规渠道处理。不自研开票、不代开票据——这是边界，不是缺口。</td></tr>
+<tr><td>税务申报</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不自研税务申报。账内可记录发票类事件并参与对账，申报本体走客户既有渠道。<br><span class="muted">理由：税务申报需与税局/电子发票合规路径绑定，自研即触碰代开与申报责任；在中国电子发票合规路径确定前不作为能力提供（复核 2027-06-30）</span></td></tr>
+<tr><td>资金与出纳</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">只产出对账结果与核对指令；不提供资金池、代收代付、分账执行。资金归集与分账走客户自选的持牌通道。<br><span class="muted">理由：二清红线：平台不得触碰资金归集与分账执行（复核 2027-06-30）</span></td></tr>
+<tr><td>生产制造</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不提供 BOM、工艺路线、工单、MRP 运算。当前客群（跨境电商/餐饮连锁/供应链）无此诉求。<br><span class="muted">理由：生产制造需要 BOM/工艺路线/产能一整套对象与行业知识，且与当前三个行业模板的客群不重叠；无锚点客户前不做（复核 2027-06-30）</span></td></tr>
+<tr><td>成本核算</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">依赖库存数量面与估值口径；数量面已交付，成本方法（移动加权/先进先出/批次实际成本）需按客户口径落地。<br><span class="muted">需客户提供：需要客户确认成本方法口径（加权/先进先出/批次实际）与首个真实账期的期初库存；口径不同则过账规则不同</span></td></tr>
+<tr><td>预算</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力；缺的是客户预算科目体系与口径。<br><span class="muted">需客户提供：需要客户的预算科目体系与考核维度（部门/项目/渠道）；无口径时做出来的是空表</span></td></tr>
+<tr><td>固定资产</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">折旧是时间驱动事件，事件内核可承载；折旧政策（年限/残值/方法）只能由客户给。<br><span class="muted">需客户提供：需要客户固定资产台账与折旧政策；且需确认是否走客户既有资产系统（若是则本板块只读对账）</span></td></tr>
+<tr><td>合并报表</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">多币种与租户隔离已具备，合并需要多主体与内部交易抵销口径；内核现在是一进程一租户。<br><span class="muted">需客户提供：需要「多主体归属」口径与内部交易抵销规则；现内核一进程一租户，多主体需先定主体模型</span></td></tr>
+<tr><td>审批流</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">已有一等原语：拟落账的 proposal 确认门、拟稿事件的 decide 门、计费规则与过账规则的审批上线。多级/会签/条件路由的通用审批引擎不在本板块。</td></tr>
+<tr><td>主数据</td><td><code>template_configured</code><br><span class="muted">模板可配</span></td><td class="muted">通用科目表在 universal_accounts；行业科目映射在每个行业模板的 account-mapping；对象身份在 objects（sku/客户/供应商/仓库）。跨系统的物料主数据同步仍走连接器。</td></tr>
+<tr><td>人力资源</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不提供人事、考勤、薪酬。与 ERP 板块「经营账 + 对账」的定位无关，且薪酬涉及个人数据与合规另一套边界。<br><span class="muted">理由：HR 是独立产品域（个人数据、考勤、薪酬合规），与经营账内核无共用原语；纳入会稀释板块边界（复核 2027-06-30）</span></td></tr>
+</tbody></table>
+<p class="muted">「全覆盖」指决策空间全覆盖：每格恰好一态、一据、一理由，对外不问「做了几个模块」，只答这四种之一。判据 <code>tools/check_coverage_matrix.py</code>；矩阵漂移、不做格被宣称、宣称无模块背书都判红。</p>
+<p class="muted">另有一份按客户功能清单导入的行业点矩阵（supply-chain，35 点，按实现证据分类），用于单客户范围的实施盘点，不构成本页的四态口径。</p></section>
 <section id="gaps"><h2>连接器缺口（4 条，每项带机器判据）</h2>
 <table><thead><tr><th scope="col">缺口</th><th scope="col">能力</th><th scope="col">责任仓</th><th scope="col">状态</th></tr></thead><tbody>
 <tr><td><code>unionpay-no-provider</code></td><td>银联收款渠道（结算流水只读）</td><td><code>open-connector-mt</code></td><td><span class="st no">open</span></td></tr>
