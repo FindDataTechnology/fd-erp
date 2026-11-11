@@ -3,155 +3,319 @@
 <title>ERP 板块 — 能力与集成说明 · 寻数 FindData</title>
 <meta name="description" content="ERP 板块的能力面、接口面与边界，数据全部由仓内唯一出处派生。">
 <style>
-:root{--fg:#15181d;--muted:#5b6472;--line:#e3e6ea;--bg:#fbfbfc;--accent:#1f5f8b;--warn:#8a5a00;--ok:#186b47;--card:#fff}
+:root{
+--paper:#eaece5;--paper-2:#e3e7df;--paper-3:#dbe0d7;
+--ink:#16211d;--ink-2:#46564e;--ink-3:#525f58;
+--rule:#cbd6cc;--rule-2:#a7b6ab;--rule-3:#7f9187;
+--red:#8e2b24;--green:#1f5c42;
+--serif:"Source Han Serif SC","Noto Serif SC","Songti SC","STSong","SimSun",Georgia,serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--rail:88px
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
-.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
-header{border-bottom:1px solid var(--line);background:var(--card)}
-header .wrap{padding:18px 20px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
-.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-h1{font-size:26px;margin:26px 0 8px;letter-spacing:-.01em}
-h2{font-size:18px;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-h3{font-size:15px;margin:22px 0 8px}
-p{margin:8px 0}
-.lead{color:var(--muted);font-size:16px}
-.tag{display:inline-block;font-size:11px;padding:2px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:#fff}
-table{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:13.5px;background:var(--card)}
-th,td{text-align:left;padding:8px 10px;border:1px solid var(--line);vertical-align:top}
-th{background:#f4f6f8;font-weight:600;white-space:nowrap}
-code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f2f4f6;padding:1px 5px;border-radius:4px}
-pre{background:#f4f6f8;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:12px 0}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px}
-.card h3{margin:0 0 6px;font-size:14px}
-.card p{margin:0;font-size:13px;color:var(--muted)}
-.rd{color:var(--accent);font-weight:600}
-.wr{color:var(--warn);font-weight:600}
-.ok{color:var(--ok)}
-.muted{color:var(--muted)}
-.badge{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);background:#fff;color:var(--muted)}
-.badge.no{border-color:#eddcb8;background:#fdf8ec;color:var(--warn)}
-footer{margin-top:56px;border-top:1px solid var(--line);padding:20px 0 40px;color:var(--muted);font-size:12.5px}
-.stat{display:flex;gap:26px;flex-wrap:wrap;margin:16px 0}
-.stat div strong{display:block;font-size:22px;line-height:1.2}
-.stat div span{font-size:12px;color:var(--muted)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16.5px/1.85 var(--serif)}
+::selection{background:#cadfd0;color:var(--ink)}
+:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-2);text-underline-offset:3px}
+a:hover{border-bottom-color:var(--red);color:var(--red)}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:16px;top:12px;z-index:9;background:var(--paper);padding:8px 12px;border:1px solid var(--ink)}
+
+.masthead{border-bottom:1px solid var(--rule-2);background:var(--paper)}
+.masthead .sheet{display:flex;align-items:baseline;gap:16px;padding:14px 0 13px calc(var(--rail) + 24px);font:500 12px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase}
+.masthead .brand{letter-spacing:.24em;color:var(--ink)}
+.masthead .doc{color:var(--ink-2);letter-spacing:.1em}
+.masthead .stamp{margin-left:auto;color:var(--ink-3);font-variant-numeric:tabular-nums lining-nums}
+
+.sheet{max-width:1060px;margin:0 auto;padding:0 24px 0 calc(var(--rail) + 24px);position:relative}
+.sheet::before{content:"";position:absolute;left:var(--rail);top:0;bottom:0;width:1px;background:var(--rule)}
+.masthead .sheet::before{display:none}
+
+.hero{padding:46px 0 8px;position:relative}
+.mark{position:absolute;right:2px;top:40px;transform:rotate(-4deg);border:2px solid var(--red);border-radius:2px;
+color:var(--red);font:600 12.5px/1.55 var(--sans);letter-spacing:.14em;text-align:center;padding:7px 11px;opacity:.88}
+.mark::after{content:"";position:absolute;inset:3px;border:1px solid var(--red);border-radius:1px;opacity:.7}
+.mark span{display:block}
+h1{margin:0;font-weight:600;font-size:clamp(2.35rem,5.4vw,3.55rem);line-height:1.12;letter-spacing:-.02em}
+h1 .sub{display:block;font-size:.58em;font-weight:500;color:var(--ink-2);margin-top:.22em;letter-spacing:-.01em}
+.rule-double{border-top:1px solid var(--ink);position:relative;margin:26px 0 22px}
+.rule-double::after{content:"";position:absolute;left:0;right:0;top:3px;height:1px;background:var(--rule-2)}
+.lede{max-width:62ch;font-size:1.06rem;margin:0 0 14px}
+.basis{max-width:66ch;color:var(--ink-3);font-size:.86rem;line-height:1.7;margin:0 0 30px}
+
+table{width:100%;border-collapse:collapse;font:400 14px/1.6 var(--sans)}
+caption{caption-side:top;text-align:left;font:500 12px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);padding-bottom:10px}
+th,td{text-align:left;padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.82rem;color:var(--ink-2);border-bottom:1px solid var(--rule-3)}
+tbody tr:hover td{background:#e6ece4}
+td.num,th.num{white-space:nowrap;text-align:right;font-family:var(--serif);font-variant-numeric:tabular-nums lining-nums;font-size:1rem;padding-right:18px}
+.num.big{font-size:1.35rem;line-height:1.3}
+.prov{color:var(--ink-2);font-size:.82rem;font-family:var(--mono);letter-spacing:0}
+.prov .dim{color:var(--ink-3);font-family:var(--sans);letter-spacing:0}
+
+.fn{font:600 .68rem/1 var(--sans);position:relative;color:var(--ink-3);border:0;padding-left:3px;vertical-align:super}
+.fn::after{content:attr(data-src);position:absolute;right:-6px;bottom:1.9em;transform:translateY(4px);text-align:left;white-space:normal;max-width:min(240px,54vw);
+background:#1d2a24;color:#eef1ec;font:400 11px/1 var(--mono);padding:5px 8px;border-radius:3px;opacity:0;pointer-events:none;transition:opacity .18s ease-out,transform .18s ease-out}
+.fn:hover::after,.fn:focus-visible::after{opacity:1;transform:translateY(0)}
+.fn:hover{color:var(--red)}
+
+.acts{display:flex;gap:26px;flex-wrap:wrap;margin:30px 0 0;font:500 13px/1 var(--sans);letter-spacing:.04em}
+.acts a{border-bottom:1px solid var(--ink);padding-bottom:4px}
+.acts a.ghost{border-bottom-color:var(--rule-2);color:var(--ink-2)}
+.acts a:hover{border-bottom-color:var(--red)}
+
+.index{margin:52px 0 0;padding:22px 0 26px;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule-2)}
+.index h2{margin:0 0 14px;font:500 12px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);border:0;padding:0}
+.index ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:0 32px;
+font:400 14px/2.1 var(--sans)}
+.index a{display:flex;gap:12px;border-bottom:1px dotted var(--rule-2);padding:0}
+.index .k{flex:1;min-width:0}
+.index .v{margin-left:auto;color:var(--ink-3);font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+
+section{padding:56px 0 8px;position:relative}
+section::before{content:"";position:absolute;left:calc(-1 * var(--rail) - 3px);top:63px;width:7px;height:7px;border-radius:50%;background:var(--paper);border:1px solid var(--rule-3)}
+h2{margin:0 0 18px;font-weight:600;font-size:1.32rem;letter-spacing:-.01em;padding-bottom:10px;border-bottom:1px solid var(--ink);position:relative}
+h2::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:1px;background:var(--rule-2)}
+h3{font:600 .95rem/1.5 var(--sans);margin:26px 0 8px;letter-spacing:.02em}
+p{margin:10px 0;max-width:68ch}
+.muted{color:var(--ink-3)}
+code{font:12.5px/1.5 var(--mono);background:var(--paper-2);padding:1px 5px;border-radius:3px;border:1px solid var(--rule)}
+
+.stack{list-style:none;margin:18px 0 24px;padding:0;border-top:1px solid var(--rule-3)}
+.stack li{display:grid;grid-template-columns:210px 1fr;gap:4px 22px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.stack .layer{font:600 1rem/1.4 var(--serif)}
+.stack .layer em{display:block;font:400 11px/1.6 var(--mono);color:var(--ink-3);font-style:normal;letter-spacing:0;margin-top:4px}
+.stack .what{color:var(--ink-2);font:400 13.5px/1.7 var(--sans)}
+.stack .hop{grid-column:1/-1;font:400 12.5px/1 var(--mono);color:var(--ink-3);letter-spacing:.02em}
+.stack .hop::before{content:"↓ "}
+
+.tb td:first-child{font-family:var(--sans);font-size:.86rem;color:var(--ink-2)}
+.tag{display:inline-block;white-space:nowrap;font:400 12.5px/1.65 var(--mono);color:var(--ink-2);border:1px solid var(--rule-2);border-radius:2px;padding:0 5px;margin:1px 5px 1px 0;background:var(--paper)}
+.cnt{color:var(--ink-3);font:400 12.5px/1.6 var(--mono);margin-left:4px;white-space:nowrap}
+.rw{font:600 11px/1 var(--sans);letter-spacing:.08em}
+.rw.w{color:var(--red)}
+.rw.r{color:var(--green)}
+.st{font:600 11.5px/1 var(--sans);letter-spacing:.04em}
+.st.ok{color:var(--green)}
+.st.no{color:var(--red)}
+
+.matrix{margin:18px 0 8px}
+.bar{display:flex;height:26px;border:1px solid var(--ink);background:var(--paper)}
+.bar span{display:block;height:100%;border-right:1px solid var(--paper)}
+.bar span:last-child{border-right:0}
+.s1{background:var(--ink)}
+.s2{background:var(--ink-3)}
+.s3{background:var(--rule-3)}
+.s4{background:#d9c0bc}
+.legend{list-style:none;display:flex;flex-wrap:wrap;gap:8px 26px;margin:12px 0 0;padding:0;font:400 12.5px/1.6 var(--sans);color:var(--ink-2)}
+.legend i{display:inline-block;width:11px;height:11px;margin-right:7px;vertical-align:-1px;border:1px solid var(--ink)}
+.legend b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums lining-nums}
+
+dl.edges{margin:16px 0 8px;border-top:1px solid var(--rule-3)}
+dl.edges div{padding:15px 0;border-bottom:1px solid var(--rule)}
+dl.edges dt{font:600 .93rem/1.5 var(--sans);letter-spacing:.02em}
+dl.edges dd{margin:4px 0 0;color:var(--ink-2);font:400 13.5px/1.7 var(--sans);max-width:70ch}
+
+footer{margin-top:64px;border-top:1px solid var(--ink);padding:22px 0 56px;color:var(--ink-2);font:400 13px/1.9 var(--sans)}
+footer h2{font:500 12px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);border:0;padding:0 0 12px;margin:0}
+footer h2::after{display:none}
+footer ul{list-style:none;margin:0 0 18px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 28px}
+footer li{font-family:var(--mono);font-size:12.5px}
+footer .say{max-width:78ch;margin:0}
+
+@media (max-width:900px){
+:root{--rail:0px}
+.sheet{padding:0 20px}
+.masthead .sheet{padding:12px 0;flex-wrap:wrap;gap:10px 14px}
+.masthead .stamp{margin-left:auto}
+table:not(.tb){display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tb thead{position:absolute;left:-9999px}
+.tb tr{display:grid;grid-template-columns:1fr auto;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--rule)}
+.tb td{border:0;padding:0}
+.tb td:first-child{grid-column:1;grid-row:1}
+.tb td.num{grid-column:2;grid-row:1;text-align:right;padding:0 0 0 12px;font-size:1.15rem}
+.tb td.prov{grid-column:1/-1;grid-row:2;padding-top:3px;font-size:12.5px;line-height:1.55}
+.prov,.tb .dim{word-break:break-word}
+.sheet::before{display:none}
+section::before{display:none}
+h1{font-size:2.1rem}
+.stack li{grid-template-columns:1fr}
+.index ol{gap:0;grid-template-columns:1fr}
+.mark{position:relative;display:inline-block;top:auto;right:auto;transform:none;margin:16px 0 4px}
+}
+@media (prefers-reduced-motion:reduce){
+*{transition:none!important;animation:none!important}
+.fn::after{transition:none}
+}
+@media print{
+body{background:#fff}
+.masthead,.acts,.index{display:none}
+.sheet{padding:0}
+.sheet::before,section::before{display:none}
+a{border:0}
+}
 </style></head><body>
-<header><div class="wrap">
-<span class="kicker">FindData · ERP · 板块</span>
-<span class="tag">数据派生，勿手改</span>
-</div></header><div class="wrap">
-<h1>ERP 板块：能力、接口与边界</h1>
-<p class="lead">ERP 是「集群 + 供给包」的组合式交付：一个行业无关的复式事件账内核，加行业模板资产（连接器 pack、舰队蓝图、科目映射、报表 preset），经同源入口对外提供 REST 面与 MCP 工具面。它不是单体 ERP 应用，也不提供表单式 UI。</p>
-<p class="muted">本页所有数字均由 <code>claims.json</code> / <code>gaps.json</code> / <code>tool-surface.json</code> / <code>coverage/</code> / 模板 manifest 在构建时派生，与 <code>claim_gate</code> 同源；不写价格、客户数、用量或上线日期。</p>
-<div class="stat">
-<div><strong>21</strong><span>MCP 工具</span></div>
-<div><strong>63</strong><span>业务路由（另有 2 条健康探针；其中 20 条未实施）</span></div>
-<div><strong>3</strong><span>行业模板</span></div>
-<div><strong>12</strong><span>可宣称能力</span></div>
-<div><strong>7</strong><span>明确不宣称</span></div>
+<a class="skip" href="#main">跳到正文</a>
+<header class="masthead"><div class="sheet">
+<span class="brand">FindData</span>
+<span class="doc">ERP · 能力与集成说明</span>
+<span class="stamp">2026-11-11</span>
+</div></header>
+<main id="main" class="sheet">
+<div class="hero">
+<h1>ERP 板块<span class="sub">能力、接口与边界</span></h1>
+<div class="rule-double"></div>
+<span class="mark" aria-hidden="true"><span>数据派生</span><span>勿手改</span></span>
+<p class="lede">ERP 是「集群 + 供给包」的组合式交付：一个行业无关的复式事件账内核，加行业模板资产（连接器 pack、舰队蓝图、科目映射、报表 preset），经同源入口对外提供 REST 面与 MCP 工具面。它不是单体 ERP 应用，也不提供表单式 UI。</p>
+<p class="basis">本页所有数字均由 <code>claims.json</code> / <code>gaps.json</code> / <code>tool-surface.json</code> / <code>coverage/</code> / 模板 manifest 在构建时派生，与 <code>claim_gate</code> 同源；不写价格、客户数、用量或上线日期。</p>
+<table class="tb"><caption>本页口径</caption>
+<thead><tr><th scope="col">项目</th><th scope="col" class="num">数量</th><th scope="col">出处</th></tr></thead><tbody>
+<tr><td>MCP 工具</td><td class="num big">21<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td><td class="prov">tool-surface.json</td></tr>
+<tr><td>业务路由</td><td class="num big">63<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td><td class="prov">coverage/ <span class="dim">（另有 2 条健康探针；其中 20 条未实施）</span></td></tr>
+<tr><td>行业模板</td><td class="num big">3<sup><a class="fn" href="#src" data-src="templates/*/manifest.json">3</a></sup></td><td class="prov">templates/*/manifest.json</td></tr>
+<tr><td>可宣称能力</td><td class="num big">12<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td><td class="prov">claims.json</td></tr>
+<tr><td>明确不宣称</td><td class="num big">7<sup><a class="fn" href="#src" data-src="claims.json">5</a></sup></td><td class="prov">claims.json</td></tr>
+</tbody></table>
+<nav class="acts" aria-label="页内入口">
+<a href="#capability">看能力面</a>
+<a href="#routes">看接口面</a>
+<a class="ghost" href="#src">核验出处</a>
+<a class="ghost" href="https://www.finddatatech.cloud/" rel="noopener">寻数官网 ↗</a>
+</nav>
 </div>
-<h2>1 · 形态：四层，各自独立升级</h2>
-<pre>客户端（壹座 miniapp 四端页面集 UE / SE / SP / CP）
-   │  /erp/supply-chain/v1/*   同源入口，剥掉客户端自带的 X-ERP-*
-   ▼
-平台网关（按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入）
-   ▼
-纵向 REST 服务面（65 路由；单副本；闸序 租户 → 页面集 → grant → 身份域）
-   ▼  全程走内核工具面，不直连库表
-行业模板层（跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计）
-   ▼  仅 proposal，不直写
-账本内核（复式事件账；确认门是唯一落账路径；借贷必平由 DB 约束强制）</pre>
-<div class="grid">
-<div class="card"><h3>账本内核（行业无关）</h3><p><code>fd-erp-ledger-mcp</code><br>MCP 工具面 · 源码 4456 行 / 测试 2895 行</p></div>
-<div class="card"><h3>行业模板工厂（差异全部上移至此）</h3><p><code>fd-erp-vertical-templates</code><br>模板资产 + 连接器绑定 + 能力矩阵 · 源码 10715 行 / 测试 8536 行</p></div>
-<div class="card"><h3>纵向 REST 服务面</h3><p><code>fd-erp-vertical-api</code><br>REST 65 路由（含 20 placeholder） · 源码 3174 行 / 测试 1797 行</p></div>
-</div>
-<h2>2 · 能力面（可宣称，逐条带证据）</h2>
-<table><tr><th>能力</th><th>标识</th><th>证据</th></tr>
-<tr><td>复式事件账（写路径只出 proposal，确认门唯一落账；借贷必平由数据库约束强制；分录 append-only；余额确定性重算）</td><td><code>ledger.double-entry</code></td><td class="muted">code / mcp_tool ×4</td></tr>
-<tr><td>stable_id 幂等去重（同源重推只落一次）</td><td><code>ledger.idempotent</code></td><td class="muted">code ×1</td></tr>
-<tr><td>多币种：原币 + 本位币折算，汇率带 as_of 与出处，无出处拒绝</td><td><code>ledger.fx-provenance</code></td><td class="muted">code ×2</td></tr>
-<tr><td>对账只读滩头：四类差异含双侧原始引用，对外部系统零写入</td><td><code>recon.readonly-four-diffs</code></td><td class="muted">mcp_tool / test ×3</td></tr>
-<tr><td>三个行业模板以四件套交付（连接器 pack / 舰队蓝图 / 科目映射 / 报表 preset），各件独立版本</td><td><code>templates.four-piece</code></td><td class="muted">asset ×3</td></tr>
-<tr><td>扩展件：取价规则 pack（规则带出处）+ 四端页面集 pack（壹座底座契约）</td><td><code>templates.extension-packs</code></td><td class="muted">asset ×2</td></tr>
-<tr><td>出网单口：商家数据只经连接器运行时读取，模板层不持端点、不发 HTTP、不读凭证</td><td><code>connector.single-egress</code></td><td class="muted">code / test ×2</td></tr>
-<tr><td>连接器三态证据链（目录 provider / 执行器测试 / live 验收），缺一态即未接通</td><td><code>connector.three-state</code></td><td class="muted">asset / test ×2</td></tr>
-<tr><td>分成只产出双方可核对的分成对账单与核对指令，零资金执行面（二清红线）</td><td><code>shares.no-fund-execution</code></td><td class="muted">code / test ×2</td></tr>
-<tr><td>事件计费与计费规则审批（bill_event / approve_billing_rule）</td><td><code>billing.event</code></td><td class="muted">mcp_tool ×2</td></tr>
-<tr><td>双客群租户隔离：经营数据按租户（cell）隔离，查询闸强制租户列</td><td><code>tenant.isolation</code></td><td class="muted">code ×1</td></tr>
-<tr><td>三个行业连接器包已在市场（supply-chain v3 / restaurant-chain v2 / crossborder v2）</td><td><code>market.connector-packs</code></td><td class="muted">release ×3</td></tr>
-</table>
-<h2>3 · 明确不宣称（对外如实守界）</h2>
+<nav class="index" aria-label="科目索引"><h2>科目索引</h2><ol>
+<li><a href="#form"><span class="k">形态</span><span class="v">四层</span></a></li>
+<li><a href="#capability"><span class="k">能力面</span><span class="v">12 条</span></a></li>
+<li><a href="#not-claimable"><span class="k">明确不宣称</span><span class="v">7 条</span></a></li>
+<li><a href="#tools"><span class="k">MCP 工具面</span><span class="v">21 个</span></a></li>
+<li><a href="#routes"><span class="k">REST 接口面</span><span class="v">63 条</span></a></li>
+<li><a href="#templates"><span class="k">行业模板</span><span class="v">3 套</span></a></li>
+<li><a href="#matrix"><span class="k">功能覆盖矩阵</span><span class="v">35 点</span></a></li>
+<li><a href="#gaps"><span class="k">连接器缺口</span><span class="v">4 条</span></a></li>
+<li><a href="#edges"><span class="k">边界</span><span class="v">四项</span></a></li>
+</ol></nav>
+<section id="form"><h2>形态：四层，各自独立升级</h2>
+<ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">63 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；确认门是唯一落账路径；借贷必平由 DB 约束强制</span></li></ul>
+<table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th><th scope="col">面</th><th scope="col" class="num">源码行</th><th scope="col" class="num">测试行</th></tr></thead><tbody>
+<tr><td>账本内核（行业无关）</td><td><code>fd-erp-ledger-mcp</code></td><td class="muted">MCP 工具面</td><td class="num">4456</td><td class="num">2895</td></tr>
+<tr><td>行业模板工厂（差异全部上移至此）</td><td><code>fd-erp-vertical-templates</code></td><td class="muted">模板资产 + 连接器绑定 + 能力矩阵</td><td class="num">10715</td><td class="num">8536</td></tr>
+<tr><td>纵向 REST 服务面</td><td><code>fd-erp-vertical-api</code></td><td class="muted">REST 65 路由（含 20 placeholder）</td><td class="num">3174</td><td class="num">1797</td></tr>
+</tbody></table></section>
+<section id="capability"><h2>能力面（可宣称，逐条带证据）</h2>
+<table><thead><tr><th scope="col">能力</th><th scope="col">标识</th><th scope="col">证据</th></tr></thead><tbody>
+<tr><td>复式事件账（写路径只出 proposal，确认门唯一落账；借贷必平由数据库约束强制；分录 append-only；余额确定性重算）</td><td><code>ledger.double-entry</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×4</span></td></tr>
+<tr><td>stable_id 幂等去重（同源重推只落一次）</td><td><code>ledger.idempotent</code></td><td><span class=tag>code</span><span class="cnt">×1</span></td></tr>
+<tr><td>多币种：原币 + 本位币折算，汇率带 as_of 与出处，无出处拒绝</td><td><code>ledger.fx-provenance</code></td><td><span class=tag>code</span><span class="cnt">×2</span></td></tr>
+<tr><td>对账只读滩头：四类差异含双侧原始引用，对外部系统零写入</td><td><code>recon.readonly-four-diffs</code></td><td><span class=tag>mcp_tool</span><span class=tag>test</span><span class="cnt">×3</span></td></tr>
+<tr><td>三个行业模板以四件套交付（连接器 pack / 舰队蓝图 / 科目映射 / 报表 preset），各件独立版本</td><td><code>templates.four-piece</code></td><td><span class=tag>asset</span><span class="cnt">×3</span></td></tr>
+<tr><td>扩展件：取价规则 pack（规则带出处）+ 四端页面集 pack（壹座底座契约）</td><td><code>templates.extension-packs</code></td><td><span class=tag>asset</span><span class="cnt">×2</span></td></tr>
+<tr><td>出网单口：商家数据只经连接器运行时读取，模板层不持端点、不发 HTTP、不读凭证</td><td><code>connector.single-egress</code></td><td><span class=tag>code</span><span class=tag>test</span><span class="cnt">×2</span></td></tr>
+<tr><td>连接器三态证据链（目录 provider / 执行器测试 / live 验收），缺一态即未接通</td><td><code>connector.three-state</code></td><td><span class=tag>asset</span><span class=tag>test</span><span class="cnt">×2</span></td></tr>
+<tr><td>分成只产出双方可核对的分成对账单与核对指令，零资金执行面（二清红线）</td><td><code>shares.no-fund-execution</code></td><td><span class=tag>code</span><span class=tag>test</span><span class="cnt">×2</span></td></tr>
+<tr><td>事件计费与计费规则审批（bill_event / approve_billing_rule）</td><td><code>billing.event</code></td><td><span class=tag>mcp_tool</span><span class="cnt">×2</span></td></tr>
+<tr><td>双客群租户隔离：经营数据按租户（cell）隔离，查询闸强制租户列</td><td><code>tenant.isolation</code></td><td><span class=tag>code</span><span class="cnt">×1</span></td></tr>
+<tr><td>三个行业连接器包已在市场（supply-chain v3 / restaurant-chain v2 / crossborder v2）</td><td><code>market.connector-packs</code></td><td><span class=tag>release</span><span class="cnt">×3</span></td></tr>
+</tbody></table></section>
+<section id="not-claimable"><h2>明确不宣称（对外如实守界）</h2>
 <p class="muted">以下条目以否定口径出现在本页与官网；任何肯定句式都会被 <code>claim_gate.py</code> 判红。</p>
-<table><tr><th>能力</th><th>口径</th></tr>
-<tr><td>不宣称：开票自研 / 支持开票</td><td class="muted">开票自研当前不提供（挂账）：票据本体由客户既有合规渠道处理，平台不伪造不代开</td></tr>
-<tr><td>不宣称：税务申报</td><td class="muted">税务申报当前不提供（挂账）</td></tr>
-<tr><td>不宣称：资金执行（资金池 / 代收代付 / 分账执行 / 资金归集）</td><td class="muted">二清红线：平台只产出对账结果与核对指令，资金归集与分账走客户自选的持牌通道</td></tr>
-<tr><td>不宣称：单体 ERP 应用 / 表单式 UI</td><td class="muted">ERP 以「集群 + 供给包」组合交付，不是单体 ERP 应用或表单式 UI</td></tr>
-<tr><td>不宣称：官网已 deploy</td><td class="muted">官网 ERP 落地页为可发布工件 + 本地校验证据；site deploy 需真实凭据，属独立发布步骤</td></tr>
-<tr><td>不宣称：网关已上线</td><td class="muted">gateway rollout 需真实凭据与集群变更，属独立发布步骤</td></tr>
-<tr><td>不宣称：registry 快照已写入</td><td class="muted">registry 写入属独立发布步骤，需真实凭据</td></tr>
-</table>
-<h2>4 · MCP 工具面（21 个）</h2>
-<table><tr><th>分组</th><th>工具</th><th>读/写</th><th>行为</th></tr>
-<tr><td>proposal</td><td><code>submit_proposal</code></td><td class="wr">写</td><td class="muted">write · 只创建 proposals 行、绝不直接落账；同 stable_id 重复提交返回首次结果（唯一索引去重）</td></tr>
-<tr><td>proposal</td><td><code>list_proposals</code></td><td class="rd">读</td><td class="muted">read · 分页查询本租户 proposal 列表及状态（待确认/已确认/已拒绝）</td></tr>
-<tr><td>proposal</td><td><code>confirm_proposal</code></td><td class="wr">写</td><td class="muted">write · 确认门；确认后按复式分录落账，借贷必平由 DB 约束强制、不平整笔拒绝；同 stable_id 幂等</td></tr>
-<tr><td>proposal</td><td><code>reject_proposal</code></td><td class="wr">写</td><td class="muted">write · 拒绝 proposal，留审计痕迹且不落账；同 stable_id 幂等</td></tr>
-<tr><td>ledger</td><td><code>query_balance</code></td><td class="rd">读</td><td class="muted">read · 按科目/币种查询余额；余额由 journal_entries 确定性重算，无直写余额字段</td></tr>
-<tr><td>ledger</td><td><code>query_entries</code></td><td class="rd">读</td><td class="muted">read · 分页查询已落账分录（原币/折算、出处、来源引用、时间戳、冲正关联）</td></tr>
-<tr><td>recon</td><td><code>run_reconciliation</code></td><td class="wr">写</td><td class="muted">long-running · 运行两源流水对账（只读滩头，对外部系统零写入），立即返回 task_id；幂等不产生破坏性副作用，但会创建/推进对账任务与报告状态故非 read-only</td></tr>
-<tr><td>recon</td><td><code>get_recon_report</code></td><td class="rd">读</td><td class="muted">read · 按 task_id 查询对账任务状态/进度/结果 + 四类差异清单（缺失/多余/金额不符/状态不符，双侧原始引用）</td></tr>
-<tr><td>billing</td><td><code>submit_billing_rule</code></td><td class="wr">写</td><td class="muted">write · 登记计费规则新版本（draft→pending_approval）；同 rule_key 版本递增、重复提交产生新版本故非幂等；无出处费率拒绝（RATE_UNSOURCED）</td></tr>
-<tr><td>billing</td><td><code>approve_billing_rule</code></td><td class="wr">写</td><td class="muted">write · 规则确认门（pending_approval→active，人工确认、不接受程序自审自批）；同维度冲突未处置拒绝上线；同 rule_key 旧 active 版本随新版本退役</td></tr>
-<tr><td>billing</td><td><code>list_billing_rules</code></td><td class="rd">读</td><td class="muted">read · 分页查询计费规则（含版本、状态机、config、rate_source）</td></tr>
-<tr><td>billing</td><td><code>bill_event</code></td><td class="wr">写</td><td class="muted">write · 按 active 规则对事件计费，写 fee_details（append-only，快照锁定规则版本）+ 组 billing-engine 机器车道分录 proposal（不直接落账）；同 stable_id 重推返回首次结果</td></tr>
-<tr><td>billing</td><td><code>list_fees</code></td><td class="rd">读</td><td class="muted">read · 分页查询费用明细（含红冲反向行 status=&#x27;reversed&#x27; + reversal_of 关联）</td></tr>
-<tr><td>billing</td><td><code>get_fee_detail</code></td><td class="rd">读</td><td class="muted">read · 费用详情 + 四层溯源链（费用项→业务单据→作业事件→计费规则版本）+ 快照确定性重算</td></tr>
-<tr><td>billing</td><td><code>reverse_fee</code></td><td class="wr">写</td><td class="muted">write · 红冲费用：新增反向明细行（reversal_of 关联，原行原样保留，append-only 无改/删路径）；原分录已落账时组冲正 proposal；同 fee 幂等</td></tr>
-<tr><td>billing</td><td><code>simulate_billing</code></td><td class="rd">读</td><td class="muted">read · 按历史事件集试算新旧规则费用差异（零写入；费率出处纪律同正式规则）</td></tr>
-<tr><td>billing</td><td><code>bill_period_snapshot</code></td><td class="wr">写</td><td class="muted">write · 按期间触发日终快照计费（存储费 = 日终库存快照 × 费率）：批量快照 → fee_details（快照锁定规则版本+汇率四要素）+ 一条 billing-engine 机器车道分录 proposal（不直接落账）；幂等键 = (租户, 期间, stable_id)，同期间重跑返回首次结果</td></tr>
-<tr><td>credit</td><td><code>reserve_credit</code></td><td class="wr">写</td><td class="muted">write · 占用客户信用额度（备忘性质，不写复式分录）；额度不足拒绝（CREDIT_EXCEEDED 含额度明细）；同 stable_id 幂等返回首次结果</td></tr>
-<tr><td>credit</td><td><code>release_credit</code></td><td class="wr">写</td><td class="muted">write · 释放信用占用（reserved→released，幂等；备忘表状态推进，非账本事实）</td></tr>
-<tr><td>credit</td><td><code>query_credit</code></td><td class="rd">读</td><td class="muted">read · 查询额度位：limit / ar_balance（1300 分录确定性重算）/ reserved / available</td></tr>
-<tr><td>credit</td><td><code>list_credit_reservations</code></td><td class="rd">读</td><td class="muted">read · 列出信用占用明细（含派生状态 reserved/expired/released 与 expires_at）；不释放、不修改任何占用</td></tr>
-</table>
-<h2>5 · REST 接口面（63 条业务路由，20 条未实施）</h2>
-<table><tr><th>面</th><th>路由数</th><th>实施状态</th></tr>
-<tr><td><code>cp</code></td><td>12</td><td><span class="badge no">4 未实施</span></td></tr>
-<tr><td><code>pagesets</code></td><td>1</td><td><span class="badge ok">已实施</span></td></tr>
-<tr><td><code>se</code></td><td>15</td><td><span class="badge no">5 未实施</span></td></tr>
-<tr><td><code>sp</code></td><td>13</td><td><span class="badge no">6 未实施</span></td></tr>
-<tr><td><code>ue</code></td><td>22</td><td><span class="badge no">5 未实施</span></td></tr>
-</table>
-<p class="muted">未实施端点按契约返回 <code>501 NOT_IMPLEMENTED</code> 并附计划车道，承载层不改写、不吞掉、不伪装成占位表单。</p>
-<h2>6 · 行业模板（差异全部上移至此）</h2>
-<table><tr><th>行业</th><th>模板资产</th><th>上架状态</th></tr>
-<tr><td>跨境电商对账模板 <span class="muted">v1.4.4</span></td><td><code>connector_pack</code>, <code>fleet_blueprint</code>, <code>account_mapping_pack</code>, <code>report_preset</code>, <code>capability_matrix</code></td><td><span class="ok">已上架：市场 v2</span></td></tr>
-<tr><td>餐饮连锁对账模板 <span class="muted">v1.0.0</span></td><td><code>connector_pack</code>, <code>fleet_blueprint</code>, <code>account_mapping_pack</code>, <code>report_preset</code></td><td><span class="ok">已上架：市场 v2</span></td></tr>
-<tr><td>仓配分销模板 <span class="muted">v1.0.0</span></td><td><code>connector_pack</code>, <code>fleet_blueprint</code>, <code>account_mapping_pack</code>, <code>report_preset</code>, <code>pricing_rules_pack</code>, <code>pagesets_pack</code></td><td><span class="ok">已上架：市场 v3</span></td></tr>
-</table>
-<h2>7 · 功能覆盖矩阵（supply-chain，35 个功能点）</h2>
-<div class="grid">
-<div class="card"><h3>直接命中</h3><p>23 个功能点</p></div>
-<div class="card"><h3>模式复用</h3><p>12 个功能点</p></div>
-<div class="card"><h3>新建</h3><p>0 个功能点</p></div>
-<div class="card"><h3>不做</h3><p>0 个功能点</p></div>
+<table><thead><tr><th scope="col">能力</th><th scope="col">口径</th></tr></thead><tbody>
+<tr><td><span class="st no">不宣称：</span>开票自研 / 支持开票</td><td class="muted">开票自研当前不提供（挂账）：票据本体由客户既有合规渠道处理，平台不伪造不代开</td></tr>
+<tr><td><span class="st no">不宣称：</span>税务申报</td><td class="muted">税务申报当前不提供（挂账）</td></tr>
+<tr><td><span class="st no">不宣称：</span>资金执行（资金池 / 代收代付 / 分账执行 / 资金归集）</td><td class="muted">二清红线：平台只产出对账结果与核对指令，资金归集与分账走客户自选的持牌通道</td></tr>
+<tr><td><span class="st no">不宣称：</span>单体 ERP 应用 / 表单式 UI</td><td class="muted">ERP 以「集群 + 供给包」组合交付，不是单体 ERP 应用或表单式 UI</td></tr>
+<tr><td><span class="st no">不宣称：</span>官网已 deploy</td><td class="muted">官网 ERP 落地页为可发布工件 + 本地校验证据；site deploy 需真实凭据，属独立发布步骤</td></tr>
+<tr><td><span class="st no">不宣称：</span>网关已上线</td><td class="muted">gateway rollout 需真实凭据与集群变更，属独立发布步骤</td></tr>
+<tr><td><span class="st no">不宣称：</span>registry 快照已写入</td><td class="muted">registry 写入属独立发布步骤，需真实凭据</td></tr>
+</tbody></table></section>
+<section id="tools"><h2>MCP 工具面（21 个）</h2>
+<h3>proposal</h3>
+<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
+<tr><td><code>submit_proposal</code></td><td class="rw w">写</td><td class="muted">write · 只创建 proposals 行、绝不直接落账；同 stable_id 重复提交返回首次结果（唯一索引去重）</td></tr>
+<tr><td><code>list_proposals</code></td><td class="rw r">读</td><td class="muted">read · 分页查询本租户 proposal 列表及状态（待确认/已确认/已拒绝）</td></tr>
+<tr><td><code>confirm_proposal</code></td><td class="rw w">写</td><td class="muted">write · 确认门；确认后按复式分录落账，借贷必平由 DB 约束强制、不平整笔拒绝；同 stable_id 幂等</td></tr>
+<tr><td><code>reject_proposal</code></td><td class="rw w">写</td><td class="muted">write · 拒绝 proposal，留审计痕迹且不落账；同 stable_id 幂等</td></tr>
+</tbody></table>
+<h3>ledger</h3>
+<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
+<tr><td><code>query_balance</code></td><td class="rw r">读</td><td class="muted">read · 按科目/币种查询余额；余额由 journal_entries 确定性重算，无直写余额字段</td></tr>
+<tr><td><code>query_entries</code></td><td class="rw r">读</td><td class="muted">read · 分页查询已落账分录（原币/折算、出处、来源引用、时间戳、冲正关联）</td></tr>
+</tbody></table>
+<h3>recon</h3>
+<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
+<tr><td><code>run_reconciliation</code></td><td class="rw w">写</td><td class="muted">long-running · 运行两源流水对账（只读滩头，对外部系统零写入），立即返回 task_id；幂等不产生破坏性副作用，但会创建/推进对账任务与报告状态故非 read-only</td></tr>
+<tr><td><code>get_recon_report</code></td><td class="rw r">读</td><td class="muted">read · 按 task_id 查询对账任务状态/进度/结果 + 四类差异清单（缺失/多余/金额不符/状态不符，双侧原始引用）</td></tr>
+</tbody></table>
+<h3>billing</h3>
+<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
+<tr><td><code>submit_billing_rule</code></td><td class="rw w">写</td><td class="muted">write · 登记计费规则新版本（draft→pending_approval）；同 rule_key 版本递增、重复提交产生新版本故非幂等；无出处费率拒绝（RATE_UNSOURCED）</td></tr>
+<tr><td><code>approve_billing_rule</code></td><td class="rw w">写</td><td class="muted">write · 规则确认门（pending_approval→active，人工确认、不接受程序自审自批）；同维度冲突未处置拒绝上线；同 rule_key 旧 active 版本随新版本退役</td></tr>
+<tr><td><code>list_billing_rules</code></td><td class="rw r">读</td><td class="muted">read · 分页查询计费规则（含版本、状态机、config、rate_source）</td></tr>
+<tr><td><code>bill_event</code></td><td class="rw w">写</td><td class="muted">write · 按 active 规则对事件计费，写 fee_details（append-only，快照锁定规则版本）+ 组 billing-engine 机器车道分录 proposal（不直接落账）；同 stable_id 重推返回首次结果</td></tr>
+<tr><td><code>list_fees</code></td><td class="rw r">读</td><td class="muted">read · 分页查询费用明细（含红冲反向行 status=&#x27;reversed&#x27; + reversal_of 关联）</td></tr>
+<tr><td><code>get_fee_detail</code></td><td class="rw r">读</td><td class="muted">read · 费用详情 + 四层溯源链（费用项→业务单据→作业事件→计费规则版本）+ 快照确定性重算</td></tr>
+<tr><td><code>reverse_fee</code></td><td class="rw w">写</td><td class="muted">write · 红冲费用：新增反向明细行（reversal_of 关联，原行原样保留，append-only 无改/删路径）；原分录已落账时组冲正 proposal；同 fee 幂等</td></tr>
+<tr><td><code>simulate_billing</code></td><td class="rw r">读</td><td class="muted">read · 按历史事件集试算新旧规则费用差异（零写入；费率出处纪律同正式规则）</td></tr>
+<tr><td><code>bill_period_snapshot</code></td><td class="rw w">写</td><td class="muted">write · 按期间触发日终快照计费（存储费 = 日终库存快照 × 费率）：批量快照 → fee_details（快照锁定规则版本+汇率四要素）+ 一条 billing-engine 机器车道分录 proposal（不直接落账）；幂等键 = (租户, 期间, stable_id)，同期间重跑返回首次结果</td></tr>
+</tbody></table>
+<h3>credit</h3>
+<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th><th scope="col">行为</th></tr></thead><tbody>
+<tr><td><code>reserve_credit</code></td><td class="rw w">写</td><td class="muted">write · 占用客户信用额度（备忘性质，不写复式分录）；额度不足拒绝（CREDIT_EXCEEDED 含额度明细）；同 stable_id 幂等返回首次结果</td></tr>
+<tr><td><code>release_credit</code></td><td class="rw w">写</td><td class="muted">write · 释放信用占用（reserved→released，幂等；备忘表状态推进，非账本事实）</td></tr>
+<tr><td><code>query_credit</code></td><td class="rw r">读</td><td class="muted">read · 查询额度位：limit / ar_balance（1300 分录确定性重算）/ reserved / available</td></tr>
+<tr><td><code>list_credit_reservations</code></td><td class="rw r">读</td><td class="muted">read · 列出信用占用明细（含派生状态 reserved/expired/released 与 expires_at）；不释放、不修改任何占用</td></tr>
+</tbody></table>
+</section>
+<section id="routes"><h2>REST 接口面（63 条业务路由，20 条未实施）</h2>
+<table><thead><tr><th scope="col">面</th><th scope="col" class="num">路由数</th><th scope="col">实施状态</th></tr></thead><tbody>
+<tr><td><code>cp</code></td><td class="num">12</td><td><span class="st no">4 未实施</span></td></tr>
+<tr><td><code>pagesets</code></td><td class="num">1</td><td><span class="st ok">已实施</span></td></tr>
+<tr><td><code>se</code></td><td class="num">15</td><td><span class="st no">5 未实施</span></td></tr>
+<tr><td><code>sp</code></td><td class="num">13</td><td><span class="st no">6 未实施</span></td></tr>
+<tr><td><code>ue</code></td><td class="num">22</td><td><span class="st no">5 未实施</span></td></tr>
+</tbody></table>
+<p class="muted">未实施端点按契约返回 <code>501 NOT_IMPLEMENTED</code> 并附计划车道，承载层不改写、不吞掉、不伪装成占位表单。</p></section>
+<section id="templates"><h2>行业模板（差异全部上移至此）</h2>
+<table><thead><tr><th scope="col">行业</th><th scope="col">模板资产</th><th scope="col">上架状态</th></tr></thead><tbody>
+<tr><td>跨境电商对账模板 <span class="muted">v1.4.4</span></td><td><span class=tag>connector_pack</span><span class=tag>fleet_blueprint</span><span class=tag>account_mapping_pack</span><span class=tag>report_preset</span><span class=tag>capability_matrix</span></td><td><span class="st ok">已上架：市场 v2</span></td></tr>
+<tr><td>餐饮连锁对账模板 <span class="muted">v1.0.0</span></td><td><span class=tag>connector_pack</span><span class=tag>fleet_blueprint</span><span class=tag>account_mapping_pack</span><span class=tag>report_preset</span></td><td><span class="st ok">已上架：市场 v2</span></td></tr>
+<tr><td>仓配分销模板 <span class="muted">v1.0.0</span></td><td><span class=tag>connector_pack</span><span class=tag>fleet_blueprint</span><span class=tag>account_mapping_pack</span><span class=tag>report_preset</span><span class=tag>pricing_rules_pack</span><span class=tag>pagesets_pack</span></td><td><span class="st ok">已上架：市场 v3</span></td></tr>
+</tbody></table></section>
+<section id="matrix"><h2>功能覆盖矩阵（supply-chain，35 个功能点）</h2>
+<div class="matrix">
+<div class="bar" role="img" aria-label="直接命中 23 个、模式复用 12 个、新建 0 个、不做 0 个">
+<span class="s1" style="width:65.714%"></span>
+<span class="s2" style="width:34.286%"></span>
 </div>
-<p class="muted">矩阵由客户功能清单导入后重算生成（幂等），每个功能点带至少一条实现证据；清单本体不进规格与模板资产，只以脱敏编号引用。</p>
-<h2>8 · 连接器缺口（4 条，每项带机器判据）</h2>
-<table><tr><th>缺口</th><th>能力</th><th>责任仓</th><th>状态</th></tr>
-<tr><td><code>unionpay-no-provider</code></td><td>银联收款渠道（结算流水只读）</td><td><code>open-connector-mt</code></td><td><span class="badge no">open</span></td></tr>
-<tr><td><code>wms-no-provider</code></td><td>客户 WMS（库存快照只读，角色绑定 wms）</td><td><code>open-connector-mt</code></td><td><span class="badge no">open</span></td></tr>
-<tr><td><code>payments-not-wired</code></td><td>支付渠道结算读取（微信支付/支付宝，经连接器运行时）</td><td><code>fd-erp-vertical-templates</code></td><td><span class="badge ok">resolved</span></td></tr>
-<tr><td><code>kingdee-no-executor-test</code></td><td>金蝶云星空（凭证/单据同步）</td><td><code>open-connector-mt</code></td><td><span class="badge no">open</span></td></tr>
-</table>
-<h2>9 · 边界</h2>
-<div class="grid">
-<div class="card"><h3>资金（二清红线）</h3><p>只产出对账结果与核对指令。不提供资金池、代收代付、分账执行；资金归集与分账走客户自选的持牌通道。</p></div>
-<div class="card"><h3>开票 / 税务</h3><p>不自研、当前不提供（挂账）。账内可记录发票类事件并参与对账；票据本体走客户既有合规渠道，不伪造、不代开。</p></div>
-<div class="card"><h3>执行面</h3><p>发货、支付、补货、开票等经营动作仅经采纳的外部 MCP server 完成；凭证由租户自带（BYOK）、经环境变量注入，零落库零日志。</p></div>
-<div class="card"><h3>租户隔离</h3><p>同时服务寻数自用与外部商家/泛企业客户；经营数据按租户隔离，任一客户租户不能读取其他租户的账、单据或报表。</p></div>
-</div>
-<footer>本页由 <code>fd-erp/tools/gen_erp_docs.py</code> 于 2026-11-11 生成。数据出处：<code>claims/claims.json</code>、<code>gaps.json</code>、<code>publish-record.json</code>、<code>tool-surface.json</code>、<code>coverage/</code>、<code>templates/*/manifest.json</code>。本页不声称任何未在 <code>publish-record.json</code> 中记为 live 的状态。</footer>
-</div></body></html>
+<ul class="legend">
+<li><i class="s1"></i>直接命中 <b>23</b></li>
+<li><i class="s2"></i>模式复用 <b>12</b></li>
+<li><i class="s3"></i>新建 <b>0</b></li>
+<li><i class="s4"></i>不做 <b>0</b></li>
+</ul></div>
+<p class="muted">矩阵由客户功能清单导入后重算生成（幂等），每个功能点带至少一条实现证据；清单本体不进规格与模板资产，只以脱敏编号引用。</p></section>
+<section id="gaps"><h2>连接器缺口（4 条，每项带机器判据）</h2>
+<table><thead><tr><th scope="col">缺口</th><th scope="col">能力</th><th scope="col">责任仓</th><th scope="col">状态</th></tr></thead><tbody>
+<tr><td><code>unionpay-no-provider</code></td><td>银联收款渠道（结算流水只读）</td><td><code>open-connector-mt</code></td><td><span class="st no">open</span></td></tr>
+<tr><td><code>wms-no-provider</code></td><td>客户 WMS（库存快照只读，角色绑定 wms）</td><td><code>open-connector-mt</code></td><td><span class="st no">open</span></td></tr>
+<tr><td><code>payments-not-wired</code></td><td>支付渠道结算读取（微信支付/支付宝，经连接器运行时）</td><td><code>fd-erp-vertical-templates</code></td><td><span class="st ok">resolved</span></td></tr>
+<tr><td><code>kingdee-no-executor-test</code></td><td>金蝶云星空（凭证/单据同步）</td><td><code>open-connector-mt</code></td><td><span class="st no">open</span></td></tr>
+</tbody></table></section>
+<section id="edges"><h2>边界</h2><dl class="edges">
+<div><dt>资金（二清红线）</dt><dd>只产出对账结果与核对指令。不提供资金池、代收代付、分账执行；资金归集与分账走客户自选的持牌通道。</dd></div>
+<div><dt>开票 / 税务</dt><dd>不自研、当前不提供（挂账）。账内可记录发票类事件并参与对账；票据本体走客户既有合规渠道，不伪造、不代开。</dd></div>
+<div><dt>执行面</dt><dd>发货、支付、补货、开票等经营动作仅经采纳的外部 MCP server 完成；凭证由租户自带（BYOK）、经环境变量注入，零落库零日志。</dd></div>
+<div><dt>租户隔离</dt><dd>同时服务寻数自用与外部商家/泛企业客户；经营数据按租户隔离，任一客户租户不能读取其他租户的账、单据或报表。</dd></div>
+</dl></section>
+<footer id="src"><h2>出处</h2><ul>
+<li>claims/claims.json</li>
+<li>gaps.json</li>
+<li>publish-record.json</li>
+<li>tool-surface.json</li>
+<li>coverage/</li>
+<li>templates/*/manifest.json</li>
+</ul>
+<p class="say">本页由 <code>fd-erp/tools/gen_erp_docs.py</code> 于 2026-11-11 生成。数据出处：<code>claims/claims.json</code>、<code>gaps.json</code>、<code>publish-record.json</code>、<code>tool-surface.json</code>、<code>coverage/</code>、<code>templates/*/manifest.json</code>。本页不声称任何未在 <code>publish-record.json</code> 中记为 live 的状态。</p>
+</footer>
+</main></body></html>

@@ -278,39 +278,161 @@ def render_readme(d: dict) -> str:
 
 # ── 站点（对外：能力与集成说明，不写营销话术） ────────────────────────────────
 CSS = """
-:root{--fg:#15181d;--muted:#5b6472;--line:#e3e6ea;--bg:#fbfbfc;--accent:#1f5f8b;--warn:#8a5a00;--ok:#186b47;--card:#fff}
+:root{
+--paper:#eaece5;--paper-2:#e3e7df;--paper-3:#dbe0d7;
+--ink:#16211d;--ink-2:#46564e;--ink-3:#525f58;
+--rule:#cbd6cc;--rule-2:#a7b6ab;--rule-3:#7f9187;
+--red:#8e2b24;--green:#1f5c42;
+--serif:"Source Han Serif SC","Noto Serif SC","Songti SC","STSong","SimSun",Georgia,serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--rail:88px
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
-.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
-header{border-bottom:1px solid var(--line);background:var(--card)}
-header .wrap{padding:18px 20px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
-.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-h1{font-size:26px;margin:26px 0 8px;letter-spacing:-.01em}
-h2{font-size:18px;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-h3{font-size:15px;margin:22px 0 8px}
-p{margin:8px 0}
-.lead{color:var(--muted);font-size:16px}
-.tag{display:inline-block;font-size:11px;padding:2px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:#fff}
-table{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:13.5px;background:var(--card)}
-th,td{text-align:left;padding:8px 10px;border:1px solid var(--line);vertical-align:top}
-th{background:#f4f6f8;font-weight:600;white-space:nowrap}
-code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f2f4f6;padding:1px 5px;border-radius:4px}
-pre{background:#f4f6f8;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:12px 0}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px}
-.card h3{margin:0 0 6px;font-size:14px}
-.card p{margin:0;font-size:13px;color:var(--muted)}
-.rd{color:var(--accent);font-weight:600}
-.wr{color:var(--warn);font-weight:600}
-.ok{color:var(--ok)}
-.muted{color:var(--muted)}
-.badge{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);background:#fff;color:var(--muted)}
-.badge.no{border-color:#eddcb8;background:#fdf8ec;color:var(--warn)}
-footer{margin-top:56px;border-top:1px solid var(--line);padding:20px 0 40px;color:var(--muted);font-size:12.5px}
-.stat{display:flex;gap:26px;flex-wrap:wrap;margin:16px 0}
-.stat div strong{display:block;font-size:22px;line-height:1.2}
-.stat div span{font-size:12px;color:var(--muted)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16.5px/1.85 var(--serif)}
+::selection{background:#cadfd0;color:var(--ink)}
+:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-2);text-underline-offset:3px}
+a:hover{border-bottom-color:var(--red);color:var(--red)}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:16px;top:12px;z-index:9;background:var(--paper);padding:8px 12px;border:1px solid var(--ink)}
+
+.masthead{border-bottom:1px solid var(--rule-2);background:var(--paper)}
+.masthead .sheet{display:flex;align-items:baseline;gap:16px;padding:14px 0 13px calc(var(--rail) + 24px);font:500 12px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase}
+.masthead .brand{letter-spacing:.24em;color:var(--ink)}
+.masthead .doc{color:var(--ink-2);letter-spacing:.1em}
+.masthead .stamp{margin-left:auto;color:var(--ink-3);font-variant-numeric:tabular-nums lining-nums}
+
+.sheet{max-width:1060px;margin:0 auto;padding:0 24px 0 calc(var(--rail) + 24px);position:relative}
+.sheet::before{content:"";position:absolute;left:var(--rail);top:0;bottom:0;width:1px;background:var(--rule)}
+.masthead .sheet::before{display:none}
+
+.hero{padding:46px 0 8px;position:relative}
+.mark{position:absolute;right:2px;top:40px;transform:rotate(-4deg);border:2px solid var(--red);border-radius:2px;
+color:var(--red);font:600 12.5px/1.55 var(--sans);letter-spacing:.14em;text-align:center;padding:7px 11px;opacity:.88}
+.mark::after{content:"";position:absolute;inset:3px;border:1px solid var(--red);border-radius:1px;opacity:.7}
+.mark span{display:block}
+h1{margin:0;font-weight:600;font-size:clamp(2.35rem,5.4vw,3.55rem);line-height:1.12;letter-spacing:-.02em}
+h1 .sub{display:block;font-size:.58em;font-weight:500;color:var(--ink-2);margin-top:.22em;letter-spacing:-.01em}
+.rule-double{border-top:1px solid var(--ink);position:relative;margin:26px 0 22px}
+.rule-double::after{content:"";position:absolute;left:0;right:0;top:3px;height:1px;background:var(--rule-2)}
+.lede{max-width:62ch;font-size:1.06rem;margin:0 0 14px}
+.basis{max-width:66ch;color:var(--ink-3);font-size:.86rem;line-height:1.7;margin:0 0 30px}
+
+table{width:100%;border-collapse:collapse;font:400 14px/1.6 var(--sans)}
+caption{caption-side:top;text-align:left;font:500 12px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);padding-bottom:10px}
+th,td{text-align:left;padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.82rem;color:var(--ink-2);border-bottom:1px solid var(--rule-3)}
+tbody tr:hover td{background:#e6ece4}
+td.num,th.num{white-space:nowrap;text-align:right;font-family:var(--serif);font-variant-numeric:tabular-nums lining-nums;font-size:1rem;padding-right:18px}
+.num.big{font-size:1.35rem;line-height:1.3}
+.prov{color:var(--ink-2);font-size:.82rem;font-family:var(--mono);letter-spacing:0}
+.prov .dim{color:var(--ink-3);font-family:var(--sans);letter-spacing:0}
+
+.fn{font:600 .68rem/1 var(--sans);position:relative;color:var(--ink-3);border:0;padding-left:3px;vertical-align:super}
+.fn::after{content:attr(data-src);position:absolute;right:-6px;bottom:1.9em;transform:translateY(4px);text-align:left;white-space:normal;max-width:min(240px,54vw);
+background:#1d2a24;color:#eef1ec;font:400 11px/1 var(--mono);padding:5px 8px;border-radius:3px;opacity:0;pointer-events:none;transition:opacity .18s ease-out,transform .18s ease-out}
+.fn:hover::after,.fn:focus-visible::after{opacity:1;transform:translateY(0)}
+.fn:hover{color:var(--red)}
+
+.acts{display:flex;gap:26px;flex-wrap:wrap;margin:30px 0 0;font:500 13px/1 var(--sans);letter-spacing:.04em}
+.acts a{border-bottom:1px solid var(--ink);padding-bottom:4px}
+.acts a.ghost{border-bottom-color:var(--rule-2);color:var(--ink-2)}
+.acts a:hover{border-bottom-color:var(--red)}
+
+.index{margin:52px 0 0;padding:22px 0 26px;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule-2)}
+.index h2{margin:0 0 14px;font:500 12px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);border:0;padding:0}
+.index ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:0 32px;
+font:400 14px/2.1 var(--sans)}
+.index a{display:flex;gap:12px;border-bottom:1px dotted var(--rule-2);padding:0}
+.index .k{flex:1;min-width:0}
+.index .v{margin-left:auto;color:var(--ink-3);font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+
+section{padding:56px 0 8px;position:relative}
+section::before{content:"";position:absolute;left:calc(-1 * var(--rail) - 3px);top:63px;width:7px;height:7px;border-radius:50%;background:var(--paper);border:1px solid var(--rule-3)}
+h2{margin:0 0 18px;font-weight:600;font-size:1.32rem;letter-spacing:-.01em;padding-bottom:10px;border-bottom:1px solid var(--ink);position:relative}
+h2::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:1px;background:var(--rule-2)}
+h3{font:600 .95rem/1.5 var(--sans);margin:26px 0 8px;letter-spacing:.02em}
+p{margin:10px 0;max-width:68ch}
+.muted{color:var(--ink-3)}
+code{font:12.5px/1.5 var(--mono);background:var(--paper-2);padding:1px 5px;border-radius:3px;border:1px solid var(--rule)}
+
+.stack{list-style:none;margin:18px 0 24px;padding:0;border-top:1px solid var(--rule-3)}
+.stack li{display:grid;grid-template-columns:210px 1fr;gap:4px 22px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.stack .layer{font:600 1rem/1.4 var(--serif)}
+.stack .layer em{display:block;font:400 11px/1.6 var(--mono);color:var(--ink-3);font-style:normal;letter-spacing:0;margin-top:4px}
+.stack .what{color:var(--ink-2);font:400 13.5px/1.7 var(--sans)}
+.stack .hop{grid-column:1/-1;font:400 12.5px/1 var(--mono);color:var(--ink-3);letter-spacing:.02em}
+.stack .hop::before{content:"↓ "}
+
+.tb td:first-child{font-family:var(--sans);font-size:.86rem;color:var(--ink-2)}
+.tag{display:inline-block;white-space:nowrap;font:400 12.5px/1.65 var(--mono);color:var(--ink-2);border:1px solid var(--rule-2);border-radius:2px;padding:0 5px;margin:1px 5px 1px 0;background:var(--paper)}
+.cnt{color:var(--ink-3);font:400 12.5px/1.6 var(--mono);margin-left:4px;white-space:nowrap}
+.rw{font:600 11px/1 var(--sans);letter-spacing:.08em}
+.rw.w{color:var(--red)}
+.rw.r{color:var(--green)}
+.st{font:600 11.5px/1 var(--sans);letter-spacing:.04em}
+.st.ok{color:var(--green)}
+.st.no{color:var(--red)}
+
+.matrix{margin:18px 0 8px}
+.bar{display:flex;height:26px;border:1px solid var(--ink);background:var(--paper)}
+.bar span{display:block;height:100%;border-right:1px solid var(--paper)}
+.bar span:last-child{border-right:0}
+.s1{background:var(--ink)}
+.s2{background:var(--ink-3)}
+.s3{background:var(--rule-3)}
+.s4{background:#d9c0bc}
+.legend{list-style:none;display:flex;flex-wrap:wrap;gap:8px 26px;margin:12px 0 0;padding:0;font:400 12.5px/1.6 var(--sans);color:var(--ink-2)}
+.legend i{display:inline-block;width:11px;height:11px;margin-right:7px;vertical-align:-1px;border:1px solid var(--ink)}
+.legend b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums lining-nums}
+
+dl.edges{margin:16px 0 8px;border-top:1px solid var(--rule-3)}
+dl.edges div{padding:15px 0;border-bottom:1px solid var(--rule)}
+dl.edges dt{font:600 .93rem/1.5 var(--sans);letter-spacing:.02em}
+dl.edges dd{margin:4px 0 0;color:var(--ink-2);font:400 13.5px/1.7 var(--sans);max-width:70ch}
+
+footer{margin-top:64px;border-top:1px solid var(--ink);padding:22px 0 56px;color:var(--ink-2);font:400 13px/1.9 var(--sans)}
+footer h2{font:500 12px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);border:0;padding:0 0 12px;margin:0}
+footer h2::after{display:none}
+footer ul{list-style:none;margin:0 0 18px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 28px}
+footer li{font-family:var(--mono);font-size:12.5px}
+footer .say{max-width:78ch;margin:0}
+
+@media (max-width:900px){
+:root{--rail:0px}
+.sheet{padding:0 20px}
+.masthead .sheet{padding:12px 0;flex-wrap:wrap;gap:10px 14px}
+.masthead .stamp{margin-left:auto}
+table:not(.tb){display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tb thead{position:absolute;left:-9999px}
+.tb tr{display:grid;grid-template-columns:1fr auto;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--rule)}
+.tb td{border:0;padding:0}
+.tb td:first-child{grid-column:1;grid-row:1}
+.tb td.num{grid-column:2;grid-row:1;text-align:right;padding:0 0 0 12px;font-size:1.15rem}
+.tb td.prov{grid-column:1/-1;grid-row:2;padding-top:3px;font-size:12.5px;line-height:1.55}
+.prov,.tb .dim{word-break:break-word}
+.sheet::before{display:none}
+section::before{display:none}
+h1{font-size:2.1rem}
+.stack li{grid-template-columns:1fr}
+.index ol{gap:0;grid-template-columns:1fr}
+.mark{position:relative;display:inline-block;top:auto;right:auto;transform:none;margin:16px 0 4px}
+}
+@media (prefers-reduced-motion:reduce){
+*{transition:none!important;animation:none!important}
+.fn::after{transition:none}
+}
+@media print{
+body{background:#fff}
+.masthead,.acts,.index{display:none}
+.sheet{padding:0}
+.sheet::before,section::before{display:none}
+a{border:0}
+}
 """
+
 
 
 def esc(x) -> str:
@@ -339,145 +461,229 @@ def render_site(d: dict) -> str:
     a("<title>ERP 板块 — 能力与集成说明 · 寻数 FindData</title>")
     a(f'<meta name="description" content="{esc(b["name"])} 板块的能力面、接口面与边界，数据全部由仓内唯一出处派生。">')
     a(f"<style>{CSS}</style></head><body>")
+    a('<a class="skip" href="#main">跳到正文</a>')
 
-    a("<header><div class=\"wrap\">")
-    a(f'<span class="kicker">FindData · {esc(b["name"])} · {esc(b["tag_zh"])}</span>')
-    a('<span class="tag">数据派生，勿手改</span>')
-    a("</div></header><div class=\"wrap\">")
+    # 报头：账簿的页眉，不是标题上方的眉标
+    a('<header class="masthead"><div class="sheet">')
+    a('<span class="brand">FindData</span>')
+    a(f'<span class="doc">{esc(b["name"])} · 能力与集成说明</span>')
+    a(f'<span class="stamp">{date.today().isoformat()}</span>')
+    a("</div></header>")
 
-    # 1 · 定位
-    a("<h1>ERP 板块：能力、接口与边界</h1>")
-    a('<p class="lead">ERP 是「集群 + 供给包」的组合式交付：一个行业无关的复式事件账内核，'
+    a('<main id="main" class="sheet">')
+
+    # ── 首屏：定位 + 试算表 + 入口 ───────────────────────────────────────
+    a('<div class="hero">')
+    a(f'<h1>{esc(b["name"])} {esc(b["tag_zh"])}<span class="sub">能力、接口与边界</span></h1>')
+    a('<div class="rule-double"></div>')
+    a('<span class="mark" aria-hidden="true"><span>数据派生</span><span>勿手改</span></span>')
+    a('<p class="lede">ERP 是「集群 + 供给包」的组合式交付：一个行业无关的复式事件账内核，'
       "加行业模板资产（连接器 pack、舰队蓝图、科目映射、报表 preset），"
       "经同源入口对外提供 REST 面与 MCP 工具面。它不是单体 ERP 应用，也不提供表单式 UI。</p>")
-    a('<p class="muted">本页所有数字均由 <code>claims.json</code> / <code>gaps.json</code> / '
+    a('<p class="basis">本页所有数字均由 <code>claims.json</code> / <code>gaps.json</code> / '
       "<code>tool-surface.json</code> / <code>coverage/</code> / 模板 manifest 在构建时派生，"
       "与 <code>claim_gate</code> 同源；不写价格、客户数、用量或上线日期。</p>")
 
-    s = d["gaps"]
-    a('<div class="stat">')
-    a(f'<div><strong>{len(d["surface"]["tool_annotations"])}</strong><span>MCP 工具</span></div>')
-    a(f'<div><strong>{rs["business"]}</strong><span>业务路由（另有 {rs["health"]} 条健康探针；其中 {rs["placeholder"]} 条未实施）</span></div>')
-    a(f'<div><strong>{len(d["templates"])}</strong><span>行业模板</span></div>')
-    a(f'<div><strong>{len(delivered)}</strong><span>可宣称能力</span></div>')
-    a(f'<div><strong>{len(not_claimable)}</strong><span>明确不宣称</span></div>')
+    a('<table class="tb"><caption>本页口径</caption>')
+    a('<thead><tr><th scope="col">项目</th><th scope="col" class="num">数量</th>'
+      '<th scope="col">出处</th></tr></thead><tbody>')
+    a('<tr><td>MCP 工具</td>'
+      f'<td class="num big">{len(ann)}<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td>'
+      '<td class="prov">tool-surface.json</td></tr>')
+    a('<tr><td>业务路由</td>'
+      f'<td class="num big">{rs["business"]}<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td>'
+      f'<td class="prov">coverage/ <span class="dim">（另有 {rs["health"]} 条健康探针；'
+      f'其中 {rs["placeholder"]} 条未实施）</span></td></tr>')
+    a('<tr><td>行业模板</td>'
+      f'<td class="num big">{len(d["templates"])}<sup><a class="fn" href="#src" '
+      'data-src="templates/*/manifest.json">3</a></sup></td>'
+      '<td class="prov">templates/*/manifest.json</td></tr>')
+    a('<tr><td>可宣称能力</td>'
+      f'<td class="num big">{len(delivered)}<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td>'
+      '<td class="prov">claims.json</td></tr>')
+    a('<tr><td>明确不宣称</td>'
+      f'<td class="num big">{len(not_claimable)}<sup><a class="fn" href="#src" data-src="claims.json">5</a></sup></td>'
+      '<td class="prov">claims.json</td></tr>')
+    a("</tbody></table>")
+
+    a('<nav class="acts" aria-label="页内入口">')
+    a('<a href="#capability">看能力面</a>')
+    a('<a href="#routes">看接口面</a>')
+    a('<a class="ghost" href="#src">核验出处</a>')
+    a('<a class="ghost" href="https://www.finddatatech.cloud/" rel="noopener">寻数官网 ↗</a>')
+    a("</nav>")
     a("</div>")
 
-    # 2 · 分层
-    a("<h2>1 · 形态：四层，各自独立升级</h2>")
-    a("<pre>"
-      "客户端（壹座 miniapp 四端页面集 UE / SE / SP / CP）\n"
-      "   │  /erp/supply-chain/v1/*   同源入口，剥掉客户端自带的 X-ERP-*\n"
-      "   ▼\n"
-      "平台网关（按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入）\n"
-      "   ▼\n"
-      "纵向 REST 服务面（65 路由；单副本；闸序 租户 → 页面集 → grant → 身份域）\n"
-      "   ▼  全程走内核工具面，不直连库表\n"
-      "行业模板层（跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计）\n"
-      "   ▼  仅 proposal，不直写\n"
-      "账本内核（复式事件账；确认门是唯一落账路径；借贷必平由 DB 约束强制）"
-      "</pre>")
-    a("<div class=\"grid\">")
+    # ── 科目索引 ────────────────────────────────────────────────────────
+    a('<nav class="index" aria-label="科目索引"><h2>科目索引</h2><ol>')
+    for anchor, label, hint in (
+        ("form", "形态", "四层"),
+        ("capability", "能力面", f"{len(delivered)} 条"),
+        ("not-claimable", "明确不宣称", f"{len(not_claimable)} 条"),
+        ("tools", "MCP 工具面", f"{len(ann)} 个"),
+        ("routes", "REST 接口面", f"{rs['business']} 条"),
+        ("templates", "行业模板", f"{len(d['templates'])} 套"),
+        ("matrix", "功能覆盖矩阵", f"{len(points)} 点"),
+        ("gaps", "连接器缺口", f"{len(gaps)} 条"),
+        ("edges", "边界", "四项"),
+    ):
+        a(f'<li><a href="#{anchor}"><span class="k">{label}</span>'
+          f'<span class="v">{esc(hint)}</span></a></li>')
+    a("</ol></nav>")
+
+    # ── 1 形态 ──────────────────────────────────────────────────────────
+    a('<section id="form"><h2>形态：四层，各自独立升级</h2>')
+    a('<ul class="stack">'
+      '<li><span class="layer">客户端<em>壹座 miniapp 四端</em></span>'
+      '<span class="what">UE / SE / SP / CP 四端页面集</span>'
+      '<span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li>'
+      '<li><span class="layer">平台网关<em>platform gateway</em></span>'
+      '<span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li>'
+      '<li><span class="layer">纵向 REST 服务面<em>vertical api</em></span>'
+      f'<span class="what">{rs["business"]} 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span>'
+      '<span class="hop">全程走内核工具面，不直连库表</span></li>'
+      '<li><span class="layer">行业模板层<em>vertical templates</em></span>'
+      '<span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span>'
+      '<span class="hop">仅 proposal，不直写</span></li>'
+      '<li><span class="layer">账本内核<em>fact ledger kernel</em></span>'
+      '<span class="what">复式事件账；确认门是唯一落账路径；借贷必平由 DB 约束强制</span></li>'
+      "</ul>")
+    a('<table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th>'
+      '<th scope="col">面</th><th scope="col" class="num">源码行</th>'
+      '<th scope="col" class="num">测试行</th></tr></thead><tbody>')
     for r in m["repos"]:
-        a(f'<div class="card"><h3>{esc(r["role"])}</h3>'
-          f'<p><code>{esc(r["path"])}</code><br>{esc(r["surface"])} · 源码 {r["src_loc"]} 行 / 测试 {r["tests_loc"]} 行</p></div>')
-    a("</div>")
+        a(f'<tr><td>{esc(r["role"])}</td><td><code>{esc(r["path"])}</code></td>'
+          f'<td class="muted">{esc(r["surface"])}</td>'
+          f'<td class="num">{r["src_loc"]}</td><td class="num">{r["tests_loc"]}</td></tr>')
+    a("</tbody></table></section>")
 
-    # 3 · 能力
-    a("<h2>2 · 能力面（可宣称，逐条带证据）</h2>")
-    a("<table><tr><th>能力</th><th>标识</th><th>证据</th></tr>")
+    # ── 2 能力面 ────────────────────────────────────────────────────────
+    a('<section id="capability"><h2>能力面（可宣称，逐条带证据）</h2>')
+    a('<table><thead><tr><th scope="col">能力</th><th scope="col">标识</th>'
+      '<th scope="col">证据</th></tr></thead><tbody>')
     for c in delivered:
         kinds = sorted({e.get("kind", "?") for e in c.get("evidence", [])})
-        a(f"<tr><td>{esc(c['capability'])}</td><td><code>{esc(c['id'])}</code></td>"
-          f"<td class=\"muted\">{esc(' / '.join(kinds))} ×{len(c.get('evidence', []))}</td></tr>")
-    a("</table>")
+        a(f'<tr><td>{esc(c["capability"])}</td><td><code>{esc(c["id"])}</code></td>'
+          f'<td>{"".join(f"<span class=tag>{esc(k)}</span>" for k in kinds)}'
+          f'<span class="cnt">×{len(c.get("evidence", []))}</span></td></tr>')
+    a("</tbody></table></section>")
 
-    # 4 · 不宣称
-    a("<h2>3 · 明确不宣称（对外如实守界）</h2>")
-    a("<p class=\"muted\">以下条目以否定口径出现在本页与官网；任何肯定句式都会被 <code>claim_gate.py</code> 判红。</p>")
-    a("<table><tr><th>能力</th><th>口径</th></tr>")
+    # ── 3 不宣称（红字，账面上的冲销） ──────────────────────────────────
+    a('<section id="not-claimable"><h2>明确不宣称（对外如实守界）</h2>')
+    a('<p class="muted">以下条目以否定口径出现在本页与官网；任何肯定句式都会被 '
+      "<code>claim_gate.py</code> 判红。</p>")
+    a('<table><thead><tr><th scope="col">能力</th><th scope="col">口径</th></tr></thead><tbody>')
     for c in not_claimable:
         # 否定词必须落在同一句内：claim_gate 按句判否定语境，标题里的「不宣称」
         # 不算，所以每行首字写「不宣称：」。
-        a(f"<tr><td>不宣称：{esc(c['capability'])}</td><td class=\"muted\">{esc(c.get('reason', ''))}</td></tr>")
-    a("</table>")
+        a(f'<tr><td><span class="st no">不宣称：</span>{esc(c["capability"])}</td>'
+          f'<td class="muted">{esc(c.get("reason", ""))}</td></tr>')
+    a("</tbody></table></section>")
 
-    # 5 · 工具面
-    a(f"<h2>4 · MCP 工具面（{len(ann)} 个）</h2>")
-    a("<table><tr><th>分组</th><th>工具</th><th>读/写</th><th>行为</th></tr>")
+    # ── 4 MCP 工具面 ────────────────────────────────────────────────────
+    a(f'<section id="tools"><h2>MCP 工具面（{len(ann)} 个）</h2>')
     for g in groups:
+        a(f'<h3>{esc(g["group"])}</h3>')
+        a('<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th>'
+          '<th scope="col">行为</th></tr></thead><tbody>')
         for t in g["tools"]:
             meta = ann.get(t, {})
             rw = "读" if meta.get("readOnlyHint") else "写"
-            cls_ = "rd" if rw == "读" else "wr"
-            a(f"<tr><td>{esc(g['group'])}</td><td><code>{esc(t)}</code></td>"
-              f"<td class=\"{cls_}\">{rw}</td><td class=\"muted\">{esc(meta.get('behavior', ''))}</td></tr>")
-    a("</table>")
+            cls_ = "r" if rw == "读" else "w"
+            a(f'<tr><td><code>{esc(t)}</code></td>'
+              f'<td class="rw {cls_}">{rw}</td>'
+              f'<td class="muted">{esc(meta.get("behavior", ""))}</td></tr>')
+        a("</tbody></table>")
+    a("</section>")
 
-    # 6 · 接口面
-    a(f"<h2>5 · REST 接口面（{rs['business']} 条业务路由，{rs['placeholder']} 条未实施）</h2>")
-    a("<table><tr><th>面</th><th>路由数</th><th>实施状态</th></tr>")
+    # ── 5 REST 接口面 ───────────────────────────────────────────────────
+    a(f'<section id="routes"><h2>REST 接口面（{rs["business"]} 条业务路由，'
+      f'{rs["placeholder"]} 条未实施）</h2>')
+    a('<table><thead><tr><th scope="col">面</th><th scope="col" class="num">路由数</th>'
+      '<th scope="col">实施状态</th></tr></thead><tbody>')
     for face, n in rs["by_face"].items():
         ph = rs["ph_by_face"].get(face, 0)
-        badge = f'<span class="badge no">{ph} 未实施</span>' if ph else '<span class="badge ok">已实施</span>'
-        a(f"<tr><td><code>{esc(face)}</code></td><td>{n}</td><td>{badge}</td></tr>")
-    a("</table>")
-    a("<p class=\"muted\">未实施端点按契约返回 <code>501 NOT_IMPLEMENTED</code> 并附计划车道，"
-      "承载层不改写、不吞掉、不伪装成占位表单。</p>")
+        st = (f'<span class="st no">{ph} 未实施</span>' if ph
+              else '<span class="st ok">已实施</span>')
+        a(f'<tr><td><code>{esc(face)}</code></td><td class="num">{n}</td><td>{st}</td></tr>')
+    a("</tbody></table>")
+    a('<p class="muted">未实施端点按契约返回 <code>501 NOT_IMPLEMENTED</code> 并附计划车道，'
+      "承载层不改写、不吞掉、不伪装成占位表单。</p></section>")
 
-    # 7 · 模板
-    a("<h2>6 · 行业模板（差异全部上移至此）</h2>")
-    a("<table><tr><th>行业</th><th>模板资产</th><th>上架状态</th></tr>")
+    # ── 6 行业模板 ──────────────────────────────────────────────────────
+    a('<section id="templates"><h2>行业模板（差异全部上移至此）</h2>')
+    a('<table><thead><tr><th scope="col">行业</th><th scope="col">模板资产</th>'
+      '<th scope="col">上架状态</th></tr></thead><tbody>')
     for key, t in d["templates"].items():
         assets = t.get("assets", {})
-        parts = ", ".join(f"<code>{esc(k)}</code>" for k in assets)
+        parts = "".join(f"<span class=tag>{esc(k)}</span>" for k in assets)
         rec = packs.get(f"{key}/connector-pack", {})
         if rec.get("published"):
             # 措辞对齐 claims.json 里 market.connector-packs 的已登记 pattern
             # （「已上架：市场 vN」）——否则声明闸会把本页判成未登记声明。
-            status = f'<span class="ok">已上架：市场 v{rec.get("market_version")}</span>'
+            status = f'<span class="st ok">已上架：市场 v{rec.get("market_version")}</span>'
         else:
-            status = '<span class="badge no">未上架</span>'
-        a(f"<tr><td>{esc(t['name_zh'])} <span class=\"muted\">v{esc(t['version'])}</span></td>"
+            status = '<span class="st no">未上架</span>'
+        a(f'<tr><td>{esc(t["name_zh"])} <span class="muted">v{esc(t["version"])}</span></td>'
           f"<td>{parts}</td><td>{status}</td></tr>")
-    a("</table>")
+    a("</tbody></table></section>")
 
-    # 8 · 覆盖矩阵
-    a(f"<h2>7 · 功能覆盖矩阵（{esc(d['matrix']['vertical'])}，{len(points)} 个功能点）</h2>")
-    a("<div class=\"grid\">")
-    for k in ("直接命中", "模式复用", "新建", "不做"):
-        a(f'<div class="card"><h3>{k}</h3><p>{cls.get(k, 0)} 个功能点</p></div>')
+    # ── 7 覆盖矩阵 ──────────────────────────────────────────────────────
+    total = max(len(points), 1)
+    order = ("直接命中", "模式复用", "新建", "不做")
+    a(f'<section id="matrix"><h2>功能覆盖矩阵（{esc(d["matrix"]["vertical"])}，'
+      f'{len(points)} 个功能点）</h2>')
+    a('<div class="matrix">')
+    a('<div class="bar" role="img" aria-label="' +
+      "、".join(f"{k} {cls.get(k, 0)} 个" for k in order) + '">')
+    for i, k in enumerate(order, start=1):
+        pct = 100.0 * cls.get(k, 0) / total
+        if pct > 0:
+            a(f'<span class="s{i}" style="width:{pct:.3f}%"></span>')
     a("</div>")
-    a("<p class=\"muted\">矩阵由客户功能清单导入后重算生成（幂等），每个功能点带至少一条实现证据；"
-      "清单本体不进规格与模板资产，只以脱敏编号引用。</p>")
+    a('<ul class="legend">')
+    for i, k in enumerate(order, start=1):
+        a(f'<li><i class="s{i}"></i>{k} <b>{cls.get(k, 0)}</b></li>')
+    a("</ul></div>")
+    a('<p class="muted">矩阵由客户功能清单导入后重算生成（幂等），每个功能点带至少一条实现证据；'
+      "清单本体不进规格与模板资产，只以脱敏编号引用。</p></section>")
 
-    # 9 · 缺口
-    a(f"<h2>8 · 连接器缺口（{len(gaps)} 条，每项带机器判据）</h2>")
-    a("<table><tr><th>缺口</th><th>能力</th><th>责任仓</th><th>状态</th></tr>")
+    # ── 8 缺口 ──────────────────────────────────────────────────────────
+    a(f'<section id="gaps"><h2>连接器缺口（{len(gaps)} 条，每项带机器判据）</h2>')
+    a('<table><thead><tr><th scope="col">缺口</th><th scope="col">能力</th>'
+      '<th scope="col">责任仓</th><th scope="col">状态</th></tr></thead><tbody>')
     for g in gaps:
-        st = '<span class="badge no">open</span>' if g["status"] == "open" else f'<span class="badge ok">{esc(g["status"])}</span>'
-        a(f"<tr><td><code>{esc(g['id'])}</code></td><td>{esc(g['capability'])}</td>"
-          f"<td><code>{esc(g['responsible_repo'])}</code></td><td>{st}</td></tr>")
-    a("</table>")
+        st = ('<span class="st no">open</span>' if g["status"] == "open"
+              else f'<span class="st ok">{esc(g["status"])}</span>')
+        a(f'<tr><td><code>{esc(g["id"])}</code></td><td>{esc(g["capability"])}</td>'
+          f'<td><code>{esc(g["responsible_repo"])}</code></td><td>{st}</td></tr>')
+    a("</tbody></table></section>")
 
-    # 10 · 边界
-    a("<h2>9 · 边界</h2>")
-    a('<div class="grid">')
-    a('<div class="card"><h3>资金（二清红线）</h3><p>只产出对账结果与核对指令。'
-      "不提供资金池、代收代付、分账执行；资金归集与分账走客户自选的持牌通道。</p></div>")
-    a('<div class="card"><h3>开票 / 税务</h3><p>不自研、当前不提供（挂账）。'
-      "账内可记录发票类事件并参与对账；票据本体走客户既有合规渠道，不伪造、不代开。</p></div>")
-    a('<div class="card"><h3>执行面</h3><p>发货、支付、补货、开票等经营动作仅经采纳的外部 MCP server 完成；'
-      "凭证由租户自带（BYOK）、经环境变量注入，零落库零日志。</p></div>")
-    a('<div class="card"><h3>租户隔离</h3><p>同时服务寻数自用与外部商家/泛企业客户；'
-      "经营数据按租户隔离，任一客户租户不能读取其他租户的账、单据或报表。</p></div>")
-    a("</div>")
+    # ── 9 边界 ──────────────────────────────────────────────────────────
+    a('<section id="edges"><h2>边界</h2><dl class="edges">')
+    a("<div><dt>资金（二清红线）</dt><dd>只产出对账结果与核对指令。"
+      "不提供资金池、代收代付、分账执行；资金归集与分账走客户自选的持牌通道。</dd></div>")
+    a("<div><dt>开票 / 税务</dt><dd>不自研、当前不提供（挂账）。"
+      "账内可记录发票类事件并参与对账；票据本体走客户既有合规渠道，不伪造、不代开。</dd></div>")
+    a("<div><dt>执行面</dt><dd>发货、支付、补货、开票等经营动作仅经采纳的外部 MCP server 完成；"
+      "凭证由租户自带（BYOK）、经环境变量注入，零落库零日志。</dd></div>")
+    a("<div><dt>租户隔离</dt><dd>同时服务寻数自用与外部商家/泛企业客户；"
+      "经营数据按租户隔离，任一客户租户不能读取其他租户的账、单据或报表。</dd></div>")
+    a("</dl></section>")
 
-    a(f"<footer>本页由 <code>fd-erp/tools/gen_erp_docs.py</code> 于 {date.today().isoformat()} 生成。"
-      "数据出处：<code>claims/claims.json</code>、<code>gaps.json</code>、<code>publish-record.json</code>、"
+    # ── 页脚：出处清单（脚注落点） ──────────────────────────────────────
+    a('<footer id="src"><h2>出处</h2><ul>')
+    for rel in ("claims/claims.json", "gaps.json", "publish-record.json",
+                "tool-surface.json", "coverage/", "templates/*/manifest.json"):
+        a(f"<li>{esc(rel)}</li>")
+    a("</ul>")
+    a(f'<p class="say">本页由 <code>fd-erp/tools/gen_erp_docs.py</code> 于 '
+      f"{date.today().isoformat()} 生成。数据出处：<code>claims/claims.json</code>、"
+      "<code>gaps.json</code>、<code>publish-record.json</code>、"
       "<code>tool-surface.json</code>、<code>coverage/</code>、<code>templates/*/manifest.json</code>。"
-      "本页不声称任何未在 <code>publish-record.json</code> 中记为 live 的状态。</footer>")
-    a("</div></body></html>")
+      "本页不声称任何未在 <code>publish-record.json</code> 中记为 live 的状态。</p>")
+    a("</footer>")
+    a("</main></body></html>")
     return "\n".join(o)
 
 
