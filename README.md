@@ -38,7 +38,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 | 组件 | 实现数 | 位置 | 问题 |
 |---|---|---|---|
-| `kernel_client` | 2 | `fd-erp-vertical-templates/fd_erp_vertical_templates/kernel_client.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/kernel_client.py` | 同一 21 工具面在两仓各写一份（Protocol+Mcp 版 vs InProcess+ReconProxy 版）。已落声明式契约 + 覆盖面闸（声明覆盖 19/11），签名不再靠人肉对齐；真正收敛为单一共享包仍待办（需先解决跨仓依赖的 CI 可见性） |
+| `kernel_client` | 2 | `fd-erp-vertical-templates/fd_erp_vertical_templates/kernel_client.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/kernel_client.py` | 同一工具面在两仓各写一份（Protocol+Mcp 版 vs InProcess+ReconProxy 版）。已落声明式契约 + 覆盖面闸（声明覆盖 19/11），签名不再靠人肉对齐；真正收敛为单一共享包仍待办（需先解决跨仓依赖的 CI 可见性） |
 | `errors / error_codes` | 3 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/errors.py`<br>`fd-erp-vertical-templates/fd_erp_vertical_templates/errors.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/errors.py` | 错误码封闭集三处各维护，新增码要改三仓。已落跨仓语义契约 + 闸（内核封闭集=镜像、7 个共享码语义逐字一致、仓自有码须声明），仍未收敛为单一常量源 |
 | `observability` | 3 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/logs.py` | 指标/日志两套实现（内核 observability.py + API observability.py/logs.py），指标名不保证同形。指标已闸（命名式 + 跨服务重名 + 桶集偏差声明，api 少 10.0 上界为已声明的偏差）；日志打码是两份代码，由同一组 12 条向量**双跑**钉住同语义（并修掉 apiKey 漏拦与顶层 list 抛异常）；2026-11-11 起 REST 面也有逐请求 JSON 日志（信封同构、默认只记失败）。模板层仍不写日志（审计靠事件档）。仍未收敛为单一实现——两份代码靠闸同语义，不靠共享包 |
 | `config` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/config.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/config.py` | 环境变量名与默认值分散，无单一契约。已落配置契约 + 闸（4 个共享变量默认值逐字一致、命名式、含凭据字段必须 repr=False）；仍未收敛为单一常量源 |

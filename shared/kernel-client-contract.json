@@ -1,6 +1,6 @@
 {
  "schema": "erp-kernel-client-contract/v1",
- "note": "内核 21 工具面 × 各消费仓客户端覆盖面的声明。工具面真源是 fd-erp-ledger-mcp/tool-surface.json；本文件只声明「谁必须盖哪些、哪些故意不盖及理由」。任何一侧漂移由 fd-erp/tools/check_kernel_client_contract.py 判红。",
+ "note": "内核 32 工具面 × 各消费仓客户端覆盖面的声明。工具面真源是 fd-erp-ledger-mcp/tool-surface.json；本文件只声明「谁必须盖哪些、哪些故意不盖及理由」。任何一侧漂移由 fd-erp/tools/check_kernel_client_contract.py 判红。",
  "source": "fd-erp-ledger-mcp/tool-surface.json",
  "consumers": [
   {

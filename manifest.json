@@ -148,7 +148,7 @@
     "fd-erp-vertical-templates/fd_erp_vertical_templates/kernel_client.py",
     "fd-erp-vertical-api/fd_erp_vertical_api/kernel_client.py"
    ],
-   "problem": "同一 21 工具面在两仓各写一份（Protocol+Mcp 版 vs InProcess+ReconProxy 版）。已落声明式契约 + 覆盖面闸（声明覆盖 19/11），签名不再靠人肉对齐；真正收敛为单一共享包仍待办（需先解决跨仓依赖的 CI 可见性）"
+   "problem": "同一工具面在两仓各写一份（Protocol+Mcp 版 vs InProcess+ReconProxy 版）。已落声明式契约 + 覆盖面闸（声明覆盖 19/11），签名不再靠人肉对齐；真正收敛为单一共享包仍待办（需先解决跨仓依赖的 CI 可见性）"
   },
   {
    "component": "errors / error_codes",
