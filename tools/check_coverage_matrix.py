@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ERP 全覆盖矩阵闸（change establish-erp-event-kernel 6.2，只读）。
+"""ERP 全覆盖矩阵闸（change establish-erp-event-kernel 6.2 / establish-erp-kernel-toolkit-and-teams 2.2，只读）。
 
 它回答的不是「矩阵格式对不对」，而是「矩阵说的和仓里/对外说的是不是同一件事」：
 
@@ -12,6 +12,13 @@
   5. 待接入说清缺什么 —— needs_onboarding 必须有 blocker。
   6. 连接器事实不漂移 —— 矩阵声明上游 provider 缺口时，连接器仓事实必须仍显缺口；
                         已补齐而矩阵仍记「需接入」即判红（缺口两分类见 erp-connector-onboarding）。
+  7. 承担者可指认 —— 每格恰好一个 owner（fleet|template|none）；none 只在 needs_onboarding/
+                    not_doing 合法且必须给 reason（delivered/template_configured 写 none 即
+                    「纸上能力」，判红）；fleet 的 ref 必须是 kebab-case 团队名（建议 -fleet 结尾，
+                    不强制）；template 的 ref 必须是仓内/工作区相对路径且能落到文件。
+                    **不查团队是否真实存在**：那是 fleet-packs 侧团队覆盖闸的职责（读本矩阵，
+                    见 design D4）。本闸不反查兄弟仓，故 fd-erp 的闸链不受兄弟仓缺席影响；
+                    跨仓路径缺失只记 warning 并注明「跨仓不可核」，仓内路径缺失判红。
 
 用法：
   python3 fd-erp/tools/check_coverage_matrix.py
@@ -24,9 +31,10 @@ import argparse
 import json
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[2]
+FD_ERP = ROOT / "fd-erp"
 MATRIX = ROOT / "fd-erp" / "shared" / "coverage-matrix.json"
 TOOL_SURFACE = ROOT / "fd-erp-ledger-mcp" / "tool-surface.json"
 VERTICAL_API = ROOT / "fd-erp-vertical-api" / "fd_erp_vertical_api"
@@ -34,6 +42,12 @@ CLAIMS = ROOT / "fd-erp-vertical-templates" / "claims" / "claims.json"
 CONNECTOR_STATUS = ROOT / "fd-erp-vertical-templates" / "connector-status.json"
 
 VALID_STATES = {"delivered", "template_configured", "needs_onboarding", "not_doing"}
+#: 承担者三形态（spec erp-board-coverage「全覆盖指决策空间全覆盖」）。
+OWNER_KINDS = {"fleet", "template", "none"}
+#: 只有这两态允许「无承担者」：已具备的能力必须有人执行，否则是纸上能力。
+OWNER_NONE_STATES = {"needs_onboarding", "not_doing"}
+#: 团队名形状：kebab-case。-fleet 结尾是建议不是强制（既有行业舰队不带该后缀）。
+KEBAB_CASE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 #: 行号锚：`foo.py:123` 或 `foo.py#L12`。行号会随改动漂移，证据必须锚在符号上。
 LINE_ANCHOR = re.compile(r"(:\d+(?::\d+)?$|#L\d+)")
 #: 边界句特征：宣称的内容是「我们不做什么」。这类 delivered claim 与 not_doing 不矛盾——
@@ -44,6 +58,74 @@ BOUNDARY_MARKERS = ("不提供", "不自研", "不执行", "禁止", "零", "无
 def _is_boundary_claim(entry: dict) -> bool:
     text = entry.get("capability") or ""
     return any(marker in text for marker in BOUNDARY_MARKERS)
+
+
+def _resolve_template_ref(ref: str) -> tuple[str | None, str | None]:
+    """静态资产（template 承担者）的 ref 解析，返回 (error, warning)。
+
+    只判「路径能落到文件」，不读内容、不判资产是否被使用。两种写法都认：
+      - 仓内相对路径（如 `shared/tool-surface.json`）：必须存在，缺失判红。
+      - finddata 工作区路径（如 `fd-erp-vertical-templates/templates/...`）：存在即过；
+        不在场只记 warning 并注明「跨仓不可核」——单仓 CI 里兄弟仓不会被检出。
+    不查团队/资产在兄弟仓里是否登记：那是 fleet-packs 侧团队覆盖闸的事（design D4）。
+    """
+    if not ref:
+        return "缺 ref（template 必须指向仓内或工作区里的资产路径）", None
+    parts = PurePosixPath(ref).parts
+    if Path(ref).is_absolute() or ".." in parts:
+        return f"ref={ref!r} 必须用相对路径（不得绝对路径或 ..）", None
+    if ref.startswith("fd-erp/"):
+        rel = ref[len("fd-erp/"):]
+        if (FD_ERP / rel).exists():
+            return None, None
+        return f"仓内路径不存在 {ref}", None
+    if (ROOT / ref).exists():
+        return None, None
+    head = parts[0] if parts else ""
+    if head != "fd-erp" and (ROOT / head).is_dir():
+        # 兄弟仓在 workspace 根下出现过，但这一个路径核不到：不能因跨仓缺席判红。
+        return None, f"跨仓不可核：{ref} 未落到文件（兄弟仓可能不在场）"
+    return f"仓内路径不存在 {ref}", None
+
+
+def _check_owner(m: dict, state: str, problems: list[str], warnings: list[str]) -> None:
+    """7) 承担者可指认：恰好一个 owner，且形态合法。
+
+    分工：本闸只核形状与 none 的合法性；「团队在团队侧声明里存在吗」由 fleet-packs
+    的团队覆盖闸读本矩阵后核（design D4），避免 fd-erp 的闸链依赖兄弟仓。
+    """
+    mid = m.get("id")
+    owner = m.get("owner")
+    if not isinstance(owner, dict):
+        problems.append(
+            f"[无承担者] {mid}: 缺 owner（每格必须恰好一个：fleet|template|none）")
+        return
+    kind = owner.get("kind")
+    if kind not in OWNER_KINDS:
+        problems.append(
+            f"[承担者类型] {mid}: owner.kind={kind!r} 不在 " f"{sorted(OWNER_KINDS)} 内")
+        return
+    ref = (owner.get("ref") or "").strip()
+    if kind == "fleet":
+        if not KEBAB_CASE.match(ref):
+            problems.append(
+                f"[承担者格式] {mid}: fleet ref={ref!r} 应为 kebab-case 团队名")
+        elif not ref.endswith("-fleet"):
+            warnings.append(
+                f"[承担者命名] {mid}: fleet ref={ref!r} 不以 -fleet 结尾（建议，不阻断）")
+    elif kind == "template":
+        error, warning = _resolve_template_ref(ref)
+        if error:
+            problems.append(f"[承担者悬空] {mid}: template {error}")
+        if warning:
+            warnings.append(f"[承担者悬空?] {mid}: {warning}")
+    else:  # none
+        if state not in OWNER_NONE_STATES:
+            problems.append(
+                f"[无主能力] {mid}: state={state} 却 owner.kind=none —— "
+                "已具备的能力没有人执行＝纸上能力")
+        if not (owner.get("reason") or "").strip():
+            problems.append(f"[承担者原因] {mid}: kind=none 必须写非空 reason")
 
 
 def _load(path: Path, label: str) -> dict:
@@ -71,6 +153,7 @@ def check() -> tuple[list[str], dict]:
     api_blob = _api_sources()
 
     problems: list[str] = []
+    warnings: list[str] = []
     stats: dict[str, object] = {}
 
     module_set = matrix.get("module_set") or []
@@ -94,11 +177,16 @@ def check() -> tuple[list[str], dict]:
     for m in modules:
         mid = m.get("id")
         state = m.get("state")
-        if state not in VALID_STATES:
+        state_ok = state in VALID_STATES
+        if not state_ok:
             problems.append(f"[状态越界] {mid}: state={state!r} 不在四态内")
-            continue
         if not (m.get("boundary") or "").strip():
             problems.append(f"[缺边界说明] {mid}: 每格都必须写边界（能做什么、不做什么）")
+
+        # 7) 承担者可指认（状态越界也照样核 owner：缺字段要一并点名）
+        _check_owner(m, state, problems, warnings)
+        if not state_ok:
+            continue
 
         # 2) 证据可解析 + 无行号锚
         evidence = m.get("evidence") or []
@@ -180,6 +268,11 @@ def check() -> tuple[list[str], dict]:
     stats["cells"] = len(modules)
     stats["states"] = counts
     stats["claims_referenced"] = sum(len(m.get("claims") or []) for m in modules)
+    stats["owner_kinds"] = {
+        k: sum(1 for m in modules if (m.get("owner") or {}).get("kind") == k)
+        for k in sorted(OWNER_KINDS)
+    }
+    stats["warnings"] = warnings
     return problems, stats
 
 
@@ -195,12 +288,15 @@ def main() -> int:
         return 2
 
     if args.json:
-        print(json.dumps({"ok": not problems, "problems": problems, "stats": stats},
+        print(json.dumps({"ok": not problems, "problems": problems,
+                          "warnings": stats.get("warnings") or [], "stats": stats},
                          ensure_ascii=False, indent=2))
     else:
         print(f"矩阵 : {MATRIX.relative_to(ROOT)}")
         print(f"格子 : {stats['cells']}（" + " / ".join(
             f"{k}={v}" for k, v in stats["states"].items()) + "）")
+        print("承担 : " + " / ".join(
+            f"{k}={v}" for k, v in stats["owner_kinds"].items()))
         print(f"claim: 引用 {stats['claims_referenced']} 条")
         print("-" * 60)
         if problems:
@@ -208,7 +304,9 @@ def main() -> int:
             for p in problems:
                 print(f"  - {p}")
         else:
-            print("✓ PASS — 格子封闭、证据可解析、不做已留档、口径无矛盾")
+            print("✓ PASS — 格子封闭、证据可解析、不做已留档、每格有承担者、口径无矛盾")
+        for w in stats.get("warnings") or []:
+            print(f"  ! WARN {w}")
     return 1 if problems else 0
 
 

@@ -133,6 +133,27 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - 不可宣称：**7** 条（对外材料出现肯定句式即被 `claim_gate.py` 判红）
 - 连接器缺口：**4** 条（每项带机器判据）
 
+### 7.1 每格谁在做
+
+- 承揽：**13** 格由智能体团队承担、**0** 格由模板资产承担、**8** 格无承担者（需一次接入或明确不做，各带原因）
+- agent 侧工具书：`fd-erp-ledger-mcp/toolkit/`（8 组卡 + `catalog.json`），判据 `scripts/check_toolkit.py`；团队编制见 `fleet-packs/erp/`，判据 `scripts/check_erp_team_coverage.py`
+- 承担者：
+  - 总账 → `erp-payables-fleet`
+  - 应收应付 → `erp-payables-fleet`
+  - 多币种与汇率 → `erp-payables-fleet`
+  - 对账 → `erp-invoice-fleet`
+  - 计费 → `erp-billing-fleet`
+  - 信用额度 → `erp-credit-fleet`
+  - 销售与订单 → `erp-order-to-cash-fleet`
+  - 采购 → `erp-order-to-cash-fleet`
+  - 库存（数量面） → `erp-fact-intake-fleet`
+  - 仓储与物流 → `supply-chain-warehousing-fleet`
+  - 发票 → `erp-invoice-fleet`
+  - 审批流 → `erp-posting-fleet`
+  - 主数据 → `erp-order-to-cash-fleet`
+
+团队按平台既有形状落地（fleet 模板 + 逐岗 preset），装包后在管理面板「智能体团队」的看板/驾驶舱/决策队列/运行台账里直接可见——**不为 ERP 另建专用面板**：并行呈现面会成为第二份团队数据。
+
 ## 8. 待办（结构性）
 
 - [ ] 把 collateral-erp 与 docs/erp 纳入版本控制（当前不在任何 git 仓内）

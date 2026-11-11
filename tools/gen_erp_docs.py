@@ -282,6 +282,28 @@ def render_readme(d: dict) -> str:
     a(f"- 不可宣称：**{len(not_claimable)}** 条（对外材料出现肯定句式即被 `claim_gate.py` 判红）")
     a(f"- 连接器缺口：**{len(d['gaps']['gaps'])}** 条（每项带机器判据）")
     a("")
+    # 覆盖怎么落到人：这是「全覆盖」从口径变成执行的那一步，放在能力段后面。
+    cells = d["coverage"]["modules"]
+    by_kind: Counter[str] = Counter((c.get("owner") or {}).get("kind") for c in cells)
+    fleet_cells = [(c["name_zh"], (c.get("owner") or {}).get("ref"))
+                   for c in cells if (c.get("owner") or {}).get("kind") == "fleet"]
+    a("### 7.1 每格谁在做")
+    a("")
+    a(f"- 承揽：**{by_kind.get('fleet', 0)}** 格由智能体团队承担、"
+      f"**{by_kind.get('template', 0)}** 格由模板资产承担、"
+      f"**{by_kind.get('none', 0)}** 格无承担者（需一次接入或明确不做，各带原因）")
+    a("- agent 侧工具书：`fd-erp-ledger-mcp/toolkit/`（8 组卡 + `catalog.json`），"
+      "判据 `scripts/check_toolkit.py`；团队编制见 `fleet-packs/erp/`，"
+      "判据 `scripts/check_erp_team_coverage.py`")
+    if fleet_cells:
+        a("- 承担者：")
+        for name, ref in fleet_cells:
+            a(f"  - {name} → `{ref}`")
+    a("")
+    a("团队按平台既有形状落地（fleet 模板 + 逐岗 preset），装包后在管理面板"
+      "「智能体团队」的看板/驾驶舱/决策队列/运行台账里直接可见——"
+      "**不为 ERP 另建专用面板**：并行呈现面会成为第二份团队数据。")
+    a("")
     a("## 8. 待办（结构性）")
     a("")
     for t in m["open_tasks"]:

@@ -41,6 +41,9 @@ CROSS_REPO_GATES = [
 #: 工作区里才有意义的外仓闸（不在 fd-erp 内）
 EXTERNAL_GATES = [
     ("对外声明（claim_gate）", ROOT / "fd-erp-vertical-templates" / "scripts" / "claim_gate.py"),
+    # 团队覆盖闸住在 fleet-packs（它读本仓矩阵）。兄弟仓不在位时 SKIP 并写明「未执行」
+    # ——跳过与通过是两件事，前者可审计。
+    ("ERP 团队覆盖", ROOT / "fleet-packs" / "scripts" / "check_erp_team_coverage.py"),
 ]
 
 
