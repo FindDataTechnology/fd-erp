@@ -262,7 +262,24 @@
      "how": "源站与边缘 Caddy 已就绪（md5 已验证），缺雷池站点与证书"
     }
    ],
-   "note": "雷池那条仍需控制台加站点+证书；在此之前用官网子路径提供公开访问，两者指向同一份生成物、同一份源站文件"
+   "note": "雷池那条仍需控制台加站点+证书；在此之前用官网子路径提供公开访问，两者指向同一份生成物、同一份源站文件",
+   "host_configs": {
+    "note": "宿主机 nginx/Caddy 配置不在任何仓里，故在 fd-erp/deploy/host/ 留版本化副本；重铺方法见该目录 README",
+    "files": [
+     {
+      "path": "fd-erp/deploy/host/nginx-erp-subdomain.conf",
+      "target": "fd-deploy:/etc/nginx/sites-enabled/erp.finddatatech.cloud"
+     },
+     {
+      "path": "fd-erp/deploy/host/nginx-www-erp-docs.snippet.conf",
+      "target": "fd-deploy:/etc/nginx/sites-enabled/www.finddatatech.cloud（插在 location / 之前）"
+     },
+     {
+      "path": "fd-erp/deploy/host/caddy-erp-route.conf",
+      "target": "root@103.236.89.212:/etc/caddy/Caddyfile（追加）"
+     }
+    ]
+   }
   }
  },
  "sources": {
