@@ -40,7 +40,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 |---|---|---|---|
 | `kernel_client` | 2 | `fd-erp-vertical-templates/fd_erp_vertical_templates/kernel_client.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/kernel_client.py` | 同一 21 工具面在两仓各写一份（Protocol+Mcp 版 vs InProcess+ReconProxy 版）。已落声明式契约 + 覆盖面闸（声明覆盖 19/11），签名不再靠人肉对齐；真正收敛为单一共享包仍待办（需先解决跨仓依赖的 CI 可见性） |
 | `errors / error_codes` | 3 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/errors.py`<br>`fd-erp-vertical-templates/fd_erp_vertical_templates/errors.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/errors.py` | 错误码封闭集三处各维护，新增码要改三仓。已落跨仓语义契约 + 闸（内核封闭集=镜像、7 个共享码语义逐字一致、仓自有码须声明），仍未收敛为单一常量源 |
-| `observability` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/observability.py` | 指标/结构化日志两套实现，指标名与字段不保证同形。指标已闸（命名式 + 跨服务重名 + 桶集偏差声明）；日志打码已用 12 条向量闸（并修掉 apiKey 漏拦与顶层 list 抛异常）；但 REST 面与模板层仍无结构化日志（已声明为缺口） |
+| `observability` | 3 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/observability.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/logs.py` | 指标/日志两套实现（内核 observability.py + API observability.py/logs.py），指标名不保证同形。指标已闸（命名式 + 跨服务重名 + 桶集偏差声明，api 少 10.0 上界为已声明的偏差）；日志打码是两份代码，由同一组 12 条向量**双跑**钉住同语义（并修掉 apiKey 漏拦与顶层 list 抛异常）；2026-11-11 起 REST 面也有逐请求 JSON 日志（信封同构、默认只记失败）。模板层仍不写日志（审计靠事件档）。仍未收敛为单一实现——两份代码靠闸同语义，不靠共享包 |
 | `config` | 2 | `fd-erp-ledger-mcp/fd_erp_ledger_mcp/config.py`<br>`fd-erp-vertical-api/fd_erp_vertical_api/config.py` | 环境变量名与默认值分散，无单一契约。已落配置契约 + 闸（4 个共享变量默认值逐字一致、命名式、含凭据字段必须 repr=False）；仍未收敛为单一常量源 |
 
 ### 4.1 内核工具面 × 客户端覆盖面（声明式契约）
@@ -70,8 +70,8 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 仓 | 读取的 `ERP_` 变量数 |
 |---|---|
 | `fd-erp-ledger-mcp` | 5 |
-| `fd-erp-vertical-api` | 10 |
-| `fd-erp-vertical-templates` | 4 |
+| `fd-erp-vertical-api` | 11 |
+| `fd-erp-vertical-templates` | 8 |
 
 - 跨仓共享且已登记：**4** 个 —— `ERP_BASE_CURRENCY`、`ERP_CREDIT_RESERVATION_MAX_DAYS`、`ERP_LEDGER_DATABASE_URL`、`ERP_TENANT_ID`
 - 共享变量默认值必须逐字一致（同名不同默认值 = 同一份部署清单在两个进程里两种行为）
@@ -85,7 +85,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 服务 | 结构化日志 | 说明 |
 |---|---|---|
 | `fd-erp-ledger-mcp` | 有 | 9 个事件 |
-| `fd-erp-vertical-api` | **无** | REST 面只有 Prometheus 计数（route/method/status/code），没有逐请求或逐业务事件的日志行。出现 501 / 403 / 额度不足时无法回答「这一单为什么被拒」——只能靠指标聚合。属已知缺口，未在本轮实施（会改部署形态与日志量，需单独裁决）。 |
+| `fd-erp-vertical-api` | 有 | 2 个事件 |
 | `fd-erp-vertical-templates` | **无** | 模板层不写日志（审计靠 JSONL 事件档与内核日志）。事件档本身是业务事实，不等同运行日志。 |
 
 - 打码向量：**12** 条；闸门状态：通过
@@ -114,14 +114,12 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 源站 | `fd-deploy`（124.220.7.175）`/opt/fd/erp/site` | nginx `/etc/nginx/sites-enabled/erp.finddatatech.cloud` |
 | 边缘 | 雷池 WAF（终止 TLS）+ 同机 Caddy（按 Host 分发）（103.236.89.212） | Caddy `/etc/caddy/Caddyfile`，upstream `124.220.7.175:80` |
 
-**公网状态：live（经 www.finddatatech.cloud/erp-docs/）**
+**公网状态：live（子域 https://erp.finddatatech.cloud/ + 官网子路径 /erp-docs/，两处同一份生成物）**
 
 | 公开地址 | 状态 | 形态 | 验收 |
 |---|---|---|---|
 | https://www.finddatatech.cloud/erp-docs/ | **live** | www 站点 nginx 加 location /erp-docs/ → alias /opt/fd/erp/site/（复用 www 现成证书，经腾讯 CDN） | 2026-11-11 curl 200 / 19087 字节 / md5 与生成物一致 |
-| https://erp.finddatatech.cloud/ | **blocked** | 源站与边缘 Caddy 已就绪（md5 已验证），缺雷池站点与证书 | — |
-
-未打通的地址：雷池控制台需新增站点 erp.finddatatech.cloud（端口 80 + 443_ssl，upstream http://172.22.222.1:8080，并申请含该域名的证书）。该机无 OpenAPI token，控制台需登录凭据，故此项不由本仓代办。
+| https://erp.finddatatech.cloud/ | **live** | 雷池站点 35（ports 80+443_ssl）→ 同机 Caddy :8080 → 源站 124.220.7.175:80；证书 66 由 acme.sh 签发并入库，续期走 /data/safeline/renew-and-push.sh | 2026-11-11 curl 200 / 19087 字节 / sha256 2012a9038d33205a 与生成物一致；TLS 指纹 BF:1B:B4:44:…:71:32 与 cert_66.crt 相同；六个邻居站同时回归正常（www 200 / platform 200 / mcp 302 / token 200 / lawbench 401 / facet 200） |
 
 已验证：
 - 源站：curl --resolve erp.finddatatech.cloud:80:124.220.7.175 → 200，正文与生成物 md5 一致（2026-11-11）
@@ -141,9 +139,9 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - [ ] 为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根
 - [ ] kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）
 - [ ] 错误码 / 指标名 / 环境变量收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）
-- [ ] REST 面（fd-erp-vertical-api）无结构化日志：501/403/额度不足只能靠指标聚合，回答不了「这一单为何被拒」——需裁决是否补请求级事件日志
+- [ ] REST 面访问日志已落（默认 errors 模式）：后续若要接日志平台，需评估 all 模式的量
 - [ ] histogram 桶集统一（当前 api 少 10.0 上界，已在契约里声明为偏差）
 - [ ] ERP 独立介绍/文档站的英文版
 - [ ] erp-daily-billing 启用前置：WMS 日终快照只读 provider 接通（open-connector-mt 侧）
-- [ ] erp.finddatatech.cloud 子域仍 blocked：雷池控制台需新增站点（80 + 443_ssl，upstream http://172.22.222.1:8080，含该域名证书）。当前公开访问走 www.finddatatech.cloud/erp-docs/
 - [ ] 备份机（103.236.89.174）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used
+- [ ] 源站 fd-deploy 上 certbot 为 erp 域名留了一张用不上的证书（TLS 在雷池终止），其 timer 仍每 60 天穿到雷池验域；清理需人工确认：sudo certbot delete --cert-name erp.finddatatech.cloud

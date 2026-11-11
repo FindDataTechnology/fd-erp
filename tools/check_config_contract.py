@@ -24,90 +24,127 @@ CONTRACT = ROOT / "fd-erp" / "shared" / "config-contract.json"
 
 CONFIGS = {
     "fd-erp-ledger-mcp": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/config.py",
-    "fd-erp-vertical-api": "fd-erp-vertical-api/fd_erp_vertical_api/config.py",
+    # 目录形态：API 的环境变量不只在 config.py（观测开关在 logs.py），
+    # 只扫 config.py 会让 logs.py 里新加的开关静默漏检（实测漏过 ERP_ACCESS_LOG）。
+    "fd-erp-vertical-api": "fd-erp-vertical-api/fd_erp_vertical_api",
     "fd-erp-vertical-templates": "fd-erp-vertical-templates/fd_erp_vertical_templates",
 }
 
 
-def _parse(rel: str) -> ast.Module:
-    """单文件，或目录（模板层没有独立 config.py：环境变量散布在多个模块）。
+def _parse(rel: str) -> list[ast.Module]:
+    """单文件 → [tree]；目录 → 每个 .py 一棵树（**保留模块边界**）。
 
-    目录形态把每个 .py 的顶层调用都并进同一棵"合成"树：只需 env_defaults 看到的
-    调用节点，不需要忠实还原模块边界。
+    为什么不合并成一棵「合成树」：模块级常量会重名。三个 connector 各自定义
+    `CONNECTION_ENV`（merchant/shopify/tiktok），合并后只留下排序最后那个文件的
+    值——闸就变成「看见一个、漏掉两个」还报通过（实测漏掉
+    ERP_CONNECTION_MERCHANT_ERP / ERP_CONNECTION_SHOPIFY）。
     """
     p = ROOT / rel
     if not p.exists():
         raise SystemExit(f"缺少出处：{rel}")
-    if p.is_dir():
-        merged = ast.Module(body=[], type_ignores=[])
-        for f in sorted(p.rglob("*.py")):
-            if "__pycache__" in f.parts or f.name.startswith("test_"):
-                continue
-            merged.body.extend(ast.parse(f.read_text(encoding="utf-8")).body)
-        return merged
-    return ast.parse(p.read_text(encoding="utf-8"))
+    if not p.is_dir():
+        return [ast.parse(p.read_text(encoding="utf-8"))]
+    trees = []
+    for f in sorted(p.rglob("*.py")):
+        if "__pycache__" in f.parts or f.name.startswith("test_"):
+            continue
+        trees.append(ast.parse(f.read_text(encoding="utf-8")))
+    return trees
 
 
-def env_defaults(tree: ast.Module) -> dict[str, str | None]:
+def env_defaults(trees: list[ast.Module],
+                 conflicts: list[dict] | None = None) -> dict[str, str | None]:
     """取 变量→默认值，覆盖两种读取形态：
 
       _env("VAR", default) / _int_env("VAR", 90)      —— 本仓 config.py 的封装
       os.environ.get("VAR", "7")                      —— 模板层直接读
 
     只认 ERP_ / FD_ 前缀，避免把 PATH 之类的通用变量算进来。
+
+    第一参是**模块级字符串常量**的也认（`os.environ.get(ACCESS_LOG_ENV)`）：
+    否则把变量名收进常量——本来是好事——反而让闸看不见它（API 侧 ERP_ACCESS_LOG
+    就是这样被静默漏检的）。常量按文件各建一份，跨模块重名不会互相覆盖。
+
+    `conflicts` 传入列表时，同仓同名不同默认值会被追加进去。此前是「先到的赢」，
+    第二个读者写什么默认值都不报——实测注入 `os.environ.get("ERP_TENANT_ID",
+    "drifted")` 闸照样绿灯。同一份清单在一个仓里两个默认值，本身就是缺陷。
     """
     out: dict[str, str | None] = {}
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        fn = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
-        if fn not in ("_env", "_int_env", "getenv", "get"):
-            continue
-        # os.environ.get(...) 的 attr 也是 "get"，靠 func.value 是否 environ 区分
-        if fn == "get":
-            base = node.func.value
-            if not (isinstance(base, ast.Attribute) and base.attr == "environ"):
+    for tree in trees:
+        consts: dict[str, str] = {}
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                target, value = node.targets[0], node.value
+            elif isinstance(node, ast.AnnAssign) and node.value is not None:
+                target, value = node.target, node.value
+            else:
                 continue
-        if not node.args or not isinstance(node.args[0], ast.Constant):
-            continue
-        name = node.args[0].value
-        if not isinstance(name, str) or not name.startswith(("ERP_", "FD_")):
-            continue
-        default = None
-        if len(node.args) > 1 and isinstance(node.args[1], ast.Constant):
-            default = str(node.args[1].value)
-        else:
-            for kw in node.keywords:
-                if kw.arg == "default" and isinstance(kw.value, ast.Constant):
-                    default = str(kw.value.value)
-        if name not in out or (out[name] is None and default is not None):
-            out[name] = default
+            if (isinstance(target, ast.Name) and isinstance(value, ast.Constant)
+                    and isinstance(value.value, str)):
+                consts[target.id] = value.value
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+            if fn not in ("_env", "_int_env", "getenv", "get"):
+                continue
+            # os.environ.get(...) 的 attr 也是 "get"，靠 func.value 是否 environ 区分
+            if fn == "get":
+                base = node.func.value
+                if not (isinstance(base, ast.Attribute) and base.attr == "environ"):
+                    continue
+            if not node.args:
+                continue
+            arg = node.args[0]
+            if isinstance(arg, ast.Constant):
+                name = arg.value
+            elif isinstance(arg, ast.Name):
+                name = consts.get(arg.id)
+            else:
+                name = None
+            if not isinstance(name, str) or not name.startswith(("ERP_", "FD_")):
+                continue
+            default = None
+            if len(node.args) > 1 and isinstance(node.args[1], ast.Constant):
+                default = str(node.args[1].value)
+            else:
+                for kw in node.keywords:
+                    if kw.arg == "default" and isinstance(kw.value, ast.Constant):
+                        default = str(kw.value.value)
+            if name not in out or (out[name] is None and default is not None):
+                out[name] = default
+            elif (default is not None and out[name] is not None
+                  and str(default) != str(out[name])):
+                if conflicts is not None:
+                    conflicts.append({"name": name, "first": out[name],
+                                      "second": default})
     return out
 
 
-def settings_fields(tree: ast.Module) -> dict[str, bool]:
+def settings_fields(trees: list[ast.Module]) -> dict[str, bool]:
     """取 Settings 类的字段 → 是否 field(repr=False)。"""
     out: dict[str, bool] = {}
-    for node in tree.body:
-        if not (isinstance(node, ast.ClassDef) and node.name.endswith("Settings")):
-            continue
-        for item in node.body:
-            name = None
-            if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
-                name = item.target.id
-                value = item.value
-            elif isinstance(item, ast.Assign) and isinstance(item.targets[0], ast.Name):
-                name = item.targets[0].id
-                value = item.value
-            if not name or name.startswith("_") or name == "extra":
+    for tree in trees:
+        for node in tree.body:
+            if not (isinstance(node, ast.ClassDef) and node.name.endswith("Settings")):
                 continue
-            protected = False
-            if isinstance(value, ast.Call) and getattr(value.func, "id", None) == "field":
-                for kw in value.keywords:
-                    if kw.arg == "repr" and isinstance(kw.value, ast.Constant):
-                        protected = value
-                        protected = kw.value.value is False
-            out[name] = protected
+            for item in node.body:
+                name = None
+                if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
+                    name = item.target.id
+                    value = item.value
+                elif isinstance(item, ast.Assign) and isinstance(item.targets[0], ast.Name):
+                    name = item.targets[0].id
+                    value = item.value
+                if not name or name.startswith("_") or name == "extra":
+                    continue
+                protected = False
+                if isinstance(value, ast.Call) and getattr(value.func, "id", None) == "field":
+                    for kw in value.keywords:
+                        if kw.arg == "repr" and isinstance(kw.value, ast.Constant):
+                            protected = kw.value.value is False
+                out[name] = protected
     return out
 
 
@@ -117,11 +154,20 @@ def check() -> dict:
     violations: list[dict] = []
     per_repo: dict[str, dict[str, str | None]] = {}
     fields: dict[str, dict[str, bool]] = {}
+    conflicts: list[dict] = []
 
     for repo, rel in CONFIGS.items():
-        tree = _parse(rel)
-        per_repo[repo] = env_defaults(tree)
-        fields[repo] = settings_fields(tree)
+        trees = _parse(rel)
+        per_repo[repo] = env_defaults(trees, conflicts)
+        fields[repo] = settings_fields(trees)
+
+    for c in conflicts:
+        violations.append({
+            "code": "ENV_DEFAULT_CONFLICT",
+            "message": (f"{c['name']} 在同一仓里有两个默认值 "
+                        f"({c['first']!r} 与 {c['second']!r})：两个读者对「没配时用哪个」"
+                        f"理解不同"),
+        })
 
     # ① 命名式
     for repo, vars_ in per_repo.items():

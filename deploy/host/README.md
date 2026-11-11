@@ -9,7 +9,10 @@
 | `nginx-www-erp-docs.snippet.conf` | 插进 `fd-deploy:/etc/nginx/sites-enabled/www.finddatatech.cloud` 的 `location / {` 之前 | `www.finddatatech.cloud/erp-docs/`（复用 www 证书） |
 | `caddy-erp-route.conf` | 追加到 `root@103.236.89.212:/etc/caddy/Caddyfile` | 雷池同机 Caddy 按 Host 转发到源站 124.220.7.175:80；**含 acme-challenge 处理器，别删** |
 
-## 边缘 TLS（雷池站点 35 / 证书 65）
+## 边缘 TLS（雷池站点 35 / 证书 66）
+
+详细行值、续期链路与回滚见 **[safeline-erp-site.md](safeline-erp-site.md)**。这里只留最
+容易踩坏的三条。
 
 `erp.finddatatech.cloud` 的证书由雷池终止，链条是：acme.sh（HTTP-01，webroot
 `/var/www/acme`）→ 上传到雷池（拿到 cert id）→ 绑给站点 35。**站点 35 的端口必须是
@@ -21,9 +24,10 @@
 | 项 | 值 |
 |---|---|
 | 雷池站点 | id **35**，`server_names=["erp.finddatatech.cloud"]`，`ports=["80","443_ssl"]`，upstream `http://172.22.222.1:8080` |
-| 证书 | id **65**，`CN=erp.finddatatech.cloud`，Let's Encrypt，有效期至 2027-02-09 |
-| 私钥/全链 | `/root/.acme.sh/erp.finddatatech.cloud_ecc/` |
+| 证书 | id **66**，`CN=erp.finddatatech.cloud`，Let's Encrypt（YE2），有效期至 2027-02-09；线上指纹 `BF:1B:B4:44:…:71:32` 与 `cert_66.crt` 相同 |
+| 私钥/全链 | `/root/.acme.sh/erp.finddatatech.cloud_ecc/`（续期走 `/data/safeline/renew-and-push.sh` → `push-cert.py`：每次上传新证书再 PUT 站点，**不写死 cert id**，所以「现在绑 66」不影响续期） |
 | 续期 | 已加入 `/data/safeline/renew-and-push.sh` 的 `CERTS` 数组，`--cron` 到期自动重签+推送 |
+| 孤儿行 | 证书 **65**（同日 18:20 早一次上传）已不被任何站点引用，下次推送由 `push-cert.py` 清理段删除；**不要手工绑回** |
 
 **acme.sh 的两个硬要求**（少一个就签不出来）：
 

@@ -11,6 +11,7 @@
   "fd-erp-ledger-mcp": {
    "structured_logs": true,
    "emitter": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/observability.py",
+   "redaction_vectors": true,
    "events": [
     "tool_call", "proposal_submitted", "proposal_confirmed", "proposal_rejected",
     "fees_billed", "billing_failed", "recon_task_finished",
@@ -18,8 +19,13 @@
    ]
   },
   "fd-erp-vertical-api": {
-   "structured_logs": false,
-   "gap": "REST 面只有 Prometheus 计数（route/method/status/code），没有逐请求或逐业务事件的日志行。出现 501 / 403 / 额度不足时无法回答「这一单为什么被拒」——只能靠指标聚合。属已知缺口，未在本轮实施（会改部署形态与日志量，需单独裁决）。"
+   "structured_logs": true,
+   "emitter": "fd-erp-vertical-api/fd_erp_vertical_api/logs.py",
+   "redaction_vectors": true,
+   "events": ["http_request", "access_log_mode_invalid"],
+   "mode": "默认 errors：只写 status>=400 或带业务码的响应；ERP_ACCESS_LOG=all 逐请求全量、off 关闭。正常下单零日志行（探针每 10s 一次，不能写盘）。",
+   "fields": ["request_id", "method", "route", "status", "dur_ms", "code", "hint", "detail_keys", "grant", "tenant_hash"],
+   "note": "route 记路由模板不记原始 URL；code 取自封闭错误码目录；detail 只记键名（值可能含客户 id/金额/单号）；响应头 X-Request-Id 原样回传，客户报障时可凭号定位到那一行。业务码在错误发生处盖到 request.state（_note_error），中间件不解析响应体。"
   },
   "fd-erp-vertical-templates": {
    "structured_logs": false,
