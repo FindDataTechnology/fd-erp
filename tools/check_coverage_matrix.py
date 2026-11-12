@@ -40,6 +40,10 @@ TOOL_SURFACE = ROOT / "fd-erp-ledger-mcp" / "tool-surface.json"
 VERTICAL_API = ROOT / "fd-erp-vertical-api" / "fd_erp_vertical_api"
 CLAIMS = ROOT / "fd-erp-vertical-templates" / "claims" / "claims.json"
 CONNECTOR_STATUS = ROOT / "fd-erp-vertical-templates" / "connector-status.json"
+#: API 侧如实 501 的占位端点清单（AST 派生）。可用格的端点证据**不得**落在这些端点上：
+#: 「源码里有这个路由」只证明那行存在，而占位实现是 raise NOT_IMPLEMENTED——
+#: 那是诚实的挂账，不是交付。用占位端点当证据，等于拿欠条当收据。
+PLANNED_SURFACES = ROOT / "fd-erp-vertical-api" / "planned-surfaces.json"
 
 VALID_STATES = {"delivered", "template_configured", "needs_onboarding", "not_doing"}
 #: 承担者三形态（spec erp-board-coverage「全覆盖指决策空间全覆盖」）。
@@ -146,11 +150,22 @@ def _api_sources() -> str:
                      for p in VERTICAL_API.rglob("*.py"))
 
 
+def _placeholder_endpoints() -> set[tuple[str, str]] | None:
+    """API 侧如实 501 的端点集合；清单不在位返回 None（不假装核过）。"""
+    try:
+        body = json.loads(PLANNED_SURFACES.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return {(str(e.get("method") or "").upper(), str(e.get("path") or ""))
+            for e in body.get("endpoints") or []}
+
+
 def check() -> tuple[list[str], dict]:
     matrix = _load(MATRIX, "覆盖矩阵")
     claims = _load(CLAIMS, "能力宣称")
     tools = _tool_names()
     api_blob = _api_sources()
+    placeholders = _placeholder_endpoints()
 
     problems: list[str] = []
     warnings: list[str] = []
@@ -211,6 +226,14 @@ def check() -> tuple[list[str], dict]:
                     # 路由模板用 {x} 占位，源码里也是同样的字面量
                     if path not in api_blob:
                         problems.append(f"[端点悬空] {mid}: 源码里没有路由 {path}")
+                    elif (placeholders is not None
+                          and (match.group(1).upper(), path) in placeholders):
+                        # 路由在、能力不在：占位实现 raise NOT_IMPLEMENTED。
+                        # 这比「路由不存在」更隐蔽——闸能解析到，人也会以为有。
+                        problems.append(
+                            f"[证据是占位端点] {mid}: {ref} 是如实 501 的占位实现"
+                            "（planned-surfaces.json）——请换真交付证据，"
+                            "或把该格降为 needs_onboarding 并写 blocker")
             elif kind == "file":
                 p = ROOT / ref
                 if not p.is_file():

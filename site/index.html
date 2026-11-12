@@ -308,16 +308,16 @@ a{border:0}
 </tbody></table></section>
 <section id="matrix"><h2>子模块全覆盖（21 格，四态封闭）</h2>
 <div class="matrix">
-<div class="bar" role="img" aria-label="已实现 9 格、模板可配 4 格、需一次接入 4 格、明确不做 4 格">
-<span class="s1" style="width:42.857%"></span>
+<div class="bar" role="img" aria-label="已实现 8 格、模板可配 4 格、需一次接入 5 格、明确不做 4 格">
+<span class="s1" style="width:38.095%"></span>
 <span class="s2" style="width:19.048%"></span>
-<span class="s3" style="width:19.048%"></span>
+<span class="s3" style="width:23.810%"></span>
 <span class="s4" style="width:19.048%"></span>
 </div>
 <ul class="legend">
-<li><i class="s1"></i>已实现 <b>9</b></li>
+<li><i class="s1"></i>已实现 <b>8</b></li>
 <li><i class="s2"></i>模板可配 <b>4</b></li>
-<li><i class="s3"></i>需一次接入 <b>4</b></li>
+<li><i class="s3"></i>需一次接入 <b>5</b></li>
 <li><i class="s4"></i>明确不做 <b>4</b></li>
 </ul></div>
 <table><thead><tr><th scope="col">子模块</th><th scope="col">状态</th><th scope="col">边界 / 需客户提供</th></tr></thead><tbody>
@@ -331,7 +331,7 @@ a{border:0}
 <tr><td>采购</td><td><code>template_configured</code><br><span class="muted">模板可配</span></td><td class="muted">采购单与到货通知在 SP 供应商面（实现 7/13，其余如实 501）。到货落 goods_received 事件后可投影库存并可过账。</td></tr>
 <tr><td>库存（数量面）</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">数量面由事件 + 对象投影回答：数量/单位/批次/序列号/仓库/在途均可表达，余额可全量重算并带水位；REST 面经 `GET /sp/inventory` 只读暴露该余额（按供货范围收口，不是跨供应商全表）。上游 WMS 读取仍需一次接入（provider 缺口另记，不在本矩阵）。</td></tr>
 <tr><td>仓储与物流</td><td><code>template_configured</code><br><span class="muted">模板可配</span></td><td class="muted">运单、月台预约、提货打卡、签收上报在 CP 承运商面（实现 8/12，其余如实 501）。仓储作业（库位/拣货/盘点路径）不在内核。</td></tr>
-<tr><td>发票</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">只记发票类事件（invoice_requested）并参与对账；票据本体由客户既有合规渠道处理。不自研开票、不代开票据——这是边界，不是缺口。</td></tr>
+<tr><td>发票</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">事件层已注册 invoice_requested（可经内核工具写入并参与对账），但产品侧开票申请面无实现——开票申请/审核/票据跟踪目前是如实 501。票据本体仍由客户既有合规渠道处理：不自研开票、不代开票据，这是边界不是缺口；缺的是把客户已有开票流程接进来的那条通道。<br><span class="muted">需客户提供：需要一条开票通道：金蝶 provider 补开票直连 action（或客户线下开票回执的录入面）＋后台审核车道；到位后本格转 delivered，事件类型与对账口径无需返工</span></td></tr>
 <tr><td>税务申报</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不自研税务申报。账内可记录发票类事件并参与对账，申报本体走客户既有渠道。<br><span class="muted">理由：税务申报需与税局/电子发票合规路径绑定，自研即触碰代开与申报责任；在中国电子发票合规路径确定前不作为能力提供（复核 2027-06-30）</span></td></tr>
 <tr><td>资金与出纳</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">只产出对账结果与核对指令；不提供资金池、代收代付、分账执行。资金归集与分账走客户自选的持牌通道。<br><span class="muted">理由：二清红线：平台不得触碰资金归集与分账执行（复核 2027-06-30）</span></td></tr>
 <tr><td>生产制造</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不提供 BOM、工艺路线、工单、MRP 运算。当前客群（跨境电商/餐饮连锁/供应链）无此诉求。<br><span class="muted">理由：生产制造需要 BOM/工艺路线/产能一整套对象与行业知识，且与当前三个行业模板的客群不重叠；无锚点客户前不做（复核 2027-06-30）</span></td></tr>

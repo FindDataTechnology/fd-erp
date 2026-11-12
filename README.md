@@ -135,7 +135,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 ### 7.1 每格谁在做
 
-- 承揽：**13** 格由智能体团队承担、**0** 格由模板资产承担、**8** 格无承担者（需一次接入或明确不做，各带原因）
+- 承揽：**12** 格由智能体团队承担、**0** 格由模板资产承担、**9** 格无承担者（需一次接入或明确不做，各带原因）
 - agent 侧工具书：`fd-erp-ledger-mcp/toolkit/`（8 组卡 + `catalog.json`），判据 `scripts/check_toolkit.py`；团队编制见 `fleet-packs/erp/`，判据 `scripts/check_erp_team_coverage.py`
 - 承担者：
   - 总账 → `erp-payables-fleet`
@@ -148,7 +148,6 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
   - 采购 → `erp-order-to-cash-fleet`
   - 库存（数量面） → `erp-fact-intake-fleet`
   - 仓储与物流 → `supply-chain-warehousing-fleet`
-  - 发票 → `erp-invoice-fleet`
   - 审批流 → `erp-posting-fleet`
   - 主数据 → `erp-order-to-cash-fleet`
 
