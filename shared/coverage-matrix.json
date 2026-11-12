@@ -368,7 +368,41 @@
         }
       ],
       "claims": [],
-      "blocker": "开票执行通道：金蝶 provider 补开票直连 action（或客户线下开票回执的录入面），以及运营侧审核页。到位后本格转 delivered；申请面、事件类型与对账口径无需返工"
+      "blocker": "开票执行通道：金蝶 provider 补开票直连 action（或客户线下开票回执的录入面），以及运营侧审核页。到位后本格转 delivered；申请面、事件类型与对账口径无需返工",
+      "intake": {
+        "kind": "connector",
+        "doc": "fd-erp-vertical-templates/docs/connector-onboarding-supply-chain.md",
+        "note": "申请面已实现（拟稿车道 + 确认门）；缺的是「已开票」的执行与回写通道。",
+        "questions": [
+          {
+            "id": "invoice_channel",
+            "ask": "开票执行通道",
+            "why": "票据本体不在平台出，通道决定我们只记申请还是能回写票号",
+            "options": [
+              {
+                "value": "kingdee-action",
+                "zh": "金蝶开票直连 action",
+                "impact": "可自动开票并回写票号；需金蝶 provider 补 action 与凭据"
+              },
+              {
+                "value": "customer-offline-receipt",
+                "zh": "客户线下开票回执录入",
+                "impact": "平台只登记回执（票号/金额/日期）；不代开票，控风险最低"
+              },
+              {
+                "value": "manual-upload",
+                "zh": "人工上传票据影像",
+                "impact": "需要中台文件服务上传契约；影像仅存引用"
+              }
+            ]
+          }
+        ],
+        "inputs": [],
+        "derived": [
+          "connector:kingdee/invoice-issue",
+          "schema:invoice-receipt"
+        ]
+      }
     },
     {
       "id": "tax",
@@ -440,7 +474,120 @@
         }
       ],
       "claims": [],
-      "blocker": "需要客户确认成本方法口径（加权/先进先出/批次实际）与首个真实账期的期初库存；口径不同则过账规则不同"
+      "blocker": "需要客户确认成本方法口径（加权/先进先出/批次实际）与首个真实账期的期初库存；口径不同则过账规则不同",
+      "intake": {
+        "kind": "customer-decision",
+        "note": "成本方法与分摊口径决定过账规则与结转分录；不先定，做出来的成本表与客户账上对不上。",
+        "questions": [
+          {
+            "id": "cost_method",
+            "ask": "成本计价方法",
+            "why": "同一批出入库在三种方法下的单位成本与结存金额都不同，过账规则必须二选一",
+            "options": [
+              {
+                "value": "weighted-average",
+                "zh": "移动加权平均",
+                "impact": "每笔入库后重算单位成本；结存与出库成本按当期平均，差异最小但不反映批次"
+              },
+              {
+                "value": "fifo",
+                "zh": "先进先出",
+                "impact": "出库按最早批次成本结转；涨价期毛利偏低，需要批次/入库时间可追"
+              },
+              {
+                "value": "batch-actual",
+                "zh": "批次实际成本",
+                "impact": "按批次归集实际成本；要求采购与生产按批次绑定，口径最准但录入最重"
+              }
+            ]
+          },
+          {
+            "id": "overhead_allocation",
+            "ask": "制造费用分摊基准",
+            "why": "分摊基准不同则单位成本不同；不分摊会把间接费用留在期间费用里",
+            "options": [
+              {
+                "value": "labor-hours",
+                "zh": "按直接人工工时",
+                "impact": "人工密集产线合理；需工时采集口径"
+              },
+              {
+                "value": "machine-hours",
+                "zh": "按机器工时",
+                "impact": "设备密集产线合理；需设备计量"
+              },
+              {
+                "value": "revenue-share",
+                "zh": "按营收占比",
+                "impact": "无需采集工时，但成本会随售价波动，适合多品类混产"
+              },
+              {
+                "value": "direct-only",
+                "zh": "只记直接成本（不分摊）",
+                "impact": "单位成本只含材料与直接人工；间接费用全部期间化，毛利口径与本量利分析不同"
+              }
+            ]
+          },
+          {
+            "id": "close_grain",
+            "ask": "成本结账粒度",
+            "why": "结账粒度决定成本计算与差异结转的频率",
+            "options": [
+              {
+                "value": "monthly",
+                "zh": "月结",
+                "impact": "标准做法；月内出库按暂估价、月末统一结转差异"
+              },
+              {
+                "value": "weekly",
+                "zh": "周结",
+                "impact": "反馈快，但每周期末要跑一次重算，对账工作量成倍"
+              }
+            ]
+          },
+          {
+            "id": "variance_policy",
+            "ask": "成本差异处理",
+            "why": "标准成本与实际成本的差异往哪去，直接影响当期毛利与存货金额",
+            "options": [
+              {
+                "value": "to-cogs",
+                "zh": "差异当月进营业成本",
+                "impact": "毛利波动直接体现；存货按标准成本列示"
+              },
+              {
+                "value": "capitalize",
+                "zh": "差异按比例资本化进存货",
+                "impact": "存货金额更接近实际成本；期末要做差异分摊"
+              },
+              {
+                "value": "track-only",
+                "zh": "只跟踪不结转",
+                "impact": "差异只进分析报表，不进分录；账实差异会长期留在账上"
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "id": "opening_inventory",
+            "ask": "首个真实账期的期初库存",
+            "format": "CSV：sku,quantity,unit,unit_cost,as_of",
+            "required": true
+          },
+          {
+            "id": "bom_routing",
+            "ask": "物料清单与工艺路线（走制造费用分摊时必填）",
+            "format": "CSV：parent_sku,component_sku,quantity,routing_step",
+            "required": false
+          }
+        ],
+        "derived": [
+          "posting-rule:cost-accounting/<cost_method>",
+          "projection:inventory-unit-cost",
+          "report:cost-variance"
+        ]
+      }
     },
     {
       "id": "budget",
@@ -454,7 +601,98 @@
       "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力；缺的是客户预算科目体系与口径。",
       "evidence": [],
       "claims": [],
-      "blocker": "需要客户的预算科目体系与考核维度（部门/项目/渠道）；无口径时做出来的是空表"
+      "blocker": "需要客户的预算科目体系与考核维度（部门/项目/渠道）；无口径时做出来的是空表",
+      "intake": {
+        "kind": "customer-decision",
+        "note": "预算的维度与控制方式决定表结构与拦截规则；没有口径时做出来的是空表。",
+        "questions": [
+          {
+            "id": "budget_dimension",
+            "ask": "预算编制维度",
+            "why": "维度决定预算表的键与超支判定口径",
+            "options": [
+              {
+                "value": "department",
+                "zh": "按部门",
+                "impact": "与组织架构对齐；跨部门项目需再拆一层"
+              },
+              {
+                "value": "project",
+                "zh": "按项目",
+                "impact": "适合项目型业务；常规运营费用难归集"
+              },
+              {
+                "value": "channel",
+                "zh": "按渠道",
+                "impact": "适合销售费用；与费用科目口径可能不一致"
+              },
+              {
+                "value": "cost-center",
+                "zh": "按成本中心",
+                "impact": "与成本核算共用维度，最省重复录入"
+              }
+            ]
+          },
+          {
+            "id": "period_grain",
+            "ask": "预算期间粒度",
+            "why": "粒度决定预算是按年摊到月还是按季考核",
+            "options": [
+              {
+                "value": "monthly",
+                "zh": "月度",
+                "impact": "按月分解，考核细但编制量大"
+              },
+              {
+                "value": "quarterly",
+                "zh": "季度",
+                "impact": "季度考核，月内可调剂；月度对比报表需插值"
+              }
+            ]
+          },
+          {
+            "id": "control_mode",
+            "ask": "预算控制方式",
+            "why": "控制方式决定超预算时系统是拦、是放行标记、还是事后审计",
+            "options": [
+              {
+                "value": "hard-block",
+                "zh": "硬拦：超预算拒绝提交",
+                "impact": "最严；需先给足预算，否则正常业务会被卡住"
+              },
+              {
+                "value": "warn-only",
+                "zh": "警告：放行但标记超支",
+                "impact": "业务不中断；超支进例外清单，靠人跟进"
+              },
+              {
+                "value": "post-audit",
+                "zh": "事后审计：不拦不标，仅出差异报表",
+                "impact": "零阻力；控制力最弱"
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "id": "account_scope",
+            "ask": "纳入预算的科目清单",
+            "format": "CSV：account_code,name,is_revenue（或引用内核通用科目表）",
+            "required": true
+          },
+          {
+            "id": "baseline",
+            "ask": "预算基数（上期实际或上期预算 + 调整口径）",
+            "format": "CSV：dimension_key,account_code,period,baseline_amount",
+            "required": true
+          }
+        ],
+        "derived": [
+          "schema:budget-dimensions",
+          "rule:budget-control/<control_mode>",
+          "report:budget-vs-actual"
+        ]
+      }
     },
     {
       "id": "fixed-assets",
@@ -468,7 +706,76 @@
       "boundary": "折旧是时间驱动事件，事件内核可承载；折旧政策（年限/残值/方法）只能由客户给。",
       "evidence": [],
       "claims": [],
-      "blocker": "需要客户固定资产台账与折旧政策；且需确认是否走客户既有资产系统（若是则本板块只读对账）"
+      "blocker": "需要客户固定资产台账与折旧政策；且需确认是否走客户既有资产系统（若是则本板块只读对账）",
+      "intake": {
+        "kind": "customer-decision",
+        "note": "折旧方法与台账归属决定这块是自建台账还是只读对账；也决定要不要碰客户的资产系统。",
+        "questions": [
+          {
+            "id": "depreciation_method",
+            "ask": "折旧方法",
+            "why": "方法不同则每期折旧额与净值不同，过账规则随之不同",
+            "options": [
+              {
+                "value": "straight-line",
+                "zh": "直线法",
+                "impact": "按使用月数均摊；最通用，税务口径常见"
+              },
+              {
+                "value": "double-declining",
+                "zh": "双倍余额递减",
+                "impact": "前期折旧高；需处理最后两年改直线的切换"
+              },
+              {
+                "value": "units-of-production",
+                "zh": "工作量法",
+                "impact": "按实际产量折旧；需采集产量口径"
+              }
+            ]
+          },
+          {
+            "id": "ledger_owner",
+            "ask": "资产台账归属",
+            "why": "台账在谁手里决定我们是自建、只读对账还是回写客户系统",
+            "options": [
+              {
+                "value": "platform",
+                "zh": "平台管台账与折旧",
+                "impact": "本板块自建资产主数据与折旧计划；客户系统不参与"
+              },
+              {
+                "value": "customer-readonly",
+                "zh": "客户系统只读对账",
+                "impact": "平台只读客户资产系统并做核对；折旧由客户系统出"
+              },
+              {
+                "value": "customer-writeback",
+                "zh": "客户系统回写",
+                "impact": "平台算、回写客户系统；需要客户系统开放写接口与回滚口径"
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "id": "asset_register",
+            "ask": "固定资产台账",
+            "format": "CSV：asset_id,name,category,acquired_on,cost,currency,salvage,useful_life_months",
+            "required": true
+          },
+          {
+            "id": "capitalization_threshold",
+            "ask": "资本化门槛",
+            "format": "单个数值 + 币种（如 5000 CNY）",
+            "required": true
+          }
+        ],
+        "derived": [
+          "posting-rule:fixed-assets/depreciation-<depreciation_method>",
+          "schema:asset-register",
+          "report:depreciation-schedule"
+        ]
+      }
     },
     {
       "id": "consolidation",
@@ -490,7 +797,93 @@
       "claims": [
         "tenant.isolation"
       ],
-      "blocker": "需要「多主体归属」口径与内部交易抵销规则；现内核一进程一租户，多主体需先定主体模型"
+      "blocker": "需要「多主体归属」口径与内部交易抵销规则；现内核一进程一租户，多主体需先定主体模型",
+      "intake": {
+        "kind": "customer-decision",
+        "note": "合并报表的前提是主体模型；内核一进程一租户，多主体要先定模型才谈抵销。",
+        "questions": [
+          {
+            "id": "entity_model",
+            "ask": "主体模型",
+            "why": "单租户多主体与一主体一租户在账套隔离、权限与对账口径上完全不同",
+            "options": [
+              {
+                "value": "single-tenant-multi-entity",
+                "zh": "单租户多主体",
+                "impact": "一个账套内用 entity 维度区分；合并取数直接，但需防串主体记账"
+              },
+              {
+                "value": "tenant-per-entity",
+                "zh": "一主体一租户",
+                "impact": "隔离最强；合并要跨租户取数，当前内核按租户隔离，需另开只读通道"
+              }
+            ]
+          },
+          {
+            "id": "elimination_scope",
+            "ask": "内部交易抵销范围",
+            "why": "抵销范围决定要做多少张抵销分录与对账工作",
+            "options": [
+              {
+                "value": "intercompany-ar-ap",
+                "zh": "仅内部往来",
+                "impact": "抵销应收应付与内部收入成本；最常见的最小集"
+              },
+              {
+                "value": "plus-inventory-profit",
+                "zh": "往来 + 存货未实现利润",
+                "impact": "多做存货加价抵销；需内部毛利数据"
+              },
+              {
+                "value": "plus-equity",
+                "zh": "往来 + 存货 + 权益",
+                "impact": "含长期股权投资与少数股东权益；接近完整合并"
+              }
+            ]
+          },
+          {
+            "id": "fx_translation",
+            "ask": "外币报表折算",
+            "why": "折算方法决定折算差额进哪里",
+            "options": [
+              {
+                "value": "closing-rate",
+                "zh": "期末汇率法（资产负债表按期末、利润表按平均）",
+                "impact": "差额进其他综合收益；需按期提供汇率"
+              },
+              {
+                "value": "temporal",
+                "zh": "时态法",
+                "impact": "货币性项目按期末、非货币性按历史；差额进当期损益"
+              },
+              {
+                "value": "none",
+                "zh": "不做折算（单一币种集团）",
+                "impact": "不产生折算差额；跨币种时会算错总额"
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "id": "entity_list",
+            "ask": "主体清单",
+            "format": "CSV：entity_id,name,currency,parent_id,ownership_pct",
+            "required": true
+          },
+          {
+            "id": "intercompany_matrix",
+            "ask": "内部交易矩阵（抵销依据）",
+            "format": "CSV：from_entity,to_entity,account_code,amount,currency,period",
+            "required": true
+          }
+        ],
+        "derived": [
+          "schema:entity-model",
+          "rule:elimination/<elimination_scope>",
+          "report:consolidated-balance-sheet"
+        ]
+      }
     },
     {
       "id": "approval-workflow",

@@ -160,6 +160,115 @@ def _placeholder_endpoints() -> set[tuple[str, str]] | None:
             for e in body.get("endpoints") or []}
 
 
+#: 接入表产物类型封闭集（`derived` 条目的前缀）。新增类型先改这里。
+#: `posting-rule` 是「事件 → 分录」的过账规则；`rule` 是口径/校验规则（预算控制、抵销规则）
+#: ——两者不是一类东西，混用会让下游找不到该把规则装进哪个引擎。
+INTAKE_DERIVED_KINDS = frozenset(
+    {"posting-rule", "rule", "schema", "projection", "report", "connector"})
+#: 接入表种类：客户口径决策 / 外部通道接入。
+INTAKE_KINDS = frozenset({"customer-decision", "connector"})
+
+
+def _check_intake(m: dict, state: str, problems: list[str]) -> None:
+    """接入表形状与质量（needs_onboarding 专用）。
+
+    为什么需要：`blocker` 那句散文说明「等什么」，但等的东西没有形状——客户来了仍在白纸上
+    问、答案也没有可验的边界。接入表把它拆成「枚举选择 + 材料字段 + 产物清单」，让「待接入」
+    是一个能填、能验的表，而不是死胡同。
+    """
+    mid = m.get("id")
+    if state != "needs_onboarding":
+        if m.get("intake"):
+            problems.append(
+                f"[多余接入表] {mid}: 只有 needs_onboarding 格需要 intake（当前 state={state}）")
+        return
+    intake = m.get("intake")
+    if not isinstance(intake, dict) or not intake:
+        problems.append(
+            f"[缺接入表] {mid}: needs_onboarding 必须写 intake"
+            "（kind/questions/inputs/derived）——只有 blocker 散文等于把「等什么」留在口头上")
+        return
+    kind = str(intake.get("kind") or "")
+    if kind not in INTAKE_KINDS:
+        problems.append(
+            f"[接入表种类] {mid}: intake.kind={kind!r} 须为 {'/'.join(sorted(INTAKE_KINDS))}")
+
+    questions = intake.get("questions")
+    if not isinstance(questions, list) or not questions:
+        problems.append(f"[接入表无问项] {mid}: intake.questions 须为非空数组")
+        questions = []
+    for i, q in enumerate(questions):
+        if not isinstance(q, dict):
+            problems.append(f"[接入表问项] {mid}: questions[{i}] 须为对象")
+            continue
+        for field in ("id", "ask", "why"):
+            if not str(q.get(field) or "").strip():
+                problems.append(f"[接入表问项] {mid}: questions[{i}].{field} 必填")
+        options = q.get("options") if isinstance(q.get("options"), list) else []
+        other = bool(q.get("other_allowed"))
+        if len(options) < 2 and not other:
+            problems.append(
+                f"[接入表假选择] {mid}/{q.get('id')}: options 只有 {len(options)} 个"
+                "——只有一个选项的「选择」等于指定；若确实无法枚举，置 other_allowed=true"
+                " 并写明补什么材料")
+        if other and not str(q.get("other_note") or "").strip():
+            problems.append(
+                f"[接入表其它项] {mid}/{q.get('id')}: other_allowed=true 时必须写 other_note"
+                "（选「其它」要补什么材料）")
+        seen: list[str] = []
+        for j, opt in enumerate(options):
+            if not isinstance(opt, dict):
+                problems.append(f"[接入表选项] {mid}/{q.get('id')}: options[{j}] 须为对象")
+                continue
+            for field in ("value", "zh", "impact"):
+                if not str(opt.get(field) or "").strip():
+                    problems.append(
+                        f"[接入表选项] {mid}/{q.get('id')}: options[{j}].{field} 必填"
+                        "（impact 要写清该候选对过账/派生口径的影响）")
+            val = str(opt.get("value") or "")
+            if val in seen:
+                problems.append(f"[接入表选项重复] {mid}/{q.get('id')}: value {val!r} 重复")
+            seen.append(val)
+
+    if "inputs" not in intake:
+        problems.append(
+            f"[接入表缺材料段] {mid}: intake.inputs 键必须存在（无材料写 []）"
+            "——缺席与空数组必须可区分")
+    inputs = intake.get("inputs") if isinstance(intake.get("inputs"), list) else []
+    for i, item in enumerate(inputs):
+        if not isinstance(item, dict):
+            problems.append(f"[接入表材料] {mid}: inputs[{i}] 须为对象")
+            continue
+        for field in ("id", "ask", "format"):
+            if not str(item.get(field) or "").strip():
+                problems.append(f"[接入表材料] {mid}: inputs[{i}].{field} 必填")
+
+    derived = intake.get("derived")
+    if not isinstance(derived, list) or not derived:
+        problems.append(f"[接入表无产物] {mid}: intake.derived 须为非空数组"
+                        "（答案到位后生成什么，必须写清楚）")
+        derived = []
+    for i, item in enumerate(derived):
+        text = str(item or "")
+        if ":" not in text:
+            problems.append(
+                f"[接入表产物形状] {mid}: derived[{i}]={text!r} 缺类型前缀"
+                "（写成 `类型:目标`，如 posting-rule:cost-accounting/weighted-average）")
+            continue
+        head = text.split(":", 1)[0]
+        if head not in INTAKE_DERIVED_KINDS:
+            problems.append(
+                f"[接入表产物类型] {mid}: derived[{i}] 类型 {head!r} 不在封闭集 "
+                f"{sorted(INTAKE_DERIVED_KINDS)}")
+
+    if kind == "connector":
+        doc = str(intake.get("doc") or "")
+        if not doc.strip():
+            problems.append(f"[接入表缺文档] {mid}: kind=connector 必须写 intake.doc")
+        elif not doc.endswith(".md"):
+            problems.append(f"[接入表缺文档] {mid}: intake.doc 须指向 .md 接入文档，实为 {doc!r}")
+
+
 def check() -> tuple[list[str], dict]:
     matrix = _load(MATRIX, "覆盖矩阵")
     claims = _load(CLAIMS, "能力宣称")
@@ -254,6 +363,8 @@ def check() -> tuple[list[str], dict]:
         # 5) needs_onboarding 说清缺什么
         if state == "needs_onboarding" and not (m.get("blocker") or "").strip():
             problems.append(f"[待接入无阻塞项] {mid}: needs_onboarding 必须写 blocker")
+        # 5b) 而且要说成可填的表：枚举选择 + 材料字段 + 产物清单
+        _check_intake(m, state, problems)
 
         # 4) 不做不得被宣称（引用的 claim 不得是「肯定式已交付」）
         for cid in m.get("claims") or []:
