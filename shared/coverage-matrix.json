@@ -86,7 +86,7 @@
       "name_zh": "应收应付",
       "name_en": "AR/AP",
       "state": "delivered",
-      "boundary": "科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。**账龄已交付**（change: add-receivable-aging）：按客户（`customer` 分析维度）出账龄表，口径为 FIFO 核销（收款先冲最早未核销应收，返回里明说未做逐票匹配），分桶 0-30/31-60/61-90/91+，未标客户单列 `unattributed`，多收报 `creditBalance`（不出负账龄），各桶合计 − 预收必须等于科目净余额。**未做**：坏账计提（需客户政策）与催收流程（需渠道）。",
+      "boundary": "科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。**应收账龄已交付**（change: add-receivable-aging）与**应付账龄已交付**（change: add-payable-aging）：两侧**共用同一份** FIFO 核销与分桶实现，只把「开放项方向」参数化（应收借方 / 应付贷方），默认科目 1100 / 2000，分桶 0-30/31-60/61-90/91+，未标维度单列 `unattributed`；多收报 `creditBalance`、多付报 `debitBalance`（都不出负账龄），各桶合计 − 多收/多付必须等于科目净额（`consistent`，不等就如实报不调桶）。口径明说未做逐票匹配。**未做**：坏账计提（需客户政策）与催收流程（需渠道）。",
       "evidence": [
         {
           "kind": "file",
@@ -100,13 +100,13 @@
         {
           "kind": "file",
           "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/aging.py",
-          "contains": "class ReceivableAging"
+          "contains": "class PayableAging"
         }
       ],
       "claims": [
         "ledger.double-entry"
       ],
-      "blocker": "科目级应收应付已交付，**账龄分析已交付**（按客户维度、FIFO 核销口径）；未做的是坏账计提与催收流程——前者要客户的坏账政策（比例/账龄阈值/审批），后者要催收渠道（短信/企微/电话记录），都不是引擎能猜的。"
+      "blocker": "科目级应收应付已交付，**应收与应付账龄都已交付**（同一套核销分桶，开放方向参数化，不是镜像复制）；未做的是坏账计提与催收流程——前者要客户的坏账政策（比例/账龄阈值/审批），后者要催收渠道（短信/企微/电话记录），都不是引擎能猜的。"
     },
     {
       "id": "multi-currency",
