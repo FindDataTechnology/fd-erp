@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 import sys
 from collections import Counter
 from datetime import date
@@ -63,6 +64,8 @@ def collect() -> dict:
         "matrix": load(f"{src['matrices']}/supply-chain.json"),
         #: 板块级全覆盖矩阵（21 格四态，唯一出处；站点覆盖栏由它派生）
         "coverage": load("fd-erp/shared/coverage-matrix.json"),
+        #: 营销（第二个生产者）已登记的事实类型——从种子 SQL 解析，不另存清单
+        "marketing_types": marketing_event_types(),
         "templates": {
             v: load(f"{src['templates']}/{v}/manifest.json")
             for v in ("crossborder", "restaurant-chain", "supply-chain")
@@ -83,6 +86,46 @@ def _gate(script: str) -> dict:
 
 def _semantics() -> dict:
     return _gate("check_semantics_contract.py")
+
+
+#: 营销事件类型登记在迁移里（注册表是封闭集，种子 SQL 就是唯一出处）。
+#: 这里直接解析那段 VALUES，而不是再维护一份 JSON 清单——两份清单必然漂移，
+#: 而漂移时没人知道该信哪份。
+_MARKETING_SEED = (
+    Path(__file__).resolve().parents[2]
+    / "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0011_marketing_producers.sql"
+)
+
+
+def marketing_event_types(path: Path = _MARKETING_SEED) -> list[dict]:
+    """从种子 SQL 里抠出 `producer='marketing'` 的类型行（名字/说明/载体/是否过账）。"""
+    if not path.is_file():
+        raise SystemExit(f"缺少营销类型种子：{path}")
+    sql = path.read_text(encoding="utf-8")
+    head = sql.find("INSERT INTO event_types")
+    if head < 0:
+        raise SystemExit(f"{path} 里找不到 event_types 的 INSERT")
+    body = sql[head:]
+    out: list[dict] = []
+    # 每个元组：('marketing.x.y', '说明', '{...}'::jsonb, 'day', INTERVAL '0',
+    #            false, 'UTC', 'marketing', 'marketing', '载体出处'),
+    # 只认整段元组：截到 `)` 后面紧跟 `,` 或 `ON CONFLICT` 为止。
+    spans = re.finditer(r"\(\s*'(marketing\.[a-z0-9_.]+)'(.*?)\)(?=,|\s*ON\s+CONFLICT)",
+                        body, re.DOTALL)
+    for m in spans:
+        name, rest = m.group(1), m.group(2)
+        quoted = [q.replace("''", "'") for q in re.findall(r"'((?:[^']|'')*)'", rest)]
+        posting = re.search(r"INTERVAL\s+'[^']*',\s*(true|false)", rest)
+        out.append({
+            "event_type": name,
+            "description": quoted[0] if quoted else "",
+            # 载体出处是元组的最后一个字符串字面量
+            "evidence_ref": quoted[-1] if quoted else "",
+            "requires_posting": (posting.group(1) == "true") if posting else None,
+        })
+    if not out:
+        raise SystemExit(f"{path} 里没解析出任何 marketing 类型——种子格式变了，先修本解析")
+    return out
 
 
 def route_stats(evidence: dict) -> dict:
@@ -303,6 +346,39 @@ def render_readme(d: dict) -> str:
     a("团队按平台既有形状落地（fleet 模板 + 逐岗 preset），装包后在管理面板"
       "「智能体团队」的看板/驾驶舱/决策队列/运行台账里直接可见——"
       "**不为 ERP 另建专用面板**：并行呈现面会成为第二份团队数据。")
+    a("")
+    # 第二个生产者：事件层不只为 ERP 一家开，但「融合」的边界是载体，不是叙事。
+    #
+    # 整节包在 claim-gate 生成块里：这张表逐行抄的是类型注册表的 description，
+    # 而注册表的措辞里带「已发布」这类宣称词——不标成生成块，claim_gate 会把它当成
+    # 人写的能力宣称（CLAIM_UNDECLARED），而它其实是 seed SQL 的派生。标成生成块
+    # 不是绕过检查：本节的内容由 `gen_erp_docs.py --check` 与注册表种子对拍。
+    mkt = d["marketing_types"]
+    a("<!-- claim-gate:begin:marketing-producers -->")
+    a("### 7.2 事实层的第二个生产者")
+    a("")
+    a("事件层是**多生产者**的：同一张只追加流水上，每条事实带 `producer` 标记"
+      "（`erp` / `marketing`），纪律一套（幂等键、定型粒度、只追加、状态只许"
+      "`pending→accepted|rejected→reversed`）。营销板块当前可生产 "
+      f"**{len(mkt)}** 类事实，每类都能指到仓内真实载体：")
+    a("")
+    a("| 事件类型 | 事实 | 载体出处 | 过账 |")
+    a("| --- | --- | --- | --- |")
+    for t in mkt:
+        posting = "是" if t["requires_posting"] else "否（只记事实，不入账）"
+        a(f"| `{t['event_type']}` | {t['description']} | `{t['evidence_ref']}` | {posting} |")
+    a("")
+    a("- **只有这三类**：投放花费、线索、活动、转化四类在仓内没有任何载体，"
+      "登记即被黑名单拒绝（`ERP_EVENT_FABRICATED_FACT`）——"
+      "「先补载体再登记类型」，不许先登记再找人填数。")
+    a("- **营销账不并入 ERP 账本**：两侧共用的是事件流水与纪律，不是账。"
+      "营销事件全部 `requires_posting=false`，ERP 的账本仍只由 ERP 的过账规则产生；"
+      "跨板块看数是同租户内的**只读聚合**（按 `producer` 过滤），不是并账。"
+      "（`line-integration-charter`：六本账不并成一本。）")
+    a("- 闸：类型注册表的前缀自洽、载体出处必填、黑名单三条判据在 "
+      "`fd-erp-ledger-mcp/tests/test_marketing_producers.py`；"
+      "接线脚本 `fd-wire/scripts/publish_facts_to_kernel.py`（可手动跑、可重放，不进常驻调度）。")
+    a("<!-- claim-gate:end:marketing-producers -->")
     a("")
     a("## 8. 待办（结构性）")
     a("")

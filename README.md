@@ -58,7 +58,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 码表与指标名一律从源码 AST 现读，契约文件只写「必须逐字一致的部分」与「允许不同但必须声明的部分」。闸：`fd-erp/tools/check_semantics_contract.py`。
 
-- 错误码：内核封闭集 **22** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **12** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 9 个、模板层自有 9 个，均须在契约里声明并给理由
+- 错误码：内核封闭集 **24** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **12** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 9 个、模板层自有 9 个，均须在契约里声明并给理由
 - 指标：内核 11 个 / api 3 个，同一 Prometheus 下不得跨服务重名
 - 闸门状态：通过
 - 已声明偏差（histogram_buckets，fd-erp-vertical-api）：erp_api_request_seconds 的桶集比内核 erp_tool_latency_seconds 少一个 10.0 上界；待办 `establish-erp-independent-root 3.5`
@@ -131,7 +131,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 - 可宣称能力：**16** 条（每条带仓内可解析证据）
 - 不可宣称：**7** 条（对外材料出现肯定句式即被 `claim_gate.py` 判红）
-- 连接器缺口：**4** 条（每项带机器判据）
+- 连接器缺口：**6** 条（每项带机器判据）
 
 ### 7.1 每格谁在做
 
@@ -153,6 +153,22 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
   - 主数据 → `erp-order-to-cash-fleet`
 
 团队按平台既有形状落地（fleet 模板 + 逐岗 preset），装包后在管理面板「智能体团队」的看板/驾驶舱/决策队列/运行台账里直接可见——**不为 ERP 另建专用面板**：并行呈现面会成为第二份团队数据。
+
+<!-- claim-gate:begin:marketing-producers -->
+### 7.2 事实层的第二个生产者
+
+事件层是**多生产者**的：同一张只追加流水上，每条事实带 `producer` 标记（`erp` / `marketing`），纪律一套（幂等键、定型粒度、只追加、状态只许`pending→accepted|rejected→reversed`）。营销板块当前可生产 **3** 类事实，每类都能指到仓内真实载体：
+
+| 事件类型 | 事实 | 载体出处 | 过账 |
+| --- | --- | --- | --- |
+| `marketing.content.published` | 内容发布（营销：fd-wire 中已发布的 artifact 版本行） | `fd-wire/api/fd_wire_api/artifacts/models.py#artifact_versions` | 否（只记事实，不入账） |
+| `marketing.desk.conversation_closed` | 客服会话关闭（营销：外部 Chatwoot 会话回流，只读） | `chatwoot:conversations` | 否（只记事实，不入账） |
+| `marketing.channel.order_paid` | 渠道订单付款（营销：电商连接器只读面回流；付款事实，不是下单事实） | `connector:shopify_admin.orders` | 否（只记事实，不入账） |
+
+- **只有这三类**：投放花费、线索、活动、转化四类在仓内没有任何载体，登记即被黑名单拒绝（`ERP_EVENT_FABRICATED_FACT`）——「先补载体再登记类型」，不许先登记再找人填数。
+- **营销账不并入 ERP 账本**：两侧共用的是事件流水与纪律，不是账。营销事件全部 `requires_posting=false`，ERP 的账本仍只由 ERP 的过账规则产生；跨板块看数是同租户内的**只读聚合**（按 `producer` 过滤），不是并账。（`line-integration-charter`：六本账不并成一本。）
+- 闸：类型注册表的前缀自洽、载体出处必填、黑名单三条判据在 `fd-erp-ledger-mcp/tests/test_marketing_producers.py`；接线脚本 `fd-wire/scripts/publish_facts_to_kernel.py`（可手动跑、可重放，不进常驻调度）。
+<!-- claim-gate:end:marketing-producers -->
 
 ## 8. 待办（结构性）
 
