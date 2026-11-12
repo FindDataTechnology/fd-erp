@@ -86,7 +86,7 @@
       "name_zh": "应收应付",
       "name_en": "AR/AP",
       "state": "delivered",
-      "boundary": "科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。未做账龄分析、坏账计提与催收流程。",
+      "boundary": "科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。**账龄已交付**（change: add-receivable-aging）：按客户（`customer` 分析维度）出账龄表，口径为 FIFO 核销（收款先冲最早未核销应收，返回里明说未做逐票匹配），分桶 0-30/31-60/61-90/91+，未标客户单列 `unattributed`，多收报 `creditBalance`（不出负账龄），各桶合计 − 预收必须等于科目净余额。**未做**：坏账计提（需客户政策）与催收流程（需渠道）。",
       "evidence": [
         {
           "kind": "file",
@@ -96,11 +96,17 @@
         {
           "kind": "tool",
           "ref": "query_credit"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/aging.py",
+          "contains": "class ReceivableAging"
         }
       ],
       "claims": [
         "ledger.double-entry"
-      ]
+      ],
+      "blocker": "科目级应收应付已交付，**账龄分析已交付**（按客户维度、FIFO 核销口径）；未做的是坏账计提与催收流程——前者要客户的坏账政策（比例/账龄阈值/审批），后者要催收渠道（短信/企微/电话记录），都不是引擎能猜的。"
     },
     {
       "id": "multi-currency",

@@ -322,7 +322,7 @@ a{border:0}
 </ul></div>
 <table><thead><tr><th scope="col">子模块</th><th scope="col">状态</th><th scope="col">边界 / 需客户提供</th></tr></thead><tbody>
 <tr><td>总账</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">复式事件账：借贷必平由 DB 约束强制、余额确定性重算、已落账 append-only、更正只走冲正。分录由事件经版本化过账规则产出，不是原始入口**三表已交付**（change: add-financial-statements）：试算平衡表（每科目借/贷/余额 + 借贷平衡断言）、利润表（收入 − 营业成本 − 期间费用 = 营业利润）、资产负债表（资产 / 负债 / 权益 / 未结转损益，**自带平衡断言**，表外科目不猜类型、判不平并点名），以及按维度费用表（未标注维度单列）。三表全部从分录现算、不落表——资产负债表能平正是账本分类与过账自洽的最强证据。</td></tr>
-<tr><td>应收应付</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。未做账龄分析、坏账计提与催收流程。</td></tr>
+<tr><td>应收应付</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。**账龄已交付**（change: add-receivable-aging）：按客户（`customer` 分析维度）出账龄表，口径为 FIFO 核销（收款先冲最早未核销应收，返回里明说未做逐票匹配），分桶 0-30/31-60/61-90/91+，未标客户单列 `unattributed`，多收报 `creditBalance`（不出负账龄），各桶合计 − 预收必须等于科目净余额。**未做**：坏账计提（需客户政策）与催收流程（需渠道）。</td></tr>
 <tr><td>多币种与汇率</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">分录记原币 + 本位币折算，汇率带 as_of 与出处；无出处汇率由 DB 约束拒绝。汇率事实做种走 fx_facts（可复用既有观测流）。</td></tr>
 <tr><td>对账</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">只读滩头：两源流水逐笔对齐，四类差异（缺失/多余/金额不符/状态不符）各带双侧原始引用，对外部系统零写入。可指向外部两源，也可指向内部「事件流 vs 分录流」。</td></tr>
 <tr><td>计费</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">规则版本化 + 人工审批上线 + 冲突拦截 + 事件/期间快照计费（幂等可重算）+ 红冲留痕 + 四层溯源 + 无出处费率拒绝。落账走 billing-engine 机器车道 proposal，不绕过确认门。</td></tr>
