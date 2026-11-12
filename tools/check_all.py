@@ -38,6 +38,10 @@ CROSS_REPO_GATES = [
     # gate-rest-surface-against-contract）。守的是「契约写着『全部端点同源』却没人核对」
     # 那类事故：2026-11-12 实测 6 条端点实现完了、契约表里没有。
     ("REST 面与契约一致", "check_rest_surface.py"),
+    # 如实 501 的阻塞归属（change: track-blocked-endpoints-by-dependency）。此前 11 条 501
+    # 只有散文理由，没人能回答「哪个依赖解除会点亮哪几条」，也没人会发现「依赖早到位、
+    # 端点还挂 501」。本闸把判据做成机器可读的外部事实（连接器 provider 状态 / 内核工具名）。
+    ("501 阻塞归属", "check_blocked_endpoints.py"),
     # 全覆盖矩阵要跨仓核证据（工具面/端点/连接器事实），兄弟仓不在场时它只做仓内部分
     ("全覆盖矩阵", "check_coverage_matrix.py"),
 ]
