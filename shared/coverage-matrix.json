@@ -291,7 +291,7 @@
       "name_zh": "库存（数量面）",
       "name_en": "Inventory",
       "state": "delivered",
-      "boundary": "数量面由事件 + 对象投影回答：数量/单位/批次/序列号/仓库/在途均可表达，余额可全量重算并带水位；REST 面经 `GET /sp/inventory` 只读暴露该余额（按供货范围收口，不是跨供应商全表）。上游 WMS 读取仍需一次接入（provider 缺口另记，不在本矩阵）。",
+      "boundary": "数量面由事件 + 对象投影回答：数量/单位/批次/序列号/仓库/在途均可表达，余额可全量重算并带水位；REST 面经 `GET /sp/inventory` 只读暴露该余额（按供货范围收口，不是跨供应商全表）。**谁产生这些事实**：入库/出库/调拨/盘点四类作业单由模板层库存作业车道（`inventory.py`）写成拟稿事件（复用 goods_received / goods_issued / goods_adjusted，不新增事件类型），过确认门后投影、再按过账规则落账；出库与调拨先核可用量，不写出负库存。这层的**对外 REST 面尚未接**（需仓库页面集，卡在页面集注册表），当前只能经内核/服务侧调用，页面不可达——不宣称页面可用。上游 WMS 读取仍需一次接入（provider 缺口另记，不在本矩阵）。",
       "evidence": [
         {
           "kind": "file",
@@ -305,6 +305,11 @@
         {
           "kind": "tool",
           "ref": "project_event"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/inventory.py",
+          "contains": "class InventoryLane"
         },
         {
           "kind": "endpoint",
@@ -325,7 +330,7 @@
       "name_zh": "仓储与物流",
       "name_en": "Warehousing & Logistics",
       "state": "template_configured",
-      "boundary": "运单、月台预约、提货打卡、签收上报在 CP 承运商面（实现 8/12，其余如实 501）。仓储作业（库位/拣货/盘点路径）不在内核。",
+      "boundary": "运单、月台预约、提货打卡、签收上报在 CP 承运商面（实现 8/12，其余如实 501）。仓储**作业执行**（库位管理、拣货路径、波次）不在内核；但作业产生的**数量事实**（入库/出库/调拨/盘点）经库存作业车道进数量面——执行在外、事实在内，是两件事。",
       "evidence": [
         {
           "kind": "endpoint",
