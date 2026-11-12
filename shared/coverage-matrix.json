@@ -1,557 +1,565 @@
 {
- "schema": "erp-coverage-matrix/v1",
- "note": "ERP 全覆盖矩阵（唯一出处，change establish-erp-event-kernel 6.1 / establish-erp-kernel-toolkit-and-teams 2.1）。规则：每个子模块恰好一格、恰好一态；四态封闭 delivered|template_configured|needs_onboarding|not_doing，禁止第五态（如「部分实现」「进行中」）。delivered 必须带仓内可解析证据且不得用行号锚；not_doing 是合法终态，但必须给理由、裁决来源、复核窗口。每格恰好一个承担者 owner（fleet|template|none），none 仅 needs_onboarding/not_doing 允许且必须给 reason。声明与实测漂移由 tools/check_coverage_matrix.py 判红。",
- "updated_at": "2026-11-11",
- "states": {
-  "delivered": "已实现：内核或本板块直接提供，有仓内可解析证据",
-  "template_configured": "模板可配：能力在行业模板资产里，装上对应模板即具备；内核不实现该行业的特有逻辑",
-  "needs_onboarding": "需一次接入或一次客户口径：缺客户侧系统接入，或缺一个只有客户能给的业务口径",
-  "not_doing": "明确不做：产品边界，附理由 + 裁决来源 + 复核窗口"
- },
- "module_set": [
-  "general-ledger",
-  "receivables-payables",
-  "multi-currency",
-  "reconciliation",
-  "billing",
-  "credit",
-  "sales-orders",
-  "purchase",
-  "inventory",
-  "warehousing-logistics",
-  "invoice",
-  "tax",
-  "treasury",
-  "manufacturing",
-  "cost-accounting",
-  "budget",
-  "fixed-assets",
-  "consolidation",
-  "approval-workflow",
-  "master-data",
-  "hr"
- ],
- "modules": [
-  {
-   "id": "general-ledger",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-payables-fleet",
-    "note": "复式账与过账规则治理：巡检核借贷平衡与余额重算，拍板持事实确认门"
-   },
-   "name_zh": "总账",
-   "name_en": "General Ledger",
-   "state": "delivered",
-   "boundary": "复式事件账：借贷必平由 DB 约束强制、余额确定性重算、已落账 append-only、更正只走冲正。分录由事件经版本化过账规则产出，不是原始入口。",
-   "evidence": [
+  "schema": "erp-coverage-matrix/v1",
+  "note": "ERP 全覆盖矩阵（唯一出处，change establish-erp-event-kernel 6.1 / establish-erp-kernel-toolkit-and-teams 2.1）。规则：每个子模块恰好一格、恰好一态；四态封闭 delivered|template_configured|needs_onboarding|not_doing，禁止第五态（如「部分实现」「进行中」）。delivered 必须带仓内可解析证据且不得用行号锚；not_doing 是合法终态，但必须给理由、裁决来源、复核窗口。每格恰好一个承担者 owner（fleet|template|none），none 仅 needs_onboarding/not_doing 允许且必须给 reason。声明与实测漂移由 tools/check_coverage_matrix.py 判红。",
+  "updated_at": "2026-11-12",
+  "states": {
+    "delivered": "已实现：内核或本板块直接提供，有仓内可解析证据",
+    "template_configured": "模板可配：能力在行业模板资产里，装上对应模板即具备；内核不实现该行业的特有逻辑",
+    "needs_onboarding": "需一次接入或一次客户口径：缺客户侧系统接入，或缺一个只有客户能给的业务口径",
+    "not_doing": "明确不做：产品边界，附理由 + 裁决来源 + 复核窗口"
+  },
+  "module_set": [
+    "general-ledger",
+    "receivables-payables",
+    "multi-currency",
+    "reconciliation",
+    "billing",
+    "credit",
+    "sales-orders",
+    "purchase",
+    "inventory",
+    "warehousing-logistics",
+    "invoice",
+    "tax",
+    "treasury",
+    "manufacturing",
+    "cost-accounting",
+    "budget",
+    "fixed-assets",
+    "consolidation",
+    "approval-workflow",
+    "master-data",
+    "hr"
+  ],
+  "modules": [
     {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
-     "contains": "erp_assert_txn_balanced"
+      "id": "general-ledger",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-payables-fleet",
+        "note": "复式账与过账规则治理：巡检核借贷平衡与余额重算，拍板持事实确认门"
+      },
+      "name_zh": "总账",
+      "name_en": "General Ledger",
+      "state": "delivered",
+      "boundary": "复式事件账：借贷必平由 DB 约束强制、余额确定性重算、已落账 append-only、更正只走冲正。分录由事件经版本化过账规则产出，不是原始入口。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
+          "contains": "erp_assert_txn_balanced"
+        },
+        {
+          "kind": "tool",
+          "ref": "query_balance"
+        },
+        {
+          "kind": "tool",
+          "ref": "post_event"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0009_posting_rules.sql",
+          "contains": "posting_rules_one_active"
+        }
+      ],
+      "claims": [
+        "ledger.double-entry",
+        "ledger.idempotent",
+        "tenant.isolation",
+        "event.append-only-facts",
+        "posting.versioned-rules"
+      ]
     },
     {
-     "kind": "tool",
-     "ref": "query_balance"
+      "id": "receivables-payables",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-payables-fleet",
+        "note": "应收应付与信用占用派生：巡检核 1300 余额与占用到期"
+      },
+      "name_zh": "应收应付",
+      "name_en": "AR/AP",
+      "state": "delivered",
+      "boundary": "科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。未做账龄分析、坏账计提与催收流程。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0002_universal_accounts.sql",
+          "contains": "universal_accounts"
+        },
+        {
+          "kind": "tool",
+          "ref": "query_credit"
+        }
+      ],
+      "claims": [
+        "ledger.double-entry"
+      ]
     },
     {
-     "kind": "tool",
-     "ref": "post_event"
+      "id": "multi-currency",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-payables-fleet",
+        "note": "汇率出处与折算差异核对：巡检抓无出处汇率，拍板定折算口径"
+      },
+      "name_zh": "多币种与汇率",
+      "name_en": "Multi-currency",
+      "state": "delivered",
+      "boundary": "分录记原币 + 本位币折算，汇率带 as_of 与出处；无出处汇率由 DB 约束拒绝。汇率事实做种走 fx_facts（可复用既有观测流）。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0005_billing_fx_provenance.sql",
+          "contains": "fx"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
+          "contains": "erp_fx_unsourced"
+        }
+      ],
+      "claims": [
+        "ledger.fx-provenance"
+      ]
     },
     {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0009_posting_rules.sql",
-     "contains": "posting_rules_one_active"
+      "id": "reconciliation",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-invoice-fleet",
+        "note": "两源逐笔对齐与四类差异定性，差异单交人工确认"
+      },
+      "name_zh": "对账",
+      "name_en": "Reconciliation",
+      "state": "delivered",
+      "boundary": "只读滩头：两源流水逐笔对齐，四类差异（缺失/多余/金额不符/状态不符）各带双侧原始引用，对外部系统零写入。可指向外部两源，也可指向内部「事件流 vs 分录流」。",
+      "evidence": [
+        {
+          "kind": "tool",
+          "ref": "run_reconciliation"
+        },
+        {
+          "kind": "tool",
+          "ref": "get_recon_report"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0006_recon_task_request.sql",
+          "contains": "request"
+        }
+      ],
+      "claims": [
+        "recon.readonly-four-diffs",
+        "recon.event-vs-entry"
+      ]
+    },
+    {
+      "id": "billing",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-billing-fleet",
+        "note": "计费规则版本治理：拟稿 → 审批上线 → 快照重算与红冲留痕"
+      },
+      "name_zh": "计费",
+      "name_en": "Billing",
+      "state": "delivered",
+      "boundary": "规则版本化 + 人工审批上线 + 冲突拦截 + 事件/期间快照计费（幂等可重算）+ 红冲留痕 + 四层溯源 + 无出处费率拒绝。落账走 billing-engine 机器车道 proposal，不绕过确认门。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0003_billing.sql",
+          "contains": "billing_rules"
+        },
+        {
+          "kind": "tool",
+          "ref": "bill_event"
+        },
+        {
+          "kind": "tool",
+          "ref": "bill_period_snapshot"
+        }
+      ],
+      "claims": [
+        "billing.event"
+      ]
+    },
+    {
+      "id": "credit",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-credit-fleet",
+        "note": "额度占用/释放巡检，超额拦截走确认门"
+      },
+      "name_zh": "信用额度",
+      "name_en": "Credit",
+      "state": "delivered",
+      "boundary": "available = limit − 1300 应收余额（分录重算）− active 占用；占用为备忘性质不写复式分录；额度不足带明细拒绝。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0004_credit_reservation_expiry.sql",
+          "contains": "credit_reservations"
+        },
+        {
+          "kind": "tool",
+          "ref": "reserve_credit"
+        }
+      ],
+      "claims": []
+    },
+    {
+      "id": "sales-orders",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-order-to-cash-fleet",
+        "note": "能力在行业模板资产的页面集与端点里（templates/supply-chain/pagesets，UE 商城 24/24、SE 业务员台 14/15）；团队只做日常单据一致性核对，不实现行业订单规则"
+      },
+      "name_zh": "销售与订单",
+      "name_en": "Sales & Orders",
+      "state": "template_configured",
+      "boundary": "订单与销售面在行业模板的页面集与端点里（UE 商城 24/24、SE 业务员台 14/15）；内核只记 order_placed 事件与据此产生的金额事实，不实现行业订单规则。售后申请（退/换/补）由 UE 售后车道受理为**流程记录**，不进事件层——申请不等于退货入库。线索与拜访由 SE CRM 车道受理为**流程记录**（`record=lead/visit`），同样不进事件层：见了一条线索不是拿到一个客户，登记一次拜访不是产生一笔订单。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/templates/supply-chain/pagesets/ue-commerce/manifest.json"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "POST /erp/supply-chain/v1/ue/orders"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "POST /erp/supply-chain/v1/ue/aftersale-requests"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "GET /erp/supply-chain/v1/se/leads"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "POST /erp/supply-chain/v1/se/visits"
+        }
+      ],
+      "claims": [
+        "templates.four-piece",
+        "connector.single-egress",
+        "connector.three-state",
+        "templates.extension-packs"
+      ]
+    },
+    {
+      "id": "purchase",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-order-to-cash-fleet",
+        "note": "采购单与到货通知在行业模板的 SP 供应商面（templates/supply-chain，实现 7/13）；团队核对单据与到货回流，不代供应商操作"
+      },
+      "name_zh": "采购",
+      "name_en": "Procurement",
+      "state": "template_configured",
+      "boundary": "采购单与到货通知在 SP 供应商面（实现 7/13，其余如实 501）。到货落 goods_received 事件后可投影库存并可过账。",
+      "evidence": [
+        {
+          "kind": "endpoint",
+          "ref": "POST /erp/supply-chain/v1/sp/purchase-orders"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "POST /erp/supply-chain/v1/sp/arrival-notices"
+        },
+        {
+          "kind": "tool",
+          "ref": "ingest_event"
+        }
+      ],
+      "claims": [
+        "templates.four-piece",
+        "connector.single-egress",
+        "connector.three-state",
+        "templates.extension-packs"
+      ]
+    },
+    {
+      "id": "inventory",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-fact-intake-fleet",
+        "note": "事实接入与数量面投影：事件缺字段巡检、批次/序列号核数"
+      },
+      "name_zh": "库存（数量面）",
+      "name_en": "Inventory",
+      "state": "delivered",
+      "boundary": "数量面由事件 + 对象投影回答：数量/单位/批次/序列号/仓库/在途均可表达，余额可全量重算并带水位；REST 面经 `GET /sp/inventory` 只读暴露该余额（按供货范围收口，不是跨供应商全表）。上游 WMS 读取仍需一次接入（provider 缺口另记，不在本矩阵）。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0008_objects.sql",
+          "contains": "object_balances"
+        },
+        {
+          "kind": "tool",
+          "ref": "query_object_balance"
+        },
+        {
+          "kind": "tool",
+          "ref": "project_event"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "GET /erp/supply-chain/v1/sp/inventory"
+        }
+      ],
+      "claims": [
+        "inventory.quantity-face"
+      ]
+    },
+    {
+      "id": "warehousing-logistics",
+      "owner": {
+        "kind": "fleet",
+        "ref": "supply-chain-warehousing-fleet",
+        "note": "既有仓配舰队承担 CP 承运商面与仓内作业回流"
+      },
+      "name_zh": "仓储与物流",
+      "name_en": "Warehousing & Logistics",
+      "state": "template_configured",
+      "boundary": "运单、月台预约、提货打卡、签收上报在 CP 承运商面（实现 8/12，其余如实 501）。仓储作业（库位/拣货/盘点路径）不在内核。",
+      "evidence": [
+        {
+          "kind": "endpoint",
+          "ref": "POST /erp/supply-chain/v1/cp/waybills"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/templates/supply-chain/pagesets/cp-carrier/manifest.json"
+        }
+      ],
+      "claims": [
+        "templates.four-piece",
+        "connector.single-egress",
+        "connector.three-state"
+      ]
+    },
+    {
+      "id": "invoice",
+      "owner": {
+        "kind": "none",
+        "reason": "开票通道未接入：金蝶 provider 无开票直连 action，后台审核车道未建（API 侧四条开票申请端点为如实 501）"
+      },
+      "name_zh": "发票",
+      "name_en": "Invoicing",
+      "state": "needs_onboarding",
+      "boundary": "事件层已注册 invoice_requested（可经内核工具写入并参与对账），但产品侧开票申请面无实现——开票申请/审核/票据跟踪目前是如实 501。票据本体仍由客户既有合规渠道处理：不自研开票、不代开票据，这是边界不是缺口；缺的是把客户已有开票流程接进来的那条通道。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0007_business_events.sql",
+          "contains": "invoice_requested"
+        }
+      ],
+      "claims": [],
+      "blocker": "需要一条开票通道：金蝶 provider 补开票直连 action（或客户线下开票回执的录入面）＋后台审核车道；到位后本格转 delivered，事件类型与对账口径无需返工"
+    },
+    {
+      "id": "tax",
+      "owner": {
+        "kind": "none",
+        "reason": "税务申报绑定税局/电子发票合规路径，自研即触碰代开与申报责任"
+      },
+      "name_zh": "税务申报",
+      "name_en": "Tax Filing",
+      "state": "not_doing",
+      "boundary": "不自研税务申报。账内可记录发票类事件并参与对账，申报本体走客户既有渠道。",
+      "evidence": [],
+      "claims": [
+        "invoice.tax-return"
+      ],
+      "reason": "税务申报需与税局/电子发票合规路径绑定，自研即触碰代开与申报责任；在中国电子发票合规路径确定前不作为能力提供",
+      "decided_by": "openspec/specs/erp-board/spec.md#开票税务能力挂账如实守界",
+      "review_by": "2027-06-30"
+    },
+    {
+      "id": "treasury",
+      "owner": {
+        "kind": "none",
+        "reason": "二清红线：平台不触碰资金归集与分账执行"
+      },
+      "name_zh": "资金与出纳",
+      "name_en": "Treasury",
+      "state": "not_doing",
+      "boundary": "只产出对账结果与核对指令；不提供资金池、代收代付、分账执行。资金归集与分账走客户自选的持牌通道。",
+      "evidence": [],
+      "claims": [
+        "funds.execution",
+        "shares.no-fund-execution"
+      ],
+      "reason": "二清红线：平台不得触碰资金归集与分账执行",
+      "decided_by": "openspec/specs/erp-board/spec.md#资金合规红线",
+      "review_by": "2027-06-30"
+    },
+    {
+      "id": "manufacturing",
+      "owner": {
+        "kind": "none",
+        "reason": "无锚点客户，且 BOM/工艺/产能自成体系、与三个行业模板客群不重叠"
+      },
+      "name_zh": "生产制造",
+      "name_en": "Manufacturing / MRP",
+      "state": "not_doing",
+      "boundary": "不提供 BOM、工艺路线、工单、MRP 运算。当前客群（跨境电商/餐饮连锁/供应链）无此诉求。",
+      "evidence": [],
+      "claims": [],
+      "reason": "生产制造需要 BOM/工艺路线/产能一整套对象与行业知识，且与当前三个行业模板的客群不重叠；无锚点客户前不做",
+      "decided_by": "user-decision 2026-11-11（核心条线评审：ERP 全覆盖口径定案）",
+      "review_by": "2027-06-30"
+    },
+    {
+      "id": "cost-accounting",
+      "owner": {
+        "kind": "none",
+        "reason": "成本方法口径未定（加权/先进先出/批次实际），过账规则随口径而变"
+      },
+      "name_zh": "成本核算",
+      "name_en": "Cost Accounting",
+      "state": "needs_onboarding",
+      "boundary": "依赖库存数量面与估值口径；数量面已交付，成本方法（移动加权/先进先出/批次实际成本）需按客户口径落地。",
+      "evidence": [
+        {
+          "kind": "tool",
+          "ref": "query_object_balance"
+        }
+      ],
+      "claims": [],
+      "blocker": "需要客户确认成本方法口径（加权/先进先出/批次实际）与首个真实账期的期初库存；口径不同则过账规则不同"
+    },
+    {
+      "id": "budget",
+      "owner": {
+        "kind": "none",
+        "reason": "客户预算科目体系与考核维度未给，无口径只能做出空表"
+      },
+      "name_zh": "预算",
+      "name_en": "Budgeting",
+      "state": "needs_onboarding",
+      "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力；缺的是客户预算科目体系与口径。",
+      "evidence": [],
+      "claims": [],
+      "blocker": "需要客户的预算科目体系与考核维度（部门/项目/渠道）；无口径时做出来的是空表"
+    },
+    {
+      "id": "fixed-assets",
+      "owner": {
+        "kind": "none",
+        "reason": "客户资产台账与折旧政策未给，且可能走客户既有资产系统（届时只读对账）"
+      },
+      "name_zh": "固定资产",
+      "name_en": "Fixed Assets",
+      "state": "needs_onboarding",
+      "boundary": "折旧是时间驱动事件，事件内核可承载；折旧政策（年限/残值/方法）只能由客户给。",
+      "evidence": [],
+      "claims": [],
+      "blocker": "需要客户固定资产台账与折旧政策；且需确认是否走客户既有资产系统（若是则本板块只读对账）"
+    },
+    {
+      "id": "consolidation",
+      "owner": {
+        "kind": "none",
+        "reason": "多主体归属口径与内部交易抵销规则未定，现内核一进程一租户"
+      },
+      "name_zh": "合并报表",
+      "name_en": "Consolidation",
+      "state": "needs_onboarding",
+      "boundary": "多币种与租户隔离已具备，合并需要多主体与内部交易抵销口径；内核现在是一进程一租户。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
+          "contains": "tenant_id"
+        }
+      ],
+      "claims": [
+        "tenant.isolation"
+      ],
+      "blocker": "需要「多主体归属」口径与内部交易抵销规则；现内核一进程一租户，多主体需先定主体模型"
+    },
+    {
+      "id": "approval-workflow",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-posting-fleet",
+        "note": "确认门与审批上线值守：规则审批、拟稿事件 decide"
+      },
+      "name_zh": "审批流",
+      "name_en": "Approval Workflow",
+      "state": "delivered",
+      "boundary": "已有一等原语：拟落账的 proposal 确认门、拟稿事件的 decide 门、计费规则与过账规则的审批上线。多级/会签/条件路由的通用审批引擎不在本板块。",
+      "evidence": [
+        {
+          "kind": "tool",
+          "ref": "confirm_proposal"
+        },
+        {
+          "kind": "tool",
+          "ref": "decide_event"
+        },
+        {
+          "kind": "tool",
+          "ref": "approve_posting_rule"
+        }
+      ],
+      "claims": [
+        "ledger.double-entry"
+      ]
+    },
+    {
+      "id": "master-data",
+      "owner": {
+        "kind": "fleet",
+        "ref": "erp-order-to-cash-fleet",
+        "note": "通用科目表与行业科目映射在模板资产（universal_accounts + templates/*/account-mapping）；团队只做跨系统主数据偏差定性"
+      },
+      "name_zh": "主数据",
+      "name_en": "Master Data",
+      "state": "template_configured",
+      "boundary": "通用科目表在 universal_accounts；行业科目映射在每个行业模板的 account-mapping；对象身份在 objects（sku/客户/供应商/仓库）。跨系统的物料主数据同步仍走连接器。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/templates/supply-chain/account-mapping/pack.json"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0008_objects.sql",
+          "contains": "CREATE TABLE IF NOT EXISTS objects"
+        }
+      ],
+      "claims": [
+        "templates.four-piece"
+      ]
+    },
+    {
+      "id": "hr",
+      "owner": {
+        "kind": "none",
+        "reason": "HR 是独立产品域（个人数据/考勤/薪酬合规），与经营账内核无共用原语"
+      },
+      "name_zh": "人力资源",
+      "name_en": "HR",
+      "state": "not_doing",
+      "boundary": "不提供人事、考勤、薪酬。与 ERP 板块「经营账 + 对账」的定位无关，且薪酬涉及个人数据与合规另一套边界。",
+      "evidence": [],
+      "claims": [],
+      "reason": "HR 是独立产品域（个人数据、考勤、薪酬合规），与经营账内核无共用原语；纳入会稀释板块边界",
+      "decided_by": "user-decision 2026-11-11（核心条线评审：ERP 全覆盖口径定案）",
+      "review_by": "2027-06-30"
     }
-   ],
-   "claims": [
-    "ledger.double-entry",
-    "ledger.idempotent",
-    "tenant.isolation",
-    "event.append-only-facts",
-    "posting.versioned-rules"
-   ]
+  ],
+  "claim_source": "fd-erp-vertical-templates/claims/claims.json",
+  "claims_note": "每个模块可引用 claims 里的 id；not_doing 模块不得引用任何 status=delivered 的 claim（否则「不做」与「宣称已做」矛盾）。反向不强制：delivered 模块可以没有对外 claim（例如库存数量面尚未进入对外口径）。",
+  "board_level_claims": {
+    "market.connector-packs": "市场在架是发布状态（三个行业连接器包的版本与 packId），不是任何单一子模块的能力；它的真源是 publish-record.json，由发布闸核，不由矩阵核。"
   },
-  {
-   "id": "receivables-payables",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-payables-fleet",
-    "note": "应收应付与信用占用派生：巡检核 1300 余额与占用到期"
-   },
-   "name_zh": "应收应付",
-   "name_en": "AR/AP",
-   "state": "delivered",
-   "boundary": "科目级应收应付与余额由分录重算；信用占用从 1300 应收余额派生。未做账龄分析、坏账计提与催收流程。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0002_universal_accounts.sql",
-     "contains": "universal_accounts"
-    },
-    {
-     "kind": "tool",
-     "ref": "query_credit"
-    }
-   ],
-   "claims": [
-    "ledger.double-entry"
-   ]
-  },
-  {
-   "id": "multi-currency",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-payables-fleet",
-    "note": "汇率出处与折算差异核对：巡检抓无出处汇率，拍板定折算口径"
-   },
-   "name_zh": "多币种与汇率",
-   "name_en": "Multi-currency",
-   "state": "delivered",
-   "boundary": "分录记原币 + 本位币折算，汇率带 as_of 与出处；无出处汇率由 DB 约束拒绝。汇率事实做种走 fx_facts（可复用既有观测流）。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0005_billing_fx_provenance.sql",
-     "contains": "fx"
-    },
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
-     "contains": "erp_fx_unsourced"
-    }
-   ],
-   "claims": [
-    "ledger.fx-provenance"
-   ]
-  },
-  {
-   "id": "reconciliation",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-invoice-fleet",
-    "note": "两源逐笔对齐与四类差异定性，差异单交人工确认"
-   },
-   "name_zh": "对账",
-   "name_en": "Reconciliation",
-   "state": "delivered",
-   "boundary": "只读滩头：两源流水逐笔对齐，四类差异（缺失/多余/金额不符/状态不符）各带双侧原始引用，对外部系统零写入。可指向外部两源，也可指向内部「事件流 vs 分录流」。",
-   "evidence": [
-    {
-     "kind": "tool",
-     "ref": "run_reconciliation"
-    },
-    {
-     "kind": "tool",
-     "ref": "get_recon_report"
-    },
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0006_recon_task_request.sql",
-     "contains": "request"
-    }
-   ],
-   "claims": [
-    "recon.readonly-four-diffs",
-    "recon.event-vs-entry"
-   ]
-  },
-  {
-   "id": "billing",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-billing-fleet",
-    "note": "计费规则版本治理：拟稿 → 审批上线 → 快照重算与红冲留痕"
-   },
-   "name_zh": "计费",
-   "name_en": "Billing",
-   "state": "delivered",
-   "boundary": "规则版本化 + 人工审批上线 + 冲突拦截 + 事件/期间快照计费（幂等可重算）+ 红冲留痕 + 四层溯源 + 无出处费率拒绝。落账走 billing-engine 机器车道 proposal，不绕过确认门。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0003_billing.sql",
-     "contains": "billing_rules"
-    },
-    {
-     "kind": "tool",
-     "ref": "bill_event"
-    },
-    {
-     "kind": "tool",
-     "ref": "bill_period_snapshot"
-    }
-   ],
-   "claims": [
-    "billing.event"
-   ]
-  },
-  {
-   "id": "credit",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-credit-fleet",
-    "note": "额度占用/释放巡检，超额拦截走确认门"
-   },
-   "name_zh": "信用额度",
-   "name_en": "Credit",
-   "state": "delivered",
-   "boundary": "available = limit − 1300 应收余额（分录重算）− active 占用；占用为备忘性质不写复式分录；额度不足带明细拒绝。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0004_credit_reservation_expiry.sql",
-     "contains": "credit_reservations"
-    },
-    {
-     "kind": "tool",
-     "ref": "reserve_credit"
-    }
-   ],
-   "claims": []
-  },
-  {
-   "id": "sales-orders",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-order-to-cash-fleet",
-    "note": "能力在行业模板资产的页面集与端点里（templates/supply-chain/pagesets，UE 商城 24/24、SE 业务员台 10/15）；团队只做日常单据一致性核对，不实现行业订单规则"
-   },
-   "name_zh": "销售与订单",
-   "name_en": "Sales & Orders",
-   "state": "template_configured",
-   "boundary": "订单与销售面在行业模板的页面集与端点里（UE 商城 24/24、SE 业务员台 10/15）；内核只记 order_placed 事件与据此产生的金额事实，不实现行业订单规则。售后申请（退/换/补）由 UE 售后车道受理为**流程记录**，不进事件层——申请不等于退货入库。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-vertical-templates/templates/supply-chain/pagesets/ue-commerce/manifest.json"
-    },
-    {
-     "kind": "endpoint",
-     "ref": "POST /erp/supply-chain/v1/ue/orders"
-    },
-    {
-     "kind": "endpoint",
-     "ref": "POST /erp/supply-chain/v1/ue/aftersale-requests"
-    }
-   ],
-   "claims": [
-    "templates.four-piece",
-    "connector.single-egress",
-    "connector.three-state",
-    "templates.extension-packs"
-   ]
-  },
-  {
-   "id": "purchase",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-order-to-cash-fleet",
-    "note": "采购单与到货通知在行业模板的 SP 供应商面（templates/supply-chain，实现 7/13）；团队核对单据与到货回流，不代供应商操作"
-   },
-   "name_zh": "采购",
-   "name_en": "Procurement",
-   "state": "template_configured",
-   "boundary": "采购单与到货通知在 SP 供应商面（实现 7/13，其余如实 501）。到货落 goods_received 事件后可投影库存并可过账。",
-   "evidence": [
-    {
-     "kind": "endpoint",
-     "ref": "POST /erp/supply-chain/v1/sp/purchase-orders"
-    },
-    {
-     "kind": "endpoint",
-     "ref": "POST /erp/supply-chain/v1/sp/arrival-notices"
-    },
-    {
-     "kind": "tool",
-     "ref": "ingest_event"
-    }
-   ],
-   "claims": [
-    "templates.four-piece",
-    "connector.single-egress",
-    "connector.three-state",
-    "templates.extension-packs"
-   ]
-  },
-  {
-   "id": "inventory",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-fact-intake-fleet",
-    "note": "事实接入与数量面投影：事件缺字段巡检、批次/序列号核数"
-   },
-   "name_zh": "库存（数量面）",
-   "name_en": "Inventory",
-   "state": "delivered",
-   "boundary": "数量面由事件 + 对象投影回答：数量/单位/批次/序列号/仓库/在途均可表达，余额可全量重算并带水位；REST 面经 `GET /sp/inventory` 只读暴露该余额（按供货范围收口，不是跨供应商全表）。上游 WMS 读取仍需一次接入（provider 缺口另记，不在本矩阵）。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0008_objects.sql",
-     "contains": "object_balances"
-    },
-    {
-     "kind": "tool",
-     "ref": "query_object_balance"
-    },
-    {
-     "kind": "tool",
-     "ref": "project_event"
-    },
-    {
-     "kind": "endpoint",
-     "ref": "GET /erp/supply-chain/v1/sp/inventory"
-    }
-   ],
-   "claims": [
-    "inventory.quantity-face"
-   ]
-  },
-  {
-   "id": "warehousing-logistics",
-   "owner": {
-    "kind": "fleet",
-    "ref": "supply-chain-warehousing-fleet",
-    "note": "既有仓配舰队承担 CP 承运商面与仓内作业回流"
-   },
-   "name_zh": "仓储与物流",
-   "name_en": "Warehousing & Logistics",
-   "state": "template_configured",
-   "boundary": "运单、月台预约、提货打卡、签收上报在 CP 承运商面（实现 8/12，其余如实 501）。仓储作业（库位/拣货/盘点路径）不在内核。",
-   "evidence": [
-    {
-     "kind": "endpoint",
-     "ref": "POST /erp/supply-chain/v1/cp/waybills"
-    },
-    {
-     "kind": "file",
-     "ref": "fd-erp-vertical-templates/templates/supply-chain/pagesets/cp-carrier/manifest.json"
-    }
-   ],
-   "claims": [
-    "templates.four-piece",
-    "connector.single-egress",
-    "connector.three-state"
-   ]
-  },
-  {
-   "id": "invoice",
-   "owner": {
-    "kind": "none",
-    "reason": "开票通道未接入：金蝶 provider 无开票直连 action，后台审核车道未建（API 侧四条开票申请端点为如实 501）"
-   },
-   "name_zh": "发票",
-   "name_en": "Invoicing",
-   "state": "needs_onboarding",
-   "boundary": "事件层已注册 invoice_requested（可经内核工具写入并参与对账），但产品侧开票申请面无实现——开票申请/审核/票据跟踪目前是如实 501。票据本体仍由客户既有合规渠道处理：不自研开票、不代开票据，这是边界不是缺口；缺的是把客户已有开票流程接进来的那条通道。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0007_business_events.sql",
-     "contains": "invoice_requested"
-    }
-   ],
-   "claims": [],
-   "blocker": "需要一条开票通道：金蝶 provider 补开票直连 action（或客户线下开票回执的录入面）＋后台审核车道；到位后本格转 delivered，事件类型与对账口径无需返工"
-  },
-  {
-   "id": "tax",
-   "owner": {
-    "kind": "none",
-    "reason": "税务申报绑定税局/电子发票合规路径，自研即触碰代开与申报责任"
-   },
-   "name_zh": "税务申报",
-   "name_en": "Tax Filing",
-   "state": "not_doing",
-   "boundary": "不自研税务申报。账内可记录发票类事件并参与对账，申报本体走客户既有渠道。",
-   "evidence": [],
-   "claims": [
-    "invoice.tax-return"
-   ],
-   "reason": "税务申报需与税局/电子发票合规路径绑定，自研即触碰代开与申报责任；在中国电子发票合规路径确定前不作为能力提供",
-   "decided_by": "openspec/specs/erp-board/spec.md#开票税务能力挂账如实守界",
-   "review_by": "2027-06-30"
-  },
-  {
-   "id": "treasury",
-   "owner": {
-    "kind": "none",
-    "reason": "二清红线：平台不触碰资金归集与分账执行"
-   },
-   "name_zh": "资金与出纳",
-   "name_en": "Treasury",
-   "state": "not_doing",
-   "boundary": "只产出对账结果与核对指令；不提供资金池、代收代付、分账执行。资金归集与分账走客户自选的持牌通道。",
-   "evidence": [],
-   "claims": [
-    "funds.execution",
-    "shares.no-fund-execution"
-   ],
-   "reason": "二清红线：平台不得触碰资金归集与分账执行",
-   "decided_by": "openspec/specs/erp-board/spec.md#资金合规红线",
-   "review_by": "2027-06-30"
-  },
-  {
-   "id": "manufacturing",
-   "owner": {
-    "kind": "none",
-    "reason": "无锚点客户，且 BOM/工艺/产能自成体系、与三个行业模板客群不重叠"
-   },
-   "name_zh": "生产制造",
-   "name_en": "Manufacturing / MRP",
-   "state": "not_doing",
-   "boundary": "不提供 BOM、工艺路线、工单、MRP 运算。当前客群（跨境电商/餐饮连锁/供应链）无此诉求。",
-   "evidence": [],
-   "claims": [],
-   "reason": "生产制造需要 BOM/工艺路线/产能一整套对象与行业知识，且与当前三个行业模板的客群不重叠；无锚点客户前不做",
-   "decided_by": "user-decision 2026-11-11（核心条线评审：ERP 全覆盖口径定案）",
-   "review_by": "2027-06-30"
-  },
-  {
-   "id": "cost-accounting",
-   "owner": {
-    "kind": "none",
-    "reason": "成本方法口径未定（加权/先进先出/批次实际），过账规则随口径而变"
-   },
-   "name_zh": "成本核算",
-   "name_en": "Cost Accounting",
-   "state": "needs_onboarding",
-   "boundary": "依赖库存数量面与估值口径；数量面已交付，成本方法（移动加权/先进先出/批次实际成本）需按客户口径落地。",
-   "evidence": [
-    {
-     "kind": "tool",
-     "ref": "query_object_balance"
-    }
-   ],
-   "claims": [],
-   "blocker": "需要客户确认成本方法口径（加权/先进先出/批次实际）与首个真实账期的期初库存；口径不同则过账规则不同"
-  },
-  {
-   "id": "budget",
-   "owner": {
-    "kind": "none",
-    "reason": "客户预算科目体系与考核维度未给，无口径只能做出空表"
-   },
-   "name_zh": "预算",
-   "name_en": "Budgeting",
-   "state": "needs_onboarding",
-   "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力；缺的是客户预算科目体系与口径。",
-   "evidence": [],
-   "claims": [],
-   "blocker": "需要客户的预算科目体系与考核维度（部门/项目/渠道）；无口径时做出来的是空表"
-  },
-  {
-   "id": "fixed-assets",
-   "owner": {
-    "kind": "none",
-    "reason": "客户资产台账与折旧政策未给，且可能走客户既有资产系统（届时只读对账）"
-   },
-   "name_zh": "固定资产",
-   "name_en": "Fixed Assets",
-   "state": "needs_onboarding",
-   "boundary": "折旧是时间驱动事件，事件内核可承载；折旧政策（年限/残值/方法）只能由客户给。",
-   "evidence": [],
-   "claims": [],
-   "blocker": "需要客户固定资产台账与折旧政策；且需确认是否走客户既有资产系统（若是则本板块只读对账）"
-  },
-  {
-   "id": "consolidation",
-   "owner": {
-    "kind": "none",
-    "reason": "多主体归属口径与内部交易抵销规则未定，现内核一进程一租户"
-   },
-   "name_zh": "合并报表",
-   "name_en": "Consolidation",
-   "state": "needs_onboarding",
-   "boundary": "多币种与租户隔离已具备，合并需要多主体与内部交易抵销口径；内核现在是一进程一租户。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
-     "contains": "tenant_id"
-    }
-   ],
-   "claims": [
-    "tenant.isolation"
-   ],
-   "blocker": "需要「多主体归属」口径与内部交易抵销规则；现内核一进程一租户，多主体需先定主体模型"
-  },
-  {
-   "id": "approval-workflow",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-posting-fleet",
-    "note": "确认门与审批上线值守：规则审批、拟稿事件 decide"
-   },
-   "name_zh": "审批流",
-   "name_en": "Approval Workflow",
-   "state": "delivered",
-   "boundary": "已有一等原语：拟落账的 proposal 确认门、拟稿事件的 decide 门、计费规则与过账规则的审批上线。多级/会签/条件路由的通用审批引擎不在本板块。",
-   "evidence": [
-    {
-     "kind": "tool",
-     "ref": "confirm_proposal"
-    },
-    {
-     "kind": "tool",
-     "ref": "decide_event"
-    },
-    {
-     "kind": "tool",
-     "ref": "approve_posting_rule"
-    }
-   ],
-   "claims": [
-    "ledger.double-entry"
-   ]
-  },
-  {
-   "id": "master-data",
-   "owner": {
-    "kind": "fleet",
-    "ref": "erp-order-to-cash-fleet",
-    "note": "通用科目表与行业科目映射在模板资产（universal_accounts + templates/*/account-mapping）；团队只做跨系统主数据偏差定性"
-   },
-   "name_zh": "主数据",
-   "name_en": "Master Data",
-   "state": "template_configured",
-   "boundary": "通用科目表在 universal_accounts；行业科目映射在每个行业模板的 account-mapping；对象身份在 objects（sku/客户/供应商/仓库）。跨系统的物料主数据同步仍走连接器。",
-   "evidence": [
-    {
-     "kind": "file",
-     "ref": "fd-erp-vertical-templates/templates/supply-chain/account-mapping/pack.json"
-    },
-    {
-     "kind": "file",
-     "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0008_objects.sql",
-     "contains": "CREATE TABLE IF NOT EXISTS objects"
-    }
-   ],
-   "claims": [
-    "templates.four-piece"
-   ]
-  },
-  {
-   "id": "hr",
-   "owner": {
-    "kind": "none",
-    "reason": "HR 是独立产品域（个人数据/考勤/薪酬合规），与经营账内核无共用原语"
-   },
-   "name_zh": "人力资源",
-   "name_en": "HR",
-   "state": "not_doing",
-   "boundary": "不提供人事、考勤、薪酬。与 ERP 板块「经营账 + 对账」的定位无关，且薪酬涉及个人数据与合规另一套边界。",
-   "evidence": [],
-   "claims": [],
-   "reason": "HR 是独立产品域（个人数据、考勤、薪酬合规），与经营账内核无共用原语；纳入会稀释板块边界",
-   "decided_by": "user-decision 2026-11-11（核心条线评审：ERP 全覆盖口径定案）",
-   "review_by": "2027-06-30"
-  }
- ],
- "claim_source": "fd-erp-vertical-templates/claims/claims.json",
- "claims_note": "每个模块可引用 claims 里的 id；not_doing 模块不得引用任何 status=delivered 的 claim（否则「不做」与「宣称已做」矛盾）。反向不强制：delivered 模块可以没有对外 claim（例如库存数量面尚未进入对外口径）。",
- "board_level_claims": {
-  "market.connector-packs": "市场在架是发布状态（三个行业连接器包的版本与 packId），不是任何单一子模块的能力；它的真源是 publish-record.json，由发布闸核，不由矩阵核。"
- },
- "board_level_note": "板块级宣称：不落到单一子模块，故不参与「必须被某个可用模块背书」的判定。豁免必须逐条给理由——没有理由的豁免就是漏洞。"
+  "board_level_note": "板块级宣称：不落到单一子模块，故不参与「必须被某个可用模块背书」的判定。豁免必须逐条给理由——没有理由的豁免就是漏洞。"
 }
