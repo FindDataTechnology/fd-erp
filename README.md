@@ -50,7 +50,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 消费仓 | 覆盖 | 声明不覆盖 |
 |---|---|---|
 | `fd-erp-vertical-templates` | 25 | 7 |
-| `fd-erp-vertical-api` | 17 | 15 |
+| `fd-erp-vertical-api` | 18 | 14 |
 
 > 注：tenant 由客户端绑定、不逐方法透传（一进程一租户）；`approved_by` / `submitted_by` / `reversed_by` 不透传，由内核按默认值填 （`human` / `ops` / `human`）—— 这是审计口径的已知取舍，不是漏参。
 
