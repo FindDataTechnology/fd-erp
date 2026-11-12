@@ -173,7 +173,7 @@ a{border:0}
 <table class="tb"><caption>本页口径</caption>
 <thead><tr><th scope="col">项目</th><th scope="col" class="num">数量</th><th scope="col">出处</th></tr></thead><tbody>
 <tr><td>MCP 工具</td><td class="num big">32<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td><td class="prov">tool-surface.json</td></tr>
-<tr><td>业务路由</td><td class="num big">64<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td><td class="prov">coverage/ <span class="dim">（另有 2 条健康探针；其中 11 条未实施）</span></td></tr>
+<tr><td>业务路由</td><td class="num big">66<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td><td class="prov">coverage/ <span class="dim">（另有 2 条健康探针；其中 11 条未实施）</span></td></tr>
 <tr><td>行业模板</td><td class="num big">3<sup><a class="fn" href="#src" data-src="templates/*/manifest.json">3</a></sup></td><td class="prov">templates/*/manifest.json</td></tr>
 <tr><td>可宣称能力</td><td class="num big">16<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td><td class="prov">claims.json</td></tr>
 <tr><td>明确不宣称</td><td class="num big">7<sup><a class="fn" href="#src" data-src="claims.json">5</a></sup></td><td class="prov">claims.json</td></tr>
@@ -190,14 +190,14 @@ a{border:0}
 <li><a href="#capability"><span class="k">能力面</span><span class="v">16 条</span></a></li>
 <li><a href="#not-claimable"><span class="k">明确不宣称</span><span class="v">7 条</span></a></li>
 <li><a href="#tools"><span class="k">MCP 工具面</span><span class="v">32 个</span></a></li>
-<li><a href="#routes"><span class="k">REST 接口面</span><span class="v">64 条</span></a></li>
+<li><a href="#routes"><span class="k">REST 接口面</span><span class="v">66 条</span></a></li>
 <li><a href="#templates"><span class="k">行业模板</span><span class="v">3 套</span></a></li>
 <li><a href="#matrix"><span class="k">子模块全覆盖</span><span class="v">21 格四态</span></a></li>
 <li><a href="#gaps"><span class="k">连接器缺口</span><span class="v">7 条</span></a></li>
 <li><a href="#edges"><span class="k">边界</span><span class="v">四项</span></a></li>
 </ol></nav>
 <section id="form"><h2>形态：五层，各自独立升级</h2>
-<ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">64 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li></ul>
+<ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">66 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li></ul>
 <table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th><th scope="col">面</th><th scope="col" class="num">源码行</th><th scope="col" class="num">测试行</th></tr></thead><tbody>
 <tr><td>账本内核（行业无关）</td><td><code>fd-erp-ledger-mcp</code></td><td class="muted">MCP 工具面</td><td class="num">4456</td><td class="num">2895</td></tr>
 <tr><td>行业模板工厂（差异全部上移至此）</td><td><code>fd-erp-vertical-templates</code></td><td class="muted">模板资产 + 连接器绑定 + 能力矩阵</td><td class="num">10715</td><td class="num">8536</td></tr>
@@ -291,11 +291,11 @@ a{border:0}
 <tr><td><code>list_posting_gaps</code></td><td class="rw r">读</td><td class="muted">read · 缺规则待补清单：哪些事件在等哪条规则（未解除的缺口）</td></tr>
 </tbody></table>
 </section>
-<section id="routes"><h2>REST 接口面（64 条业务路由，11 条未实施）</h2>
+<section id="routes"><h2>REST 接口面（66 条业务路由，11 条未实施）</h2>
 <table><thead><tr><th scope="col">面</th><th scope="col" class="num">路由数</th><th scope="col">实施状态</th></tr></thead><tbody>
 <tr><td><code>cp</code></td><td class="num">12</td><td><span class="st no">4 未实施</span></td></tr>
 <tr><td><code>pagesets</code></td><td class="num">1</td><td><span class="st ok">已实施</span></td></tr>
-<tr><td><code>se</code></td><td class="num">15</td><td><span class="st no">1 未实施</span></td></tr>
+<tr><td><code>se</code></td><td class="num">17</td><td><span class="st no">1 未实施</span></td></tr>
 <tr><td><code>sp</code></td><td class="num">14</td><td><span class="st no">6 未实施</span></td></tr>
 <tr><td><code>ue</code></td><td class="num">22</td><td><span class="st ok">已实施</span></td></tr>
 </tbody></table>
@@ -344,7 +344,7 @@ a{border:0}
 <tr><td>人力资源</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不提供人事、考勤、薪酬。与 ERP 板块「经营账 + 对账」的定位无关，且薪酬涉及个人数据与合规另一套边界。<br><span class="muted">理由：HR 是独立产品域（个人数据、考勤、薪酬合规），与经营账内核无共用原语；纳入会稀释板块边界（复核 2027-06-30）</span></td></tr>
 </tbody></table>
 <p class="muted">「全覆盖」指决策空间全覆盖：每格恰好一态、一据、一理由，对外不问「做了几个模块」，只答这四种之一。判据 <code>tools/check_coverage_matrix.py</code>；矩阵漂移、不做格被宣称、宣称无模块背书都判红。</p>
-<p class="muted">另有一份按客户功能清单导入的行业点矩阵（supply-chain，35 点，按实现证据分类），用于单客户范围的实施盘点，不构成本页的四态口径。</p></section>
+<p class="muted">另有一份按客户功能清单导入的行业点矩阵（supply-chain，36 点，按实现证据分类），用于单客户范围的实施盘点，不构成本页的四态口径。</p></section>
 <section id="gaps"><h2>连接器缺口（7 条，每项带机器判据）</h2>
 <table><thead><tr><th scope="col">缺口</th><th scope="col">能力</th><th scope="col">责任仓</th><th scope="col">状态</th></tr></thead><tbody>
 <tr><td><code>unionpay-no-provider</code></td><td>银联收款渠道（结算流水只读）</td><td><code>open-connector-mt</code></td><td><span class="st no">open</span></td></tr>
