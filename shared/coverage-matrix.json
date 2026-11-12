@@ -214,12 +214,12 @@
    "owner": {
     "kind": "fleet",
     "ref": "erp-order-to-cash-fleet",
-    "note": "能力在行业模板资产的页面集与端点里（templates/supply-chain/pagesets，UE 商城 23/23、SE 业务员台 10/15）；团队只做日常单据一致性核对，不实现行业订单规则"
+    "note": "能力在行业模板资产的页面集与端点里（templates/supply-chain/pagesets，UE 商城 24/24、SE 业务员台 10/15）；团队只做日常单据一致性核对，不实现行业订单规则"
    },
    "name_zh": "销售与订单",
    "name_en": "Sales & Orders",
    "state": "template_configured",
-   "boundary": "订单与销售面在行业模板的页面集与端点里（UE 商城 23/23、SE 业务员台 10/15）；内核只记 order_placed 事件与据此产生的金额事实，不实现行业订单规则。",
+   "boundary": "订单与销售面在行业模板的页面集与端点里（UE 商城 24/24、SE 业务员台 10/15）；内核只记 order_placed 事件与据此产生的金额事实，不实现行业订单规则。售后申请（退/换/补）由 UE 售后车道受理为**流程记录**，不进事件层——申请不等于退货入库。",
    "evidence": [
     {
      "kind": "file",
@@ -228,6 +228,10 @@
     {
      "kind": "endpoint",
      "ref": "POST /erp/supply-chain/v1/ue/orders"
+    },
+    {
+     "kind": "endpoint",
+     "ref": "POST /erp/supply-chain/v1/ue/aftersale-requests"
     }
    ],
    "claims": [
