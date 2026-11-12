@@ -161,7 +161,7 @@ a{border:0}
 <header class="masthead"><div class="sheet">
 <span class="brand">FindData</span>
 <span class="doc">ERP · 能力与集成说明</span>
-<span class="stamp">2026-11-12</span>
+<span class="stamp">2026-11-13</span>
 </div></header>
 <main id="main" class="sheet">
 <div class="hero">
@@ -335,9 +335,9 @@ a{border:0}
 <tr><td>税务申报</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不自研税务申报。账内可记录发票类事件并参与对账，申报本体走客户既有渠道。<br><span class="muted">理由：税务申报需与税局/电子发票合规路径绑定，自研即触碰代开与申报责任；在中国电子发票合规路径确定前不作为能力提供（复核 2027-06-30）</span></td></tr>
 <tr><td>资金与出纳</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">只产出对账结果与核对指令；不提供资金池、代收代付、分账执行。资金归集与分账走客户自选的持牌通道。<br><span class="muted">理由：二清红线：平台不得触碰资金归集与分账执行（复核 2027-06-30）</span></td></tr>
 <tr><td>生产制造</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不提供 BOM、工艺路线、工单、MRP 运算。当前客群（跨境电商/餐饮连锁/供应链）无此诉求。<br><span class="muted">理由：生产制造需要 BOM/工艺路线/产能一整套对象与行业知识，且与当前三个行业模板的客群不重叠；无锚点客户前不做（复核 2027-06-30）</span></td></tr>
-<tr><td>成本核算</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">依赖库存数量面与估值口径；数量面已交付，成本计价已交付（`cost_method` 三法全实现、`provisional_basis` 缺成本不补零、`variance_policy` 差异分类、`close_grain` 结账粒度）；成本方法不再需要客户预先拍板，改口径即可切换（切换只影响切换后的新出库，已出库成本不重算）。<br><span class="muted">需客户提供：引擎已交付（成本计价：重放已确认事实，三种方法由口径选择）；仍缺的只有**首个真实账期的期初库存**（无期初则结存金额从零起算，与客户账面对不上）。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。</span></td></tr>
+<tr><td>成本核算</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">依赖库存数量面与估值口径；数量面已交付，成本计价已交付（`cost_method` 三法全实现、`provisional_basis` 缺成本不补零、`variance_policy` 差异分类、`close_grain` 结账粒度）；成本方法不再需要客户预先拍板，改口径即可切换（切换只影响切换后的新出库，已出库成本不重算）。<br><span class="muted">需客户提供：引擎已交付（成本计价：重放已确认事实，三种方法由口径选择）；仍缺的只有**首个真实账期的期初库存**（无期初则结存金额从零起算，与客户账面对不上）口径已进册且已转 `enforced=true`：`cost_method` / `provisional_basis` / `variance_policy` / `close_grain` 改了会真改变计算（切换只影响切换后的新出库）。</span></td></tr>
 <tr><td>预算</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力；缺的是客户预算科目体系与口径。<br><span class="muted">需客户提供：预算引擎未交付：口径（维度/期间/控制方式）已在册，表结构与拦截规则等引擎立项。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。</span></td></tr>
-<tr><td>固定资产</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">折旧是时间驱动事件，事件内核可承载；折旧政策（年限/残值/方法）只能由客户给。<br><span class="muted">需客户提供：折旧引擎未交付：口径（折旧方法/台账归属）已在册。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。</span></td></tr>
+<tr><td>固定资产</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">折旧引擎已交付（change: add-fixed-assets-lane）：登记受资本化门槛约束 → 折旧计划 → 期末按期间计提（**待确认 proposal**，借费用 / 贷 1602 累计折旧）→ 净值与计划可查可复算。三种方法按口径 `depreciation_method` 全实现（直线/双倍余额递减末期改直线/工作量法），资产可单独指定方法；`asset_ledger_owner` 为 `platform` 时自建台账，为 `customer-readonly` / `customer-writeback` 时如实 `NOT_WIRED`（不假装对接客户资产系统）。内核通用科目已补 `1601 固定资产` / `1602 累计折旧`（迁移 0012，追加幂等）。**不做**处置、减值、重估、在建工程转固——那是另一套判断，等真实需求。<br><span class="muted">需客户提供：引擎已交付（折旧：三方法 + 期末计提走确认门 + 净值/计划可复算）；仍缺的只有**数据**：客户资产台账（CSV：asset_id,name,category,acquired_on,cost,currency,salvage,useful_life_months）与**资本化门槛数值**（人工登记，程序不得自设）。口径已进册且已转 `enforced=true`：`depreciation_method` / `asset_ledger_owner` 改了会真改变计算。</span></td></tr>
 <tr><td>合并报表</td><td><code>needs_onboarding</code><br><span class="muted">需一次接入</span></td><td class="muted">多币种与租户隔离已具备，合并需要多主体与内部交易抵销口径；内核现在是一进程一租户。<br><span class="muted">需客户提供：合并引擎未交付：口径（主体模型/抵销范围/折算方法）已在册。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。</span></td></tr>
 <tr><td>审批流</td><td><code>delivered</code><br><span class="muted">已实现</span></td><td class="muted">已有一等原语：拟落账的 proposal 确认门、拟稿事件的 decide 门、计费规则与过账规则的审批上线。多级/会签/条件路由的通用审批引擎不在本板块。</td></tr>
 <tr><td>主数据</td><td><code>template_configured</code><br><span class="muted">模板可配</span></td><td class="muted">通用科目表在 universal_accounts；行业科目映射在每个行业模板的 account-mapping；对象身份在 objects（sku/客户/供应商/仓库）。跨系统的物料主数据同步仍走连接器。</td></tr>
@@ -369,6 +369,6 @@ a{border:0}
 <li>coverage/</li>
 <li>templates/*/manifest.json</li>
 </ul>
-<p class="say">本页由 <code>fd-erp/tools/gen_erp_docs.py</code> 于 2026-11-12 生成。数据出处：<code>claims/claims.json</code>、<code>gaps.json</code>、<code>publish-record.json</code>、<code>tool-surface.json</code>、<code>coverage/</code>、<code>templates/*/manifest.json</code>。本页不声称任何未在 <code>publish-record.json</code> 中记为 live 的状态。</p>
+<p class="say">本页由 <code>fd-erp/tools/gen_erp_docs.py</code> 于 2026-11-13 生成。数据出处：<code>claims/claims.json</code>、<code>gaps.json</code>、<code>publish-record.json</code>、<code>tool-surface.json</code>、<code>coverage/</code>、<code>templates/*/manifest.json</code>。本页不声称任何未在 <code>publish-record.json</code> 中记为 live 的状态。</p>
 </footer>
 </main></body></html>

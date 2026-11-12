@@ -1,7 +1,7 @@
 # fd-erp — ERP 板块独立维护根
 
 > 本文件由 `fd-erp/tools/gen_erp_docs.py` 从 `fd-erp/manifest.json` 与各仓机器可读产物派生，**不要手改**。
-> 生成日期：2026-11-12。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
+> 生成日期：2026-11-13。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
 
 ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线。章程 `openspec/specs/erp-board/spec.md`；对外口径唯一出处 `docs/erp/README.md`。
 

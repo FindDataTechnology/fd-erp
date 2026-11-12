@@ -489,7 +489,7 @@
         }
       ],
       "claims": [],
-      "blocker": "引擎已交付（成本计价：重放已确认事实，三种方法由口径选择）；仍缺的只有**首个真实账期的期初库存**（无期初则结存金额从零起算，与客户账面对不上）。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。",
+      "blocker": "引擎已交付（成本计价：重放已确认事实，三种方法由口径选择）；仍缺的只有**首个真实账期的期初库存**（无期初则结存金额从零起算，与客户账面对不上）口径已进册且已转 `enforced=true`：`cost_method` / `provisional_basis` / `variance_policy` / `close_grain` 改了会真改变计算（切换只影响切换后的新出库）。",
       "intake": {
         "kind": "customer-decision",
         "note": "成本方法与分摊口径决定过账规则与结转分录；不先定，做出来的成本表与客户账上对不上。",
@@ -719,13 +719,23 @@
       "id": "fixed-assets",
       "owner": {
         "kind": "none",
-        "reason": "客户资产台账与折旧政策未给，且可能走客户既有资产系统（届时只读对账）"
+        "reason": "客户资产台账与资本化门槛数值未给；折旧方法与台账归属已在册（改口径即可切换）"
       },
       "name_zh": "固定资产",
       "name_en": "Fixed Assets",
       "state": "needs_onboarding",
-      "boundary": "折旧是时间驱动事件，事件内核可承载；折旧政策（年限/残值/方法）只能由客户给。",
+      "boundary": "折旧引擎已交付（change: add-fixed-assets-lane）：登记受资本化门槛约束 → 折旧计划 → 期末按期间计提（**待确认 proposal**，借费用 / 贷 1602 累计折旧）→ 净值与计划可查可复算。三种方法按口径 `depreciation_method` 全实现（直线/双倍余额递减末期改直线/工作量法），资产可单独指定方法；`asset_ledger_owner` 为 `platform` 时自建台账，为 `customer-readonly` / `customer-writeback` 时如实 `NOT_WIRED`（不假装对接客户资产系统）。内核通用科目已补 `1601 固定资产` / `1602 累计折旧`（迁移 0012，追加幂等）。**不做**处置、减值、重估、在建工程转固——那是另一套判断，等真实需求。",
       "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/assets.py",
+          "contains": "class FixedAssetLane"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0012_fixed_assets_accounts.sql",
+          "contains": "1602"
+        },
         {
           "kind": "file",
           "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
@@ -733,10 +743,10 @@
         }
       ],
       "claims": [],
-      "blocker": "折旧引擎未交付：口径（折旧方法/台账归属）已在册。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。",
+      "blocker": "引擎已交付（折旧：三方法 + 期末计提走确认门 + 净值/计划可复算）；仍缺的只有**数据**：客户资产台账（CSV：asset_id,name,category,acquired_on,cost,currency,salvage,useful_life_months）与**资本化门槛数值**（人工登记，程序不得自设）。口径已进册且已转 `enforced=true`：`depreciation_method` / `asset_ledger_owner` 改了会真改变计算。",
       "intake": {
         "kind": "customer-decision",
-        "note": "折旧方法与台账归属决定这块是自建台账还是只读对账；也决定要不要碰客户的资产系统。",
+        "note": "以下口径已可配置（在册、有消费者），登记台账时按客户选择取值即可；真正阻塞的是台账数据与门槛数值。",
         "questions": [
           {
             "id": "depreciation_method",
