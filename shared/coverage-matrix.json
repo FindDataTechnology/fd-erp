@@ -476,7 +476,7 @@
       "name_zh": "成本核算",
       "name_en": "Cost Accounting",
       "state": "needs_onboarding",
-      "boundary": "依赖库存数量面与估值口径；数量面已交付，成本计价已交付（`cost_method` 三法全实现、`provisional_basis` 缺成本不补零、`variance_policy` 差异分类、`close_grain` 结账粒度）；成本方法不再需要客户预先拍板，改口径即可切换（切换只影响切换后的新出库，已出库成本不重算）。",
+      "boundary": "依赖库存数量面与估值口径；数量面已交付，成本计价已交付（`cost_method` 三法全实现、`provisional_basis` 缺成本不补零、`variance_policy` 差异分类、`close_grain` 结账粒度）；成本方法不再需要客户预先拍板，改口径即可切换（切换只影响切换后的新出库，已出库成本不重算）；**结转通道已交付**（change: add-cost-cogs-posting）：期末把已计价的出库成本汇成一张待确认 proposal（借 5000 营业成本 / 贷 1200 存货，稳定键 `cogs:<期间>`、期间幂等）；成本未知的出库默认整期拒结（结转偏小的营业成本会让毛利虚高且看不出来），部分结转须显式声明并自报被跳过项。",
       "evidence": [
         {
           "kind": "tool",
@@ -491,6 +491,11 @@
           "kind": "file",
           "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
           "contains": "cost_method"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/cost.py",
+          "contains": "def post_cogs"
         }
       ],
       "claims": [],
