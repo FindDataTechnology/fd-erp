@@ -346,21 +346,29 @@
       "id": "invoice",
       "owner": {
         "kind": "none",
-        "reason": "开票通道未接入：金蝶 provider 无开票直连 action，后台审核车道未建（API 侧四条开票申请端点为如实 501）"
+        "reason": "开票**申请**面已实现（拟稿车道 + 确认门），仍缺开票**执行**通道：金蝶 provider 无开票直连 action、运营侧审核页未建。票据本体归客户既有渠道——格子整体能力等那条通道接入，故不给团队承担者"
       },
       "name_zh": "发票",
       "name_en": "Invoicing",
       "state": "needs_onboarding",
-      "boundary": "事件层已注册 invoice_requested（可经内核工具写入并参与对账），但产品侧开票申请面无实现——开票申请/审核/票据跟踪目前是如实 501。票据本体仍由客户既有合规渠道处理：不自研开票、不代开票据，这是边界不是缺口；缺的是把客户已有开票流程接进来的那条通道。",
+      "boundary": "开票**申请**面已实现：客户提交（对账单/订单引用 + 抬头 + 税号）→ 内核拟稿车道落 `invoice_requested` pending → 确认门（decide_event）拍板 → 客户侧看到 accepted/rejected。状态是内核投影，本服务不留第二份状态台账。票据**本体**仍由客户既有合规渠道处理：不自研开票、不代开票据、不生成票据文件——这是边界不是缺口；缺的是「已开票」的回写通道（发票号/票据影像）与运营侧审核页。",
       "evidence": [
         {
           "kind": "file",
           "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0007_business_events.sql",
           "contains": "invoice_requested"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "POST /erp/supply-chain/v1/ue/invoice-requests"
+        },
+        {
+          "kind": "endpoint",
+          "ref": "GET /erp/supply-chain/v1/ue/invoice-requests"
         }
       ],
       "claims": [],
-      "blocker": "需要一条开票通道：金蝶 provider 补开票直连 action（或客户线下开票回执的录入面）＋后台审核车道；到位后本格转 delivered，事件类型与对账口径无需返工"
+      "blocker": "开票执行通道：金蝶 provider 补开票直连 action（或客户线下开票回执的录入面），以及运营侧审核页。到位后本格转 delivered；申请面、事件类型与对账口径无需返工"
     },
     {
       "id": "tax",
