@@ -618,7 +618,7 @@
       "name_zh": "预算",
       "name_en": "Budgeting",
       "state": "needs_onboarding",
-      "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力。引擎已交付（change: add-budget-control-lane）：按口径维度与期间登记预算（人工拍板、修订追加式）→ 承诺占用（`hard-block` 拒 / `warn-only` 放行并标记 / `post-audit` 不拦只记）→ 释放 → 执行查询。**承诺由预算车道记（带维度），实际开支从内核分录按科目只读汇总——内核分录没有维度列，所以「按部门的实际」无法拆出**，查询里两者分开列示并明说实际只到科目层。",
+      "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力。引擎已交付（change: add-budget-control-lane）：按口径维度与期间登记预算（人工拍板、修订追加式）→ 承诺占用（`hard-block` 拒 / `warn-only` 放行并标记 / `post-audit` 不拦只记）→ 释放 → 执行查询。承诺由预算车道记（带维度）；**实际开支按维度从内核分录汇总**（change: add-ledger-dimensions：分录自该迁移起带 `dimensions`）——同科目同期**未标注维度**的净额单列为 `unattributedActual`，不被静默漏掉。口径词表（`cost-center`）与内核维度键（`cost_center`）显式映射，不靠字符串巧合对齐。",
       "evidence": [
         {
           "kind": "file",
@@ -629,10 +629,15 @@
           "kind": "file",
           "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
           "contains": "budget_control"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0013_analytical_dimensions.sql",
+          "contains": "dimensions"
         }
       ],
       "claims": [],
-      "blocker": "引擎已交付（预算控制：三控制方式 + 两种期间粒度 + 四种维度 + 承诺/释放/执行查询）；仍缺的只有**数据**：客户预算基数（CSV：dimension_value,account_code,period,baseline_amount）与纳入预算的科目清单。口径已进册且已转 `enforced=true`：`budget_dimension` / `budget_period` / `budget_control` 改了会真改变计算。**边界**：实际值只到科目层（内核分录无维度列），按维度的实际需先给账本加维度——那是一次内核核心改动，等有客户真要求按部门对账时单独立项。",
+      "blocker": "引擎已交付（预算控制：三控制方式 + 两种期间粒度 + 四种维度 + 承诺/释放/执行查询 + 按维度实际与未标注单列）；仍缺的只有**数据**：客户预算基数（CSV：dimension_value,account_code,period,baseline_amount）与纳入预算的科目清单。口径已进册且已转 `enforced=true`。**历史分录没有维度**（不回填，猜出来的归属比没有归属更糟），故按维度实际只覆盖维度迁移之后的落账——跨越切换点的期间需人工看 `unattributedActual`。",
       "intake": {
         "kind": "customer-decision",
         "note": "以下口径已可配置（在册、有消费者），登记预算时按客户选择取值即可；真正阻塞的是预算基数与科目范围。",
@@ -833,7 +838,7 @@
       "name_zh": "合并报表",
       "name_en": "Consolidation",
       "state": "needs_onboarding",
-      "boundary": "多币种与租户隔离已具备，合并需要多主体与内部交易抵销口径；内核现在是一进程一租户。",
+      "boundary": "多币种与租户隔离已具备。**主体维度底座已交付**（change: add-ledger-dimensions）：分录可带 `entity` 维度，按主体切账在账本层已可表达；仍缺的是**合并引擎本身**——主体清单与持股比例、内部交易抵销（往来/存货未实现利润/权益）与外币报表折算。当前内核一进程一租户，`single-tenant-multi-entity` 这条路现在能走通（用 entity 维度），`tenant-per-entity` 则要跨租户只读取数通道。",
       "evidence": [
         {
           "kind": "file",
@@ -844,12 +849,17 @@
           "kind": "file",
           "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
           "contains": "entity_model"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/dimensions.py",
+          "contains": "entity"
         }
       ],
       "claims": [
         "tenant.isolation"
       ],
-      "blocker": "合并引擎未交付：口径（主体模型/抵销范围/折算方法）已在册。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。",
+      "blocker": "合并引擎未交付：口径（主体模型/抵销范围/折算方法）已在册，主体维度底座已交付（`entity` 维度可落到分录）。仍缺的是**抵销与折算的实现**：内部往来抵销、存货未实现利润抵销、权益抵销、外币报表折算，以及主体清单/持股比例的主数据。这三件都依赖真实客户的集团结构——没有主体树时做出来的是空报表，故等首个有集团结构需求的客户再立项。",
       "intake": {
         "kind": "customer-decision",
         "note": "合并报表的前提是主体模型；内核一进程一租户，多主体要先定模型才谈抵销。",
