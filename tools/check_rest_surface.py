@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""REST 实现面 ↔ 声明契约 双向对拍闸（change: gate-rest-surface-against-contract）。
+
+守的是**声明面失信**这一类事故：契约四份 `api-contract.md` 都写着「本契约全部端点与
+MCP 工具面同源数据」，但此前没有任何闸核对这句话——2026-11-12 实测，两条新端点加进
+`faces.py` 后测试全绿、各闸全绿、变更归档，契约表里却始终没有那两行。
+
+三个方向都判红：
+
+  1. 实现有、声明无   —— 新增端点必须同时补契约行（哪怕是如实 501 的端点，也要声明）；
+  2. 声明有、实现无   —— 契约不得悬空；
+  3. 白名单条目过期   —— 基础设施端点免检牌必须跟着路由走，改名/删除后要撤牌。
+
+为什么用 AST 而不是手抄清单：`planned_surfaces.py` 已经因为同一理由选了 AST（手抄必腐化）。
+本闸沿用它 `_routes` 的写法，不引入第二套解析。
+
+**基础设施端点走代码内显式白名单**，不按路径前缀自动放行：前缀规则会静默吞掉未来任何以
+`/health` 开头的业务端点；白名单每加一条都要写理由与声明出处，加的时候人会想一下。
+
+解析到零行契约直接判红：零行不是「通过」，是解析器失效（表头被改、缩进变了、列顺序换了）。
+
+退出码：0 通过 / 1 有漂移 / 2 输入缺失（兄弟仓不在场，非通过）。
+
+用法：
+    python3 tools/check_rest_surface.py
+    python3 tools/check_rest_surface.py --api-dir <repo>/fd_erp_vertical_api \\
+        --pagesets-dir <templates>/templates/supply-chain/pagesets
+"""
+from __future__ import annotations
+
+import argparse
+import ast
+import re
+import sys
+from pathlib import Path
+
+#: 工作区根（fd-erp/tools/check_rest_surface.py → parents[2]）。worktree 下兄弟仓不在场，
+#: 于是走 SKIP 分支——缺输入与漂移是两件事，不混为一谈。
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_API_DIR = ROOT / "fd-erp-vertical-api" / "fd_erp_vertical_api"
+DEFAULT_PAGESETS_DIR = (ROOT / "fd-erp-vertical-templates" / "templates" / "supply-chain"
+                        / "pagesets")
+
+#: 参与派生实现的文件（faces 是四个页面集的业务面，app 是服务级与少量 UE 面）
+API_FILES = ("faces.py", "app.py")
+
+#: 声明表行：`| GET | `/erp/...` | ... |`
+ROW_RE = re.compile(r"^\|\s*(GET|POST|PUT|PATCH|DELETE)\s*\|\s*`([^`]+)`")
+PLACEHOLDER_RE = re.compile(r"\{[^}]+\}")
+
+#: 基础设施端点白名单：不进业务契约，但必须有理由 + 声明出处。
+#: 反向核对：这里登记的路由若已不存在 → 判红（撤牌）。
+INFRA_ENDPOINTS: tuple[dict[str, str], ...] = (
+    {
+        "method": "GET", "path": "/health",
+        "why": "进程存活探针（容器 liveness/readiness 用），不属于任何页面集的业务面",
+        "declared_at": "fd-erp-vertical-api/README.md「访问日志」节（探针路径列为调试可见项）",
+    },
+    {
+        "method": "GET", "path": "/healthz",
+        "why": "k8s 风格健康探针别名，同上，不承载业务语义",
+        "declared_at": "fd-erp-vertical-api/README.md「访问日志」节",
+    },
+    {
+        "method": "GET", "path": "/erp/supply-chain/v1/pagesets",
+        "why": "页面集授权形状查询：给客户端解析 key/grant 用，不属于四个页面集任一方的业务面",
+        "declared_at": "fd-erp-vertical-api/README.md「页面集授权形状」节",
+    },
+)
+
+
+def norm(path: str) -> str:
+    """占位符规范化：`{request_id}` 与 `{requestId}` 是同一路由。
+
+    只做这一条归一（把 `{...}` 换成 `{}`）。不做大小写折叠、不做尾斜杠折叠——那会把真正
+    不同的路径判成相同，闸就失去了意义。
+    """
+    return PLACEHOLDER_RE.sub("{}", path.strip())
+
+
+def _routes_of(src: str, fname: str) -> list[tuple[str, str, str]]:
+    """该文件里声明的路由：(METHOD, 原始路径, 文件)。"""
+    out: list[tuple[str, str, str]] = []
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as exc:  # 语法错要如实报，不能静默当零条
+        raise SystemExit(f"FAIL: 无法解析 {fname}：{exc}") from exc
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for dec in node.decorator_list:
+            if not isinstance(dec, ast.Call):
+                continue
+            attr = getattr(dec.func, "attr", "")
+            if attr not in ("get", "post", "put", "patch", "delete"):
+                continue
+            if dec.args and isinstance(dec.args[0], ast.Constant) and isinstance(
+                    dec.args[0].value, str):
+                out.append((attr.upper(), dec.args[0].value, fname))
+    return out
+
+
+def derive_code(api_dir: Path) -> tuple[dict[tuple[str, str], tuple[str, str]], list[str]]:
+    """实现端点集合 + 重复路由问题。
+
+    键是 (method, 规范化路径)；值是 (原始路径, 文件)。同一路由被两个处理器抢注是 bug，
+    单独报出来（FastAPI 会静默保留先注册的那个）。
+    """
+    code: dict[tuple[str, str], tuple[str, str]] = {}
+    dupes: list[str] = []
+    for fname in API_FILES:
+        path = api_dir / fname
+        if not path.is_file():
+            continue
+        for method, raw, src in _routes_of(path.read_text(encoding="utf-8"), fname):
+            key = (method, norm(raw))
+            if key in code:
+                dupes.append(f"{method} {norm(raw)} 在 {code[key][1]} 与 {src} 重复注册")
+                continue
+            code[key] = (raw, src)
+    return code, dupes
+
+
+def derive_declared(pagesets_dir: Path) -> tuple[dict[tuple[str, str], tuple[str, str]],
+                                                 list[str]]:
+    """契约表里的端点集合 + 解析失效问题（零行 = 解析失效，判红）。"""
+    declared: dict[tuple[str, str], tuple[str, str]] = {}
+    problems: list[str] = []
+    files = sorted(pagesets_dir.glob("*/api-contract.md"))
+    if not files:
+        problems.append(f"契约文件一个都没找到：{pagesets_dir}/*/api-contract.md")
+        return declared, problems
+    for f in files:
+        rows = 0
+        for line in f.read_text(encoding="utf-8").splitlines():
+            m = ROW_RE.match(line)
+            if not m:
+                continue
+            rows += 1
+            method, raw = m.group(1), m.group(2)
+            key = (method, norm(raw))
+            if key in declared:
+                problems.append(f"{method} {norm(raw)} 在两份契约里重复声明："
+                                f"{declared[key][1]} 与 {f.parent.name}")
+                continue
+            declared[key] = (raw, f.parent.name)
+        if rows == 0:
+            problems.append(f"{f.parent.name}/api-contract.md 解析到 0 条端点——表行格式变了？"
+                            "（零行不是通过，是解析失效）")
+    return declared, problems
+
+
+def check(api_dir: Path, pagesets_dir: Path) -> list[str]:
+    """返回问题清单（空 = 通过）。每条都写「怎么修」。"""
+    problems: list[str] = []
+    code, dupes = derive_code(api_dir)
+    if not code:
+        problems.append(f"{api_dir} 下没派生出任何路由——路径指错了？（零条不是通过）")
+        return problems + dupes
+    declared, parse_problems = derive_declared(pagesets_dir)
+    problems.extend(parse_problems)
+    problems.extend(dupes)
+
+    allow = {(e["method"], norm(e["path"])): e for e in INFRA_ENDPOINTS}
+
+    # 1) 实现有、声明无（且不在基础设施白名单里）
+    for key, (raw, src) in sorted(code.items()):
+        if key in declared or key in allow:
+            continue
+        problems.append(
+            f"[未声明] {key[0]} {norm(raw)}（{src}）——"
+            f"在对应页面集的 api-contract.md 补一行（含权限列），"
+            f"或确认它是基础设施端点后登记到本闸 INFRA_ENDPOINTS 并写明声明出处")
+
+    # 2) 声明有、实现无
+    for key, (raw, pack) in sorted(declared.items()):
+        if key in code:
+            continue
+        problems.append(
+            f"[悬空声明] {key[0]} {norm(raw)}（{pack}/api-contract.md）——"
+            f"实现它（无车道就如实 501 + planned_lane），或从契约里删掉这行")
+
+    # 3) 白名单过期（免检牌必须跟着路由走）
+    for key, entry in sorted(allow.items()):
+        if key in code:
+            continue
+        problems.append(
+            f"[白名单过期] {key[0]} {key[1]}（{entry['declared_at']}）——"
+            f"该路由已不存在，从 INFRA_ENDPOINTS 撤掉这条")
+
+    # 4) 白名单与契约重复声明（两边都有：说明它其实是业务面，不该挂免检牌）
+    for key in sorted(allow):
+        if key in declared:
+            problems.append(
+                f"[白名单冗余] {key[0]} {key[1]} 已被 {declared[key][1]} 契约声明——"
+                f"它是业务面，从 INFRA_ENDPOINTS 撤掉")
+    return problems
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="REST 实现面 ↔ 声明契约双向对拍")
+    ap.add_argument("--api-dir", default=str(DEFAULT_API_DIR),
+                    help="fd_erp_vertical_api 包目录（默认按工作区布局推）")
+    ap.add_argument("--pagesets-dir", default=str(DEFAULT_PAGESETS_DIR),
+                    help="templates/supply-chain/pagesets 目录（默认按工作区布局推）")
+    args = ap.parse_args(argv)
+
+    api_dir = Path(args.api_dir)
+    pagesets_dir = Path(args.pagesets_dir)
+
+    # 缺输入 → SKIP（退出 2），不假红也不假绿
+    missing = [str(p) for p in (api_dir, pagesets_dir) if not p.is_dir()]
+    if missing:
+        print(f"SKIP: 兄弟仓不在场，无法对拍（缺 {', '.join(missing)}）")
+        return 2
+
+    problems = check(api_dir, pagesets_dir)
+    code, _ = derive_code(api_dir)
+    declared, _ = derive_declared(pagesets_dir)
+    if problems:
+        print(f"FAIL: REST 面与声明契约不一致（{len(problems)} 处）：")
+        for p in problems:
+            print("  " + p)
+        return 1
+    print(f"OK: {len(code)} 条实现端点与 {len(declared)} 条契约声明双向一致"
+          f"（基础设施端点 {len(INFRA_ENDPOINTS)} 条已登记理由）")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

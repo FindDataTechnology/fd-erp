@@ -34,6 +34,10 @@ CROSS_REPO_GATES = [
     ("跨仓语义（错误码/指标）", "check_semantics_contract.py"),
     ("环境变量契约", "check_config_contract.py"),
     ("日志打码向量", "check_log_redaction.py"),
+    # REST 实现面 ↔ 四份 api-contract.md 双向对拍（change:
+    # gate-rest-surface-against-contract）。守的是「契约写着『全部端点同源』却没人核对」
+    # 那类事故：2026-11-12 实测 6 条端点实现完了、契约表里没有。
+    ("REST 面与契约一致", "check_rest_surface.py"),
     # 全覆盖矩阵要跨仓核证据（工具面/端点/连接器事实），兄弟仓不在场时它只做仓内部分
     ("全覆盖矩阵", "check_coverage_matrix.py"),
 ]

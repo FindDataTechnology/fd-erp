@@ -214,12 +214,12 @@
       "owner": {
         "kind": "fleet",
         "ref": "erp-order-to-cash-fleet",
-        "note": "能力在行业模板资产的页面集与端点里（templates/supply-chain/pagesets，UE 商城 24/24、SE 业务员台 14/15）；团队只做日常单据一致性核对，不实现行业订单规则"
+        "note": "能力在行业模板资产的页面集与端点里（templates/supply-chain/pagesets，UE 商城 24/24、SE 业务员台 16/17）；团队只做日常单据一致性核对，不实现行业订单规则"
       },
       "name_zh": "销售与订单",
       "name_en": "Sales & Orders",
       "state": "template_configured",
-      "boundary": "订单与销售面在行业模板的页面集与端点里（UE 商城 24/24、SE 业务员台 14/15）；内核只记 order_placed 事件与据此产生的金额事实，不实现行业订单规则。售后申请（退/换/补）由 UE 售后车道受理为**流程记录**，不进事件层——申请不等于退货入库。线索与拜访由 SE CRM 车道受理为**流程记录**（`record=lead/visit`），同样不进事件层：见了一条线索不是拿到一个客户，登记一次拜访不是产生一笔订单。",
+      "boundary": "订单与销售面在行业模板的页面集与端点里（UE 商城 24/24、SE 业务员台 16/17）；内核只记 order_placed 事件与据此产生的金额事实，不实现行业订单规则。售后申请（退/换/补）由 UE 售后车道受理为**流程记录**，不进事件层——申请不等于退货入库。线索与拜访由 SE CRM 车道受理为**流程记录**（`record=lead/visit`），同样不进事件层：见了一条线索不是拿到一个客户，登记一次拜访不是产生一笔订单。",
       "evidence": [
         {
           "kind": "file",
@@ -254,12 +254,12 @@
       "owner": {
         "kind": "fleet",
         "ref": "erp-order-to-cash-fleet",
-        "note": "采购单与到货通知在行业模板的 SP 供应商面（templates/supply-chain，实现 7/13）；团队核对单据与到货回流，不代供应商操作"
+        "note": "采购单与到货通知在行业模板的 SP 供应商面（templates/supply-chain，实现 8/14）；团队核对单据与到货回流，不代供应商操作"
       },
       "name_zh": "采购",
       "name_en": "Procurement",
       "state": "template_configured",
-      "boundary": "采购单与到货通知在 SP 供应商面（实现 7/13，其余如实 501）。到货落 goods_received 事件后可投影库存并可过账。",
+      "boundary": "采购单与到货通知在 SP 供应商面（实现 8/14，其余如实 501）。到货落 goods_received 事件后可投影库存并可过账。",
       "evidence": [
         {
           "kind": "endpoint",
