@@ -48,20 +48,6 @@
       ]
     },
     {
-      "id": "carrier-dimension",
-      "title": "承运商维度（运费单归集）",
-      "criterion": {
-        "kind": "tool-in-surface",
-        "subject": "list_fees_by_carrier",
-        "note": "不是缺读工具面：内核 list_fees / get_fee_detail 早已可用。缺的是**承运商这一维**——费用行与内核事件都不带 carrier，按承运商归集无从下手。先在事件 refs 落承运商引用（或计费规则按 waybill 反查），再由内核露出按承运商归集的读工具，运费单才可派生。"
-      },
-      "endpoints": [
-        {"method": "GET", "path": "/erp/supply-chain/v1/cp/freight-statements"},
-        {"method": "GET", "path": "/erp/supply-chain/v1/cp/freight-statements/{statementId}"},
-        {"method": "POST", "path": "/erp/supply-chain/v1/cp/freight-statements/{statementId}/confirm"}
-      ]
-    },
-    {
       "id": "wms-dock-master",
       "title": "月台资源主数据（可约时段）",
       "criterion": {

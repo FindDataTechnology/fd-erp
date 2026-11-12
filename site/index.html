@@ -257,7 +257,7 @@ a{border:0}
 <tr><td><code>approve_billing_rule</code></td><td class="rw w">写</td><td class="muted">write · 规则确认门（pending_approval→active，人工确认、不接受程序自审自批）；同维度冲突未处置拒绝上线；同 rule_key 旧 active 版本随新版本退役</td></tr>
 <tr><td><code>list_billing_rules</code></td><td class="rw r">读</td><td class="muted">read · 分页查询计费规则（含版本、状态机、config、rate_source）</td></tr>
 <tr><td><code>bill_event</code></td><td class="rw w">写</td><td class="muted">write · 按 active 规则对事件计费，写 fee_details（append-only，快照锁定规则版本）+ 组 billing-engine 机器车道分录 proposal（不直接落账）；同 stable_id 重推返回首次结果</td></tr>
-<tr><td><code>list_fees</code></td><td class="rw r">读</td><td class="muted">read · 分页查询费用明细（含红冲反向行 status=&#x27;reversed&#x27; + reversal_of 关联）</td></tr>
+<tr><td><code>list_fees</code></td><td class="rw r">读</td><td class="muted">read · 分页查询费用明细（含红冲反向行 status=&#x27;reversed&#x27; + reversal_of 关联；每行含 refs = 计费时的单据引用，缺失回 {}，供按单据/承运商归集时免 N+1）</td></tr>
 <tr><td><code>get_fee_detail</code></td><td class="rw r">读</td><td class="muted">read · 费用详情 + 四层溯源链（费用项→业务单据→作业事件→计费规则版本）+ 快照确定性重算</td></tr>
 <tr><td><code>reverse_fee</code></td><td class="rw w">写</td><td class="muted">write · 红冲费用：新增反向明细行（reversal_of 关联，原行原样保留，append-only 无改/删路径）；原分录已落账时组冲正 proposal；同 fee 幂等</td></tr>
 <tr><td><code>simulate_billing</code></td><td class="rw r">读</td><td class="muted">read · 按历史事件集试算新旧规则费用差异（零写入；费率出处纪律同正式规则）</td></tr>
