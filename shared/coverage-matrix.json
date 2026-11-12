@@ -471,15 +471,25 @@
       "name_zh": "成本核算",
       "name_en": "Cost Accounting",
       "state": "needs_onboarding",
-      "boundary": "依赖库存数量面与估值口径；数量面已交付，成本方法（移动加权/先进先出/批次实际成本）需按客户口径落地。",
+      "boundary": "依赖库存数量面与估值口径；数量面已交付，成本计价已交付（`cost_method` 三法全实现、`provisional_basis` 缺成本不补零、`variance_policy` 差异分类、`close_grain` 结账粒度）；成本方法不再需要客户预先拍板，改口径即可切换（切换只影响切换后的新出库，已出库成本不重算）。",
       "evidence": [
         {
           "kind": "tool",
           "ref": "query_object_balance"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/cost.py",
+          "contains": "class CostEngine"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
+          "contains": "cost_method"
         }
       ],
       "claims": [],
-      "blocker": "需要客户确认成本方法口径（加权/先进先出/批次实际）与首个真实账期的期初库存；口径不同则过账规则不同",
+      "blocker": "引擎已交付（成本计价：重放已确认事实，三种方法由口径选择）；仍缺的只有**首个真实账期的期初库存**（无期初则结存金额从零起算，与客户账面对不上）。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。",
       "intake": {
         "kind": "customer-decision",
         "note": "成本方法与分摊口径决定过账规则与结转分录；不先定，做出来的成本表与客户账上对不上。",
@@ -604,9 +614,15 @@
       "name_en": "Budgeting",
       "state": "needs_onboarding",
       "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力；缺的是客户预算科目体系与口径。",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
+          "contains": "budget_dimension"
+        }
+      ],
       "claims": [],
-      "blocker": "需要客户的预算科目体系与考核维度（部门/项目/渠道）；无口径时做出来的是空表",
+      "blocker": "预算引擎未交付：口径（维度/期间/控制方式）已在册，表结构与拦截规则等引擎立项。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。",
       "intake": {
         "kind": "customer-decision",
         "note": "预算的维度与控制方式决定表结构与拦截规则；没有口径时做出来的是空表。",
@@ -709,9 +725,15 @@
       "name_en": "Fixed Assets",
       "state": "needs_onboarding",
       "boundary": "折旧是时间驱动事件，事件内核可承载；折旧政策（年限/残值/方法）只能由客户给。",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
+          "contains": "depreciation_method"
+        }
+      ],
       "claims": [],
-      "blocker": "需要客户固定资产台账与折旧政策；且需确认是否走客户既有资产系统（若是则本板块只读对账）",
+      "blocker": "折旧引擎未交付：口径（折旧方法/台账归属）已在册。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。",
       "intake": {
         "kind": "customer-decision",
         "note": "折旧方法与台账归属决定这块是自建台账还是只读对账；也决定要不要碰客户的资产系统。",
@@ -797,12 +819,17 @@
           "kind": "file",
           "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
           "contains": "tenant_id"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
+          "contains": "entity_model"
         }
       ],
       "claims": [
         "tenant.isolation"
       ],
-      "blocker": "需要「多主体归属」口径与内部交易抵销规则；现内核一进程一租户，多主体需先定主体模型",
+      "blocker": "合并引擎未交付：口径（主体模型/抵销范围/折算方法）已在册。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。",
       "intake": {
         "kind": "customer-decision",
         "note": "合并报表的前提是主体模型；内核一进程一租户，多主体要先定模型才谈抵销。",
