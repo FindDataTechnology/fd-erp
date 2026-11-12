@@ -608,24 +608,29 @@
       "id": "budget",
       "owner": {
         "kind": "none",
-        "reason": "客户预算科目体系与考核维度未给，无口径只能做出空表"
+        "reason": "客户预算基数与科目范围未给；维度/期间/控制方式已在册（改口径即可切换）"
       },
       "name_zh": "预算",
       "name_en": "Budgeting",
       "state": "needs_onboarding",
-      "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力；缺的是客户预算科目体系与口径。",
+      "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力。引擎已交付（change: add-budget-control-lane）：按口径维度与期间登记预算（人工拍板、修订追加式）→ 承诺占用（`hard-block` 拒 / `warn-only` 放行并标记 / `post-audit` 不拦只记）→ 释放 → 执行查询。**承诺由预算车道记（带维度），实际开支从内核分录按科目只读汇总——内核分录没有维度列，所以「按部门的实际」无法拆出**，查询里两者分开列示并明说实际只到科目层。",
       "evidence": [
         {
           "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/budget.py",
+          "contains": "class BudgetBook"
+        },
+        {
+          "kind": "file",
           "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py",
-          "contains": "budget_dimension"
+          "contains": "budget_control"
         }
       ],
       "claims": [],
-      "blocker": "预算引擎未交付：口径（维度/期间/控制方式）已在册，表结构与拦截规则等引擎立项。口径已进册（change: add-valuation-policy-book）：本格涉及的口径键在 `fd-erp-vertical-templates/fd_erp_vertical_templates/policy.py` 登记，全部候选值在册、默认值取行业常见值、变更走确认车道；引擎未交付前该键被标 `enforced=false`（改了不会改变任何计算，且提案当场就会说明「仅登记」）。",
+      "blocker": "引擎已交付（预算控制：三控制方式 + 两种期间粒度 + 四种维度 + 承诺/释放/执行查询）；仍缺的只有**数据**：客户预算基数（CSV：dimension_value,account_code,period,baseline_amount）与纳入预算的科目清单。口径已进册且已转 `enforced=true`：`budget_dimension` / `budget_period` / `budget_control` 改了会真改变计算。**边界**：实际值只到科目层（内核分录无维度列），按维度的实际需先给账本加维度——那是一次内核核心改动，等有客户真要求按部门对账时单独立项。",
       "intake": {
         "kind": "customer-decision",
-        "note": "预算的维度与控制方式决定表结构与拦截规则；没有口径时做出来的是空表。",
+        "note": "以下口径已可配置（在册、有消费者），登记预算时按客户选择取值即可；真正阻塞的是预算基数与科目范围。",
         "questions": [
           {
             "id": "budget_dimension",
