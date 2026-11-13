@@ -689,7 +689,7 @@
       "name_zh": "预算",
       "name_en": "Budgeting",
       "state": "needs_onboarding",
-      "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力。引擎已交付（change: add-budget-control-lane）：按口径维度与期间登记预算（人工拍板、修订追加式）→ 承诺占用（`hard-block` 拒 / `warn-only` 放行并标记 / `post-audit` 不拦只记）→ 释放 → 执行查询。承诺由预算车道记（带维度）；**实际开支按维度从内核分录汇总**（change: add-ledger-dimensions：分录自该迁移起带 `dimensions`）——同科目同期**未标注维度**的净额单列为 `unattributedActual`，不被静默漏掉。口径词表（`cost-center`）与内核维度键（`cost_center`）显式映射，不靠字符串巧合对齐。",
+      "boundary": "预算在事件内核下是「预算对象 + 期间投影」，无需新内核能力。引擎已交付（change: add-budget-control-lane）：按口径维度与期间登记预算（人工拍板、修订追加式）→ 承诺占用（`hard-block` 拒 / `warn-only` 放行并标记 / `post-audit` 不拦只记）→ 释放 → 执行查询。承诺由预算车道记（带维度）；**实际开支按维度从内核分录汇总**（change: add-ledger-dimensions：分录自该迁移起带 `dimensions`）——同科目同期**未标注维度**的净额单列为 `unattributedActual`，不被静默漏掉。口径词表（`cost-center`）与内核维度键（`cost_center`）显式映射，不靠字符串巧合对齐。**执行整表已交付**（change: add-budget-execution）：`execution(period)` 把「有预算 / 有承诺 / 有实际」三者取并集出一张表，行是（维度值, 科目）；**双执行率**并列——承诺率回答「额度占了多少」、实际率回答「钱花到哪了」，预算未登记时两者为 null（不写 0%）；`remaining = 预算 − max(承诺, 实际)`（承诺与实际会重叠，取大者作保守估计，不做假去重）；**没登记预算却已花钱的科目点名**（`unbudgeted`）——否则「预算合规」只是没查到的假象；`alerts` 按超支/临近阈值（默认 0.9）点名并标触发口径；累计口径按区间求和（月从 1 月、季从首季），未标维度的实际单列不摊给任何维度，结转分录不计入实际。",
       "evidence": [
         {
           "kind": "file",
