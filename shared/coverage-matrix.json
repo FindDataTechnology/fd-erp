@@ -42,7 +42,7 @@
       "name_zh": "总账",
       "name_en": "General Ledger",
       "state": "delivered",
-      "boundary": "复式事件账：借贷必平由 DB 约束强制、余额确定性重算、已落账 append-only、更正只走冲正。分录由事件经版本化过账规则产出，不是原始入口。**三表已交付**（change: add-financial-statements）：试算平衡表（每科目借/贷/余额 + 借贷平衡断言）、利润表（收入 − 营业成本 − 期间费用 = 营业利润）、资产负债表（资产 / 负债 / 权益 / 未结转损益，**自带平衡断言**，表外科目不猜类型、判不平并点名），以及按维度费用表（未标注维度单列）。三表全部从分录现算、不落表——资产负债表能平正是账本分类与过账自洽的最强证据。**期间关账已交付**（change: add-period-close）：分录带独立**业务日期** `booked_on`（与落账时刻 `posted_at` 分开，期间归属因此与会话时区解耦），`accounting_periods` 追加式记录 close/reopen（无可变状态列），**数据库触发器**拒绝业务日期落在已关期间的分录（绕应用层直接 SQL 也进不去），顺序关账（早于目标且未关的期间先拦）、只重开最近一期且须理由，关账写快照（逐科目借/贷/净额/行数 + 借贷合计）并可按快照复算核对（不一致逐科目点名差额）。工具面（MCP）尚未开这组动作——同其余模板车道，等 REST 面一起接。",
+      "boundary": "复式事件账：借贷必平由 DB 约束强制、余额确定性重算、已落账 append-only、更正只走冲正。分录由事件经版本化过账规则产出，不是原始入口。**三表已交付**（change: add-financial-statements）：试算平衡表（每科目借/贷/余额 + 借贷平衡断言）、利润表（收入 − 营业成本 − 期间费用 = 营业利润）、资产负债表（资产 / 负债 / 权益 / 未结转损益，**自带平衡断言**，表外科目不猜类型、判不平并点名），以及按维度费用表（未标注维度单列）。三表全部从分录现算、不落表——资产负债表能平正是账本分类与过账自洽的最强证据。**期间关账已交付**（change: add-period-close）：分录带独立**业务日期** `booked_on`（与落账时刻 `posted_at` 分开，期间归属因此与会话时区解耦），`accounting_periods` 追加式记录 close/reopen（无可变状态列），**数据库触发器**拒绝业务日期落在已关期间的分录（绕应用层直接 SQL 也进不去），顺序关账（早于目标且未关的期间先拦）、只重开最近一期且须理由，关账写快照（逐科目借/贷/净额/行数 + 借贷合计）并可按快照复算核对（不一致逐科目点名差额）。工具面（MCP）尚未开这组动作——同其余模板车道，等 REST 面一起接。 **月结清单已交付**（change: add-month-end-checklist）：`month_end` 按固定顺序跑「结转出库成本 → 计提折旧 → 计提坏账」三步，每步只出待确认 proposal，失败即停；期间已关账或期间内有待确认提案时不开跑；**关账前置=三步成功且期间内没有任何待确认提案**，关账入口由调用方注入（模板层不实现关账）。`precheck` / `checklist` 只读，逐项给出 `ok|blocker|warning` 与修法。",
       "evidence": [
         {
           "kind": "file",
@@ -76,6 +76,11 @@
           "kind": "file",
           "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/periods.py",
           "contains": "def close"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/month_end.py",
+          "contains": "class MonthEndChecklist"
         }
       ],
       "claims": [
