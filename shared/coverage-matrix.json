@@ -869,17 +869,17 @@
       "id": "consolidation",
       "owner": {
         "kind": "none",
-        "reason": "多主体归属口径与内部交易抵销规则未定，现内核一进程一租户"
+        "reason": "合并引擎已交付（分主体取数/内部往来抵销/差额单列/平衡断言/抵销入账）；缺的是客户集团结构（主体清单与持股比例）与分录的主体标注——没有真实主体树时并出来的是空报表，故等首个有集团结构的客户接入"
       },
       "name_zh": "合并报表",
       "name_en": "Consolidation",
       "state": "needs_onboarding",
-      "boundary": "多币种与租户隔离已具备。**主体维度底座已交付**（change: add-ledger-dimensions）：分录可带 `entity` 维度，按主体切账在账本层已可表达；仍缺的是**合并引擎本身**——主体清单与持股比例、内部交易抵销（往来/存货未实现利润/权益）与外币报表折算。当前内核一进程一租户，`single-tenant-multi-entity` 这条路现在能走通（用 entity 维度），`tenant-per-entity` 则要跨租户只读取数通道。",
+      "boundary": "**合并引擎已交付**（change: add-consolidation-engine）：按 `entity` 维度分主体取数 → 内部往来抵销 → 「各主体 → 抵销 → 合并」工作底稿，自带平衡断言（资产 = 负债 + 权益 + 未结转损益）。主体登记人工拍板、追加式修订（持股 ∈ (0,1]、同标识幂等）；未标主体的分录单列 `unattributed` 不摊；`source_ref = elim:` 的分录归抵销列、不计入任何主体；抵销额取双方**较小者**，差额作为 `unmatched` 单列并指明朝向（不抹平），且**扣除已落账抵销**——否则第二次合并会把同一笔再抵一次，资产越并越小而报表照样平。抵销可落成一笔待确认 proposal（业务日期=期间末日、按期间幂等）。口径 `entity_model` / `elimination_scope` 已转 `enforced`（实现 `single-tenant-multi-entity` 与 `intercompany-ar-ap`；`tenant-per-entity` 与含存货/权益两档如实 `NOT_WIRED`），`fx_translation` 仍未实现——外币主体直接 `NOT_WIRED`，不按 1:1 混入。",
       "evidence": [
         {
           "kind": "file",
-          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
-          "contains": "tenant_id"
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/consolidation.py",
+          "contains": "class ConsolidationBook"
         },
         {
           "kind": "file",
@@ -888,17 +888,18 @@
         },
         {
           "kind": "file",
-          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/dimensions.py",
-          "contains": "entity"
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0013_analytical_dimensions.sql",
+          "contains": "dimensions"
         }
       ],
       "claims": [
-        "tenant.isolation"
+        "tenant.isolation",
+        "ledger.double-entry"
       ],
-      "blocker": "合并引擎未交付：口径（主体模型/抵销范围/折算方法）已在册，主体维度底座已交付（`entity` 维度可落到分录）。仍缺的是**抵销与折算的实现**：内部往来抵销、存货未实现利润抵销、权益抵销、外币报表折算，以及主体清单/持股比例的主数据。这三件都依赖真实客户的集团结构——没有主体树时做出来的是空报表，故等首个有集团结构需求的客户再立项。",
+      "blocker": "引擎已交付（分主体取数、内部往来抵销、差额单列、平衡断言、抵销入账）；仍缺的只有**客户数据**：主体清单与持股比例（CSV：entity_id,name,currency,parent_id,ownership_pct）与内部往来对账依据。另两档能力等真实需求：`tenant-per-entity` 要跨租户只读通道，含存货未实现利润/权益的抵销要内部毛利与股权链，外币折算要按期汇率通路（`fx_translation` 尚未实现）。",
       "intake": {
         "kind": "customer-decision",
-        "note": "合并报表的前提是主体模型；内核一进程一租户，多主体要先定模型才谈抵销。",
+        "note": "合并引擎已交付，剩下的是**数据**：先登记主体（`register_entity`，人工），再把分录打上 `entity` 维度；内部往来两侧不等时底稿会单列差额，照着差额去查账。",
         "questions": [
           {
             "id": "entity_model",
@@ -966,20 +967,19 @@
           {
             "id": "entity_list",
             "ask": "主体清单",
-            "format": "CSV：entity_id,name,currency,parent_id,ownership_pct",
+            "format": "CSV：entity_id,name,currency,parent_id,ownership_pct（登记走 register_entity）",
             "required": true
           },
           {
-            "id": "intercompany_matrix",
-            "ask": "内部交易矩阵（抵销依据）",
-            "format": "CSV：from_entity,to_entity,account_code,amount,currency,period",
+            "id": "entity_tagging",
+            "ask": "分录打主体维度",
+            "format": "落账时 dimensions={entity: <entity_id>}；未标注的会在底稿单列 unattributed",
             "required": true
           }
         ],
         "derived": [
-          "schema:entity-model",
-          "rule:elimination/<elimination_scope>",
-          "report:consolidated-balance-sheet"
+          "report:consolidated-balance-sheet",
+          "rule:elimination/intercompany-ar-ap"
         ]
       }
     },
