@@ -1021,7 +1021,7 @@
       "name_zh": "合并报表",
       "name_en": "Consolidation",
       "state": "needs_onboarding",
-      "boundary": "**合并引擎已交付**（change: add-consolidation-engine）：按 `entity` 维度分主体取数 → 内部往来抵销 → 「各主体 → 抵销 → 合并」工作底稿，自带平衡断言（资产 = 负债 + 权益 + 未结转损益）。主体登记人工拍板、追加式修订（持股 ∈ (0,1]、同标识幂等）；未标主体的分录单列 `unattributed` 不摊；`source_ref = elim:` 的分录归抵销列、不计入任何主体；抵销额取双方**较小者**，差额作为 `unmatched` 单列并指明朝向（不抹平），且**扣除已落账抵销**——否则第二次合并会把同一笔再抵一次，资产越并越小而报表照样平。抵销可落成一笔待确认 proposal（业务日期=期间末日、按期间幂等）。口径 `entity_model` / `elimination_scope` 已转 `enforced`（实现 `single-tenant-multi-entity` 与 `intercompany-ar-ap`；`tenant-per-entity` 与含存货/权益两档如实 `NOT_WIRED`），`fx_translation` 仍未实现——外币主体直接 `NOT_WIRED`，不按 1:1 混入。",
+      "boundary": "**合并引擎已交付**（change: add-consolidation-engine）：按 `entity` 维度分主体取数 → 内部往来抵销 → 「各主体 → 抵销 → 合并」工作底稿，自带平衡断言（资产 = 负债 + 权益 + 未结转损益）。主体登记人工拍板、追加式修订（持股 ∈ (0,1]、同标识幂等）；未标主体的分录单列 `unattributed` 不摊；`source_ref = elim:` 的分录归抵销列、不计入任何主体；抵销额取双方**较小者**，差额作为 `unmatched` 单列并指明朝向（不抹平），且**扣除已落账抵销**——否则第二次合并会把同一笔再抵一次，资产越并越小而报表照样平。抵销可落成一笔待确认 proposal（业务日期=期间末日、按期间幂等）。口径 `entity_model` / `elimination_scope` 已转 `enforced`（实现 `single-tenant-multi-entity` 与 `intercompany-ar-ap`；`tenant-per-entity` 与含存货/权益两档如实 `NOT_WIRED`），外币主体按口径处理：`none`（默认）直接 `NOT_WIRED` 不按 1:1 混入；`closing-rate` 则**先折算再抵销**（资产/负债期末汇率、损益各期平均、权益发生期期末；缺率即拒并点名，混币分录拒指向先调汇）——顺序不可反，否则内部往来是拿两种币种比大小。折算差额（CTA）进合并权益单列且**不落分录**：它是对报表的折算调整，不是主体发生过的交易。`temporal`（时态法）如实未实现。",
       "evidence": [
         {
           "kind": "file",
@@ -1043,7 +1043,7 @@
         "tenant.isolation",
         "ledger.double-entry"
       ],
-      "blocker": "引擎已交付（分主体取数、内部往来抵销、差额单列、平衡断言、抵销入账）；仍缺的只有**客户数据**：主体清单与持股比例（CSV：entity_id,name,currency,parent_id,ownership_pct）与内部往来对账依据。另两档能力等真实需求：`tenant-per-entity` 要跨租户只读通道，含存货未实现利润/权益的抵销要内部毛利与股权链，外币折算要按期汇率通路（`fx_translation` 尚未实现）。",
+      "blocker": "引擎已交付（分主体取数、内部往来抵销、差额单列、平衡断言、抵销入账）；仍缺的只有**客户数据**：主体清单与持股比例（CSV：entity_id,name,currency,parent_id,ownership_pct）与内部往来对账依据。另两档能力等真实需求：`tenant-per-entity` 要跨租户只读通道，含存货未实现利润/权益的抵销要内部毛利与股权链。外币折算已交付 `closing-rate`（change: add-fx-translation），但 CTA 未按持股拆分归母/少数股东——那要完整股权链（属 `plus-equity` 档）。",
       "intake": {
         "kind": "customer-decision",
         "note": "合并引擎已交付，剩下的是**数据**：先登记主体（`register_entity`，人工），再把分录打上 `entity` 维度；内部往来两侧不等时底稿会单列差额，照着差额去查账。",
