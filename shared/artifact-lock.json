@@ -3,6 +3,6 @@
  "note": "生成物指纹。gen_erp_docs.py 写入，check_all.py 校验；手改生成物会在这里露馅。",
  "artifacts": {
   "README.md": "0d6eb40c8a28fa9f9135bafc37a31d27db53c6f3352cb550e9adf9f24ab23e22",
-  "site/index.html": "14012411da5e63ef83036a4ecf7f44db1d1ed554cb6c29e5207148bffa23eb94"
+  "site/index.html": "a20b507ad659286368ce7d208c61bf34179f3dd4008f52af2e007893b869400b"
  }
 }

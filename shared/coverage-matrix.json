@@ -163,7 +163,7 @@
       "name_zh": "多币种与汇率",
       "name_en": "Multi-currency",
       "state": "delivered",
-      "boundary": "分录记原币 + 本位币折算，汇率带 as_of 与出处；无出处汇率由 DB 约束拒绝。汇率事实做种走 fx_facts（可复用既有观测流）。",
+      "boundary": "分录记原币 + 本位币折算，汇率带 as_of 与出处；无出处汇率由 DB 约束拒绝。汇率事实做种走 fx_facts（可复用既有观测流）。 **期末调汇已交付**（change: add-fx-revaluation）：`fx_revaluation` 按登记好的**期末汇率**把外币**货币性项目**（现金/应收/在途结算款/应付/预收暂收）重述到期末汇率，差额入 `6603 汇兑损益`（期间费用，利润表单列一行）。期末汇率由人工登记且**必须带出处**（同坏账费率：外部事实、程序不得自设，修订留痕）；缺汇率就拒并点名币种，**不回落历史汇率**（那样调汇等于没调）；存货/固定资产/折旧/坏账准备按历史成本或估计计量，**不重述**。判据是差额不是状态：调汇落账后账上本位币已等于外币×期末汇率，重跑差额自然为零，汇率修订后只调新增差额。",
       "evidence": [
         {
           "kind": "file",
@@ -174,6 +174,16 @@
           "kind": "file",
           "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0001_baseline.sql",
           "contains": "erp_fx_unsourced"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/fx_revaluation.py",
+          "contains": "class FxRevaluation"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0016_fx_accounts.sql",
+          "contains": "6603"
         }
       ],
       "claims": [
