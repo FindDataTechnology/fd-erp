@@ -10,7 +10,7 @@
         "KernelClient",
         "McpKernelClient"
       ],
-      "note": "模板层是内核的主要消费方。tenant 由客户端绑定、不逐个方法透传（一进程一租户）；approved_by/submitted_by/reversed_by 不透传，由内核按默认值填（'human'/'ops'）——这是审计口径的已知取舍，不是漏参。2026-11-12 订正（establish-erp-event-kernel 7.1）：ingest_event / project_event / post_event / query_object_balance 由「故意不盖」转入必须覆盖——供应商到货预告是外部系统原始事实（供应商门户回流），模板层就是它的接收方；不落事件层则「到货 → 库存 → 分录」只有前段一笔 jsonl。规则、科目与金额仍在内核侧：模板层只提交事实并触发一次幂等派生，缺规则时内核挂待补并回 posted=false。 2026-11-12 口径变更（add-invoice-request-lane）：submit_event / query_events 由「故意不盖」转入必须覆盖。原因：开票申请是**需要审核的**事件，必须走拟稿车道落 pending 并由确认门拍板——用 ingest_event 直接接受等于自动通过审核；而申请状态属于内核投影，客户端要读事件明细才不必另存一份状态台账。decide_event 仍不覆盖：过门是运营/agent 的权限，执行侧不代任何一方拍板。 2026-11-12：decide_event 仍不覆盖——模板编排层不代任何一方过门；拍板入口在 API 仓的 SE 审核端点。",
+      "note": "模板层是内核的主要消费方。tenant 由客户端绑定、不逐个方法透传（一进程一租户）；approved_by/submitted_by/reversed_by 不透传，由内核按默认值填（'human'/'ops'）——这是审计口径的已知取舍，不是漏参。2026-11-12 订正（establish-erp-event-kernel 7.1）：ingest_event / project_event / post_event / query_object_balance 由「故意不盖」转入必须覆盖——供应商到货预告是外部系统原始事实（供应商门户回流），模板层就是它的接收方；不落事件层则「到货 → 库存 → 分录」只有前段一笔 jsonl。规则、科目与金额仍在内核侧：模板层只提交事实并触发一次幂等派生，缺规则时内核挂待补并回 posted=false。 2026-11-12 口径变更（add-invoice-request-lane）：submit_event / query_events 由「故意不盖」转入必须覆盖。原因：开票申请是**需要审核的**事件，必须走拟稿车道落 pending 并由确认门拍板——用 ingest_event 直接接受等于自动通过审核；而申请状态属于内核投影，客户端要读事件明细才不必另存一份状态台账。decide_event 仍不覆盖：过门是运营/agent 的权限，执行侧不代任何一方拍板。 2026-11-12：decide_event 仍不覆盖——模板编排层不代任何一方过门；拍板入口在 API 仓的 SE 审核端点。 2026-11-13（add-period-close）：期间关账五个工具对模板层**故意不盖**——模板层负责把业务事实算对（按业务日期归期），「哪一期已定稿」的判定与拍板在内核/API。",
       "must_cover": [
         "approve_billing_rule",
         "bill_event",
@@ -45,7 +45,12 @@
         "submit_posting_rule": "过账规则归运维/内核侧登记：模板层不定义科目与金额算法，避免把业务分支搬进规则",
         "approve_posting_rule": "过账规则审批是人工确认门，归内核/运维侧；模板层无审批权",
         "list_posting_rules": "规则清单查询由运维侧使用，模板层不列规则",
-        "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单"
+        "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单",
+        "close_period": "关账不是行业垂直能力：期间台账/落账闸/快照都在内核，模板层只把日期源切到业务日期（dates.entry_date），不代任何一方关账或重开",
+        "reopen_period": "关账不是行业垂直能力：期间台账/落账闸/快照都在内核，模板层只把日期源切到业务日期（dates.entry_date），不代任何一方关账或重开",
+        "period_status": "关账不是行业垂直能力：期间台账/落账闸/快照都在内核，模板层只把日期源切到业务日期（dates.entry_date），不代任何一方关账或重开",
+        "period_report": "关账不是行业垂直能力：期间台账/落账闸/快照都在内核，模板层只把日期源切到业务日期（dates.entry_date），不代任何一方关账或重开",
+        "list_periods": "关账不是行业垂直能力：期间台账/落账闸/快照都在内核，模板层只把日期源切到业务日期（dates.entry_date），不代任何一方关账或重开"
       }
     },
     {
@@ -54,16 +59,20 @@
       "classes": [
         "InProcessKernelClient"
       ],
-      "note": "REST 服务面覆盖四端页面集需要的工具（proposal / ledger / recon / credit + 事件层）。2026-11-12 订正（同 7.1）：事件层四工具经 InProcessKernelClient 暴露给 REST 面，用于到货事实落事件、投影库存、触发过账与只读库存查询；REST 面仍不直连库表、不算金额、不猜科目。 2026-11-12 口径变更（add-invoice-request-lane）：submit_event / query_events 由「故意不盖」转入必须覆盖。原因：开票申请是**需要审核的**事件，必须走拟稿车道落 pending 并由确认门拍板——用 ingest_event 直接接受等于自动通过审核；而申请状态属于内核投影，客户端要读事件明细才不必另存一份状态台账。decide_event 仍不覆盖：过门是运营/agent 的权限，执行侧不代任何一方拍板。 2026-11-12 口径变更（add-se-invoice-audit-queue）：API 仓的 decide_event 由「故意不盖」转入必须覆盖——SE 业务员台的开票审核端点就是拍板席位的传输面（人经 REST 过门）。模板仓仍不覆盖：模板编排层不代任何一方过门，这条纪律不变（客户/车队都是各自过门）。 2026-11-12 口径变更（add-carrier-freight-dimension）：bill_event / list_fees / get_fee_detail 由「故意不盖」转入必须覆盖。原因：CP 运费单车道要按运单计运费的**事实**、按承运商归集**费用行**（费用行 refs 带承运商），REST 面因此有了计费读面与按事件计费的写入路径；规则登记/审批、红冲、试算、期间快照、额度清单仍只在 MCP 面（REST 无对应端点）。",
+      "note": "REST 服务面覆盖四端页面集需要的工具（proposal / ledger / recon / credit + 事件层）。2026-11-12 订正（同 7.1）：事件层四工具经 InProcessKernelClient 暴露给 REST 面，用于到货事实落事件、投影库存、触发过账与只读库存查询；REST 面仍不直连库表、不算金额、不猜科目。 2026-11-12 口径变更（add-invoice-request-lane）：submit_event / query_events 由「故意不盖」转入必须覆盖。原因：开票申请是**需要审核的**事件，必须走拟稿车道落 pending 并由确认门拍板——用 ingest_event 直接接受等于自动通过审核；而申请状态属于内核投影，客户端要读事件明细才不必另存一份状态台账。decide_event 仍不覆盖：过门是运营/agent 的权限，执行侧不代任何一方拍板。 2026-11-12 口径变更（add-se-invoice-audit-queue）：API 仓的 decide_event 由「故意不盖」转入必须覆盖——SE 业务员台的开票审核端点就是拍板席位的传输面（人经 REST 过门）。模板仓仍不覆盖：模板编排层不代任何一方过门，这条纪律不变（客户/车队都是各自过门）。 2026-11-12 口径变更（add-carrier-freight-dimension）：bill_event / list_fees / get_fee_detail 由「故意不盖」转入必须覆盖。原因：CP 运费单车道要按运单计运费的**事实**、按承运商归集**费用行**（费用行 refs 带承运商），REST 面因此有了计费读面与按事件计费的写入路径；规则登记/审批、红冲、试算、期间快照、额度清单仍只在 MCP 面（REST 无对应端点）。 2026-11-13 口径变更（add-period-close）：close_period / reopen_period / period_status / period_report / list_periods 转入必须覆盖——关账是账本的时间轴，REST 面要能「关这一期 / 重开最近一期 / 核对快照与复算」。关账语义全在内核（顺序关账、只重开最近一期、落账闸在 DB 触发器里），API 只做绑定与错误码翻译。",
       "must_cover": [
         "bill_event",
+        "close_period",
         "confirm_proposal",
         "decide_event",
         "get_fee_detail",
         "get_recon_report",
         "ingest_event",
         "list_fees",
+        "list_periods",
         "list_proposals",
+        "period_report",
+        "period_status",
         "post_event",
         "project_event",
         "query_balance",
@@ -73,6 +82,7 @@
         "query_object_balance",
         "reject_proposal",
         "release_credit",
+        "reopen_period",
         "reserve_credit",
         "run_reconciliation",
         "submit_event",

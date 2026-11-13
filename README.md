@@ -49,8 +49,8 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 | 消费仓 | 覆盖 | 声明不覆盖 |
 |---|---|---|
-| `fd-erp-vertical-templates` | 25 | 7 |
-| `fd-erp-vertical-api` | 21 | 11 |
+| `fd-erp-vertical-templates` | 25 | 12 |
+| `fd-erp-vertical-api` | 26 | 11 |
 
 > 注：tenant 由客户端绑定、不逐方法透传（一进程一租户）；`approved_by` / `submitted_by` / `reversed_by` 不透传，由内核按默认值填 （`human` / `ops` / `human`）—— 这是审计口径的已知取舍，不是漏参。
 
@@ -58,7 +58,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 码表与指标名一律从源码 AST 现读，契约文件只写「必须逐字一致的部分」与「允许不同但必须声明的部分」。闸：`fd-erp/tools/check_semantics_contract.py`。
 
-- 错误码：内核封闭集 **24** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **12** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 9 个、模板层自有 9 个，均须在契约里声明并给理由
+- 错误码：内核封闭集 **25** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **13** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 9 个、模板层自有 9 个，均须在契约里声明并给理由
 - 指标：内核 11 个 / api 3 个，同一 Prometheus 下不得跨服务重名
 - 闸门状态：通过
 - 已声明偏差（histogram_buckets，fd-erp-vertical-api）：erp_api_request_seconds 的桶集比内核 erp_tool_latency_seconds 少一个 10.0 上界；待办 `establish-erp-independent-root 3.5`
