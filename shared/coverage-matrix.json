@@ -437,7 +437,7 @@
       "name_zh": "发票",
       "name_en": "Invoicing",
       "state": "needs_onboarding",
-      "boundary": "开票三段都已实现（引擎层）：①**申请**——客户提交（对账单/订单引用 + 抬头 + 税号）→ 内核拟稿车道落 `invoice_requested` pending → 确认门拍板 → 客户侧看到 accepted/rejected（状态是内核投影，不留第二份台账）；②**审核值守**——巡检岗报积压、拍板岗唯一持门；③**回执**（change: add-invoice-receipt-lane）——票开出来之后登记号码/开票日期/价税合计/税额/渠道，同租户票号唯一（撞号点名归属）、金额按推定值核对为 matched/mismatched/unverified、未开票清单只列已通过且无有效回执的申请、作废留痕且号可重开。票据**本体**仍由客户既有合规渠道出具：不自研开票、不代开票据、不生成票据文件——这是边界不是缺口。",
+      "boundary": "开票三段都已实现（引擎层）：①**申请**——客户提交（对账单/订单引用 + 抬头 + 税号）→ 内核拟稿车道落 `invoice_requested` pending → 确认门拍板 → 客户侧看到 accepted/rejected（状态是内核投影，不留第二份台账）；②**审核值守**——巡检岗报积压、拍板岗唯一持门；③**回执**（change: add-invoice-receipt-lane）——票开出来之后登记号码/开票日期/价税合计/税额/渠道，同租户票号唯一（撞号点名归属）、金额按推定值核对为 matched/mismatched/unverified、未开票清单只列已通过且无有效回执的申请、作废留痕且号可重开。票据**本体**仍由客户既有合规渠道出具：不自研开票、不代开票据、不生成票据文件——这是边界不是缺口。**发票台账与抵扣资格已交付**（change: add-cn-invoice-register）：按「方向+票种+号码」幂等登记销项/进项票（票种封闭集：专票/普票/全电专票/全电普票/海关缴款书），`certify` 记录勾选认证这一人工事实；**抵扣资格 = 可抵票种 且 已认证**——普票不可抵（税额并入成本，不挂「待抵扣」：那会让资产虚增且永远抵不掉），可抵票种未认证归「待认证」；采购过账按台账判定，同一张进项票不得抵两次；销项按「税率 × 票种」分列（对应申报表附列资料一）；台账与账上 `2221.01.02` 勾稽，手工直接记进项的差额点名。",
       "evidence": [
         {
           "kind": "file",
@@ -456,10 +456,15 @@
           "kind": "file",
           "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/invoice_receipt.py",
           "contains": "class InvoiceReceiptLane"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/cn_invoice.py",
+          "contains": "class CnInvoiceBook"
         }
       ],
       "claims": [],
-      "blocker": "只剩**执行通道的直连那一端**与**运营侧审核页**：金蝶 provider 补开票直连 action（凭据 + provider 契约），以及页面集注册表里的审核/回执页（REST 面卡在 paas 页面集注册表）。回执面已交付——线下/电子税局开票的文件今天就能录，「谁还没开票」今天就能问；金蝶直连到位后只是同一条车道多一个录入来源，不返工。",
+      "blocker": "只剩**执行通道的直连那一端**与**运营侧审核页**：金蝶 provider 补开票直连 action（凭据 + provider 契约），以及页面集注册表里的审核/回执页（REST 面卡在 paas 页面集注册表）。回执面已交付——线下/电子税局开票的文件今天就能录，「谁还没开票」今天就能问；金蝶直连到位后只是同一条车道多一个录入来源，不返工。另新增**进项抵扣资格**这一层：以前拿到票就记进项（普票也记，等于少缴税），现在按票种+认证判定，不可抵的税进成本、待认证的单列——这层不依赖任何通道，今天就能用。",
       "intake": {
         "kind": "connector",
         "doc": "fd-erp-vertical-templates/docs/connector-onboarding-supply-chain.md",
