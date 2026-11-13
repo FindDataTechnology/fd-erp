@@ -2,7 +2,7 @@
  "schema": "erp-artifact-lock/v1",
  "note": "生成物指纹。gen_erp_docs.py 写入，check_all.py 校验；手改生成物会在这里露馅。",
  "artifacts": {
-  "README.md": "0d6eb40c8a28fa9f9135bafc37a31d27db53c6f3352cb550e9adf9f24ab23e22",
-  "site/index.html": "928d284b4a44c22eeafdc409f40cb764812c95dbed5b00cdbe16ea00183ff53f"
+  "README.md": "0a0a486bc2e3a53d1db977ab934be5ca4571271469b9fdfcd743f08b7f180e3c",
+  "site/index.html": "efd7dd0ec532bd3783910024b1680e8989496a90b7d8eb38efc2f62e92b72882"
  }
 }
