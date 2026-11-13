@@ -521,17 +521,129 @@
       "id": "manufacturing",
       "owner": {
         "kind": "none",
-        "reason": "无锚点客户，且 BOM/工艺/产能自成体系、与三个行业模板客群不重叠"
+        "reason": "基础生产闭环已由模板车道交付；仍缺的工艺路线/产能排程/MRP 需客户主数据与排产口径，无锚点客户前不扩"
       },
       "name_zh": "生产制造",
       "name_en": "Manufacturing / MRP",
-      "state": "not_doing",
-      "boundary": "不提供 BOM、工艺路线、工单、MRP 运算。当前客群（跨境电商/餐饮连锁/供应链）无此诉求。",
-      "evidence": [],
+      "state": "needs_onboarding",
+      "boundary": "**已交付基础生产闭环**（change: add-manufacturing-orders）：BOM 人工单层登记（自引用拒、同组件重复拒、修订追加式不覆盖历史）→ 工单按 BOM 展开（`ref` 幂等，重复下单返回首单）→ 领料（单位成本**必须人工给**，缺失即拒；非 BOM 组件拒；超领如实点名而不是拦死）→ 完工（单位成本 = 累计归集 ÷ **计划数量**，累计超计划拒、未归集拒）→ 在制品对账（`status` 同时给台账在制品与**账上** `1401` 按 `production_order` 维度汇总的净额，不一致如实报差并给差额，不粉饰为 0）。落账走 proposal：领料借 1401 / 贷 1200，完工借 1200 / 贷 1401，只出待确认提案、不过门不落账。**不提供**：多级 BOM 展开、工艺路线（routing）、产能排程与负荷平衡、MRP 净需求运算、制造费用分摊进在制品（当前只做直接成本，间接费用留在期间费用）、标准成本与实际成本差异分析、批次/序列号追溯。原材料与成品共用 `1200 存货`：生产的实质是「存货构成变了、总额没变」，故完工后 1200 净额回到原值——要看构成需按 SKU 走数量面 `objects/object_balances`。",
+      "evidence": [
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/manufacturing.py",
+          "contains": "class ManufacturingLane"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-vertical-templates/fd_erp_vertical_templates/manufacturing.py",
+          "contains": "def status"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/migrations/0017_wip_account.sql",
+          "contains": "1401"
+        },
+        {
+          "kind": "file",
+          "ref": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/dimensions.py",
+          "contains": "production_order"
+        }
+      ],
       "claims": [],
-      "reason": "生产制造需要 BOM/工艺路线/产能一整套对象与行业知识，且与当前三个行业模板的客群不重叠；无锚点客户前不做",
-      "decided_by": "user-decision 2026-11-11（核心条线评审：ERP 全覆盖口径定案）",
-      "review_by": "2027-06-30"
+      "blocker": "基础闭环已交付并过真库装配验收（台账在制品 == 账上 1401 工单维度净额，完工后归零）；仍缺的是**客户主数据与排产口径**：①多级 BOM 与工艺路线（单层够做简装/组装，多级要递归展开与损耗率）；②产能与排程（工单优先级、设备/工作中心日历、负荷平衡）；③MRP 净需求（要看现有库存、在途、安全库存，才能算出该采购/该生产多少）；④制造费用分摊基准（不分摊则单位成本只含直接材料，与本量利口径不同）。以上都不影响当前闭环运行——领料与完工的单位成本由人给，账不会错；缺的是「自动算出来」。",
+      "intake": {
+        "kind": "customer-decision",
+        "note": "以下口径决定「多级展开与成本归集」怎么算；材料到位前，单层 BOM + 人工单位成本已可完整跑一轮生产。",
+        "questions": [
+          {
+            "id": "bom_depth",
+            "ask": "BOM 层级",
+            "why": "单层只能直采直产；多级要递归展开并按层级归集成本，缺少中间件库存会把成本算到错误层级",
+            "options": [
+              {
+                "value": "single-level",
+                "zh": "单层 BOM（当前）",
+                "impact": "工单只领一层组件；组件本身若也是自制件，其成本需由上一张工单结转到组件领用价"
+              },
+              {
+                "value": "multi-level",
+                "zh": "多级 BOM",
+                "impact": "按层级递归展开到最底层物料；需中间件库存与逐层成本结转，展开算法与循环检测要一并做"
+              }
+            ]
+          },
+          {
+            "id": "issue_costing",
+            "ask": "领料单位成本来源",
+            "why": "直接决定借记 1401 的金额，也决定在制品与账上能否对上；不同来源的差异会长期留在 1401",
+            "options": [
+              {
+                "value": "manual",
+                "zh": "人工逐单给（当前）",
+                "impact": "每次领料必须写 unit_cost，缺失即拒；口径最透明，但依赖录入人的取价"
+              },
+              {
+                "value": "cost-engine",
+                "zh": "取成本引擎的出库成本",
+                "impact": "与库存计价同源（加权/先进先出/批次），在制品自动与存货账一致；需先把 SKU 与数量面绑定"
+              },
+              {
+                "value": "standard-cost",
+                "zh": "按标准成本",
+                "impact": "用固定标准价领料，差异单列；便于考核但需维护标准价版本与差异结转口径"
+              }
+            ]
+          },
+          {
+            "id": "overhead_allocation",
+            "ask": "制造费用是否分摊进在制品",
+            "why": "分摊与否决定单位成本是否含间接费用；不分摊则毛利偏高、在制品偏低",
+            "options": [
+              {
+                "value": "direct-only",
+                "zh": "只归集直接材料（当前）",
+                "impact": "1401 只含领料成本；人工与制造费用全部期间化，毛利口径与本量利分析不同"
+              },
+              {
+                "value": "labor-hours",
+                "zh": "按直接人工工时分摊",
+                "impact": "需工时采集；人工密集产线合理，在制品会更接近真实制造成本"
+              },
+              {
+                "value": "machine-hours",
+                "zh": "按机器工时分摊",
+                "impact": "需设备计量；设备密集产线合理，成本随开机时长波动"
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "id": "bom_master",
+            "ask": "物料清单（BOM）",
+            "format": "CSV：parent_sku,component_sku,quantity,unit,scrap_rate",
+            "required": true
+          },
+          {
+            "id": "opening_wip",
+            "ask": "首个真实账期的在制品期初（按工单）",
+            "format": "CSV：order_ref,product_sku,planned_quantity,accumulated_cost,as_of",
+            "required": false
+          },
+          {
+            "id": "routing_capacity",
+            "ask": "工艺路线与产能日历（做排程/MRP 时必填）",
+            "format": "CSV：sku,routing_step,work_center,standard_minutes,capacity_per_day",
+            "required": false
+          }
+        ],
+        "derived": [
+          "schema:bom-multilevel",
+          "rule:manufacturing/overhead-allocation",
+          "projection:material-requirement",
+          "report:wip-by-order"
+        ]
+      }
     },
     {
       "id": "cost-accounting",
