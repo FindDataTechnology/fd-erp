@@ -509,7 +509,7 @@
       "name_zh": "税务申报",
       "name_en": "Tax Filing",
       "state": "not_doing",
-      "boundary": "不自研税务申报。账内可记录发票类事件并参与对账，申报本体走客户既有渠道。",
+      "boundary": "不自研税务申报。账内可记录发票类事件并参与对账；申报**数据**已能算出（增值税、附加税、所得税预缴与月度税表逐项勾稽，见 erp-cn-localization），申报**提交**仍走客户既有渠道。",
       "evidence": [],
       "claims": [
         "invoice.tax-return"
