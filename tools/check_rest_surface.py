@@ -41,6 +41,13 @@ DEFAULT_API_DIR = ROOT / "fd-erp-vertical-api" / "fd_erp_vertical_api"
 DEFAULT_PAGESETS_DIR = (ROOT / "fd-erp-vertical-templates" / "templates" / "supply-chain"
                         / "pagesets")
 
+#: **内部面**契约（没有页面集的服务端面）：与页面集契约同格式，只是所在的那一层
+#: 不被覆盖矩阵度量（功能点对账表、域计数、已提交快照）。声明在这里而不是塞进
+#: 某个页集契约：内部面没有页面，塞进去会改变一个封闭空间的度量。
+INTERNAL_CONTRACT_FILES: tuple[tuple[Path, str], ...] = (
+    (ROOT / "fd-erp-vertical-api" / "INTERNAL-API.md", "内部面契约"),
+)
+
 #: 参与派生实现的文件（faces 是四个页面集的业务面，app 是服务级与少量 UE 面）
 API_FILES = ("faces.py", "app.py")
 
@@ -150,6 +157,35 @@ def derive_declared(pagesets_dir: Path) -> tuple[dict[tuple[str, str], tuple[str
     return declared, problems
 
 
+def _derive_declared_from_files(files: list[tuple[Path, str]],
+                                ) -> tuple[dict[tuple[str, str], tuple[str, str]],
+                                           list[str]]:
+    """从任意契约文件（页面集契约或内部面契约）解析端点表。"""
+    declared: dict[tuple[str, str], tuple[str, str]] = {}
+    problems: list[str] = []
+    for path, label in files:
+        if not path.is_file():
+            problems.append(f"{label} 文件不存在：{path}——声明面缺一份，端点就没了出处")
+            continue
+        rows = 0
+        for line in path.read_text(encoding="utf-8").splitlines():
+            m = ROW_RE.match(line)
+            if not m:
+                continue
+            rows += 1
+            method, raw = m.group(1), m.group(2)
+            key = (method, norm(raw))
+            if key in declared:
+                problems.append(f"{method} {norm(raw)} 在两份契约里重复声明："
+                                f"{declared[key][1]} 与 {label}")
+                continue
+            declared[key] = (raw, label)
+        if rows == 0:
+            problems.append(f"{label} 解析到 0 条端点——表行格式变了？"
+                            "（零行不是通过，是解析失效）")
+    return declared, problems
+
+
 def check(api_dir: Path, pagesets_dir: Path) -> list[str]:
     """返回问题清单（空 = 通过）。每条都写「怎么修」。"""
     problems: list[str] = []
@@ -158,6 +194,11 @@ def check(api_dir: Path, pagesets_dir: Path) -> list[str]:
         problems.append(f"{api_dir} 下没派生出任何路由——路径指错了？（零条不是通过）")
         return problems + dupes
     declared, parse_problems = derive_declared(pagesets_dir)
+    internal, internal_problems = _derive_declared_from_files(
+        list(INTERNAL_CONTRACT_FILES))
+    for key, value in internal.items():      # 内部面与页集面同一张「已声明」表
+        declared.setdefault(key, value)
+    parse_problems.extend(internal_problems)
     problems.extend(parse_problems)
     problems.extend(dupes)
 
