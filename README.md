@@ -58,7 +58,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 码表与指标名一律从源码 AST 现读，契约文件只写「必须逐字一致的部分」与「允许不同但必须声明的部分」。闸：`fd-erp/tools/check_semantics_contract.py`。
 
-- 错误码：内核封闭集 **25** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **13** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 9 个、模板层自有 9 个，均须在契约里声明并给理由
+- 错误码：内核封闭集 **25** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **13** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 10 个、模板层自有 9 个，均须在契约里声明并给理由
 - 指标：内核 11 个 / api 3 个，同一 Prometheus 下不得跨服务重名
 - 闸门状态：通过
 - 已声明偏差（histogram_buckets，fd-erp-vertical-api）：erp_api_request_seconds 的桶集比内核 erp_tool_latency_seconds 少一个 10.0 上界；待办 `establish-erp-independent-root 3.5`
@@ -70,7 +70,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 仓 | 读取的 `ERP_` 变量数 |
 |---|---|
 | `fd-erp-ledger-mcp` | 5 |
-| `fd-erp-vertical-api` | 13 |
+| `fd-erp-vertical-api` | 15 |
 | `fd-erp-vertical-templates` | 8 |
 
 - 跨仓共享且已登记：**4** 个 —— `ERP_BASE_CURRENCY`、`ERP_CREDIT_RESERVATION_MAX_DAYS`、`ERP_LEDGER_DATABASE_URL`、`ERP_TENANT_ID`

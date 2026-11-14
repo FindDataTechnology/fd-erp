@@ -1,6 +1,6 @@
 {
  "schema": "erp-shared-semantics/v1",
- "updated_at": "2026-11-11",
+ "updated_at": "2026-11-14",
  "note": "ERP 三仓之间的跨仓语义契约（错误码 + 指标名）。本文件只写「必须逐字一致的部分」和「允许不同但必须声明的部分」，码表与指标名本身不抄写——一律从源码 AST 现读，避免第二份真相。由 fd-erp/tools/check_semantics_contract.py 执行。",
  "error_codes": {
   "sources": {
@@ -35,7 +35,8 @@
     "GRANT_REQUIRED": "页面集已授权但当前账号缺该端点所需权限码；请联系管理员开通。",
     "NOT_IMPLEMENTED": "契约端点已定义、后端能力未就绪（如实 501，无假实现）；详见 README 未实现清单。",
     "SHARE_EXECUTION_DENIED": "试图输出资金执行面（红线），拒绝。",
-    "DATA_SCOPE_DENIED": "越权操作非名下/非本域数据（业务员-客户归属、代理身份越权校验失败）。"
+    "DATA_SCOPE_DENIED": "越权操作非名下/非本域数据（业务员-客户归属、代理身份越权校验失败）。",
+    "STAFF_NOT_AUTHORIZED": "调用者不在财务任职名单内（或名单未配置）——财务后台按人授权，需管理员登记。"
    }
   }
  },
