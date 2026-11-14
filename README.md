@@ -70,7 +70,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 仓 | 读取的 `ERP_` 变量数 |
 |---|---|
 | `fd-erp-ledger-mcp` | 5 |
-| `fd-erp-vertical-api` | 12 |
+| `fd-erp-vertical-api` | 13 |
 | `fd-erp-vertical-templates` | 8 |
 
 - 跨仓共享且已登记：**4** 个 —— `ERP_BASE_CURRENCY`、`ERP_CREDIT_RESERVATION_MAX_DAYS`、`ERP_LEDGER_DATABASE_URL`、`ERP_TENANT_ID`
