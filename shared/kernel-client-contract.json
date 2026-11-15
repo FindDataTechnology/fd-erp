@@ -13,7 +13,17 @@
         "classes": [
           "McpKernelClient"
         ],
-        "note": "2026-11-15 订正（fix-erp-decide-gate-transport）：McpKernelClient 不是「模板层能力」，是**传输适配器**——api 的 MCP 内层复用的就是这个类，所以它必须 1:1 覆盖内核工具面全集（37/37，含编排面故意不盖的 decide_event 与期间五工具）。原先把两个类并在一起与 must_cover 比对，导致两个方向都错：补转发修断链会被判漂移（2026-11-15 实测 CLIENT_DRIFT 多出 period 五方法），而缺 decide_event 这种真断链反而不在判据里（api 的 MCP 形态从未被本闸登记）。分层后：classes=编排面（纪律，模板层不代任何一方拍板/关账/登记规则），transport=传输面（覆盖度，缺一个即红）。"
+        "note": "2026-11-15 订正（fix-erp-decide-gate-transport）：McpKernelClient 不是「模板层能力」，是**传输适配器**——api 的 MCP 内层复用的就是这个类，所以它必须 1:1 覆盖内核工具面全集（37/37，含编排面故意不盖的 decide_event 与期间五工具）。原先把两个类并在一起与 must_cover 比对，导致两个方向都错：补转发修断链会被判漂移（2026-11-15 实测 CLIENT_DRIFT 多出 period 五方法），而缺 decide_event 这种真断链反而不在判据里（api 的 MCP 形态从未被本闸登记）。分层后：classes=编排面（纪律，模板层不代任何一方拍板/关账/登记规则），transport=传输面（覆盖度，缺一个即红）。",
+        "param_policy": {
+          "note": "参数名判据的例外表（2026-11-15）。三个方向各一档：内核有传输不收（PARAM_MISSING）、传输收了不发（PARAM_SWALLOWED）、传输收/发内核没有（PARAM_EXTRA）。**没有例外声明就是缺陷**：今天的三起事故全部落在没有声明的那一侧——decide_event 多发 lane/actor（EXTRA）、ingest_event 少收 provenance（MISSING）、submit_proposal 少收 booked_on（MISSING，14 处调用点跨 9 个模板）。裸参数名（如 tenant_id）对所有工具生效；`工具.参数` 只对该工具生效。",
+          "not_accepted": {
+            "tenant_id": "客户端构造时绑定租户（一租户一进程/一线），不逐调用透传——传了等于让调用点越权选租户。内核签名保留 tenant_id 给 MCP 直连调用方与多租户运维。两种形态都合法：不接受，或接受但不装进 payload（后者见下方 12 个方法）。",
+            "approve_billing_rule.approved_by": "审批人不可由客户端自证：规则审批是人工确认门，内核按默认值填 'human'。传输层若透传，等于让行业模板自己写审批人——审计口径失效。",
+            "reverse_fee.reversed_by": "红冲人同理由内核默认值填（'ops'）：红冲是账务纠正动作，执行侧不代填操作者。",
+            "submit_billing_rule.submitted_by": "规则提交人同理由内核默认值填（'ops'）：规则编写在运维/计费侧，客户端不自称作者。"
+          },
+          "note_swallowed": "confirm_proposal / get_recon_report / list_proposals / query_balance / query_entries / reject_proposal / run_reconciliation / submit_proposal 这 8 个方法接受 tenant_id 但不装进 payload（与上面那条同一事实的另一种写法）。判据不为这种情况单独开口子：它们由 tenant_id 这条例外覆盖。"
+        }
       },
       "note": "模板层是内核的主要消费方。tenant 由客户端绑定、不逐个方法透传（一进程一租户）；approved_by/submitted_by/reversed_by 不透传，由内核按默认值填（'human'/'ops'）——这是审计口径的已知取舍，不是漏参。2026-11-12 订正（establish-erp-event-kernel 7.1）：ingest_event / project_event / post_event / query_object_balance 由「故意不盖」转入必须覆盖——供应商到货预告是外部系统原始事实（供应商门户回流），模板层就是它的接收方；不落事件层则「到货 → 库存 → 分录」只有前段一笔 jsonl。规则、科目与金额仍在内核侧：模板层只提交事实并触发一次幂等派生，缺规则时内核挂待补并回 posted=false。 2026-11-12 口径变更（add-invoice-request-lane）：submit_event / query_events 由「故意不盖」转入必须覆盖。原因：开票申请是**需要审核的**事件，必须走拟稿车道落 pending 并由确认门拍板——用 ingest_event 直接接受等于自动通过审核；而申请状态属于内核投影，客户端要读事件明细才不必另存一份状态台账。decide_event 仍不覆盖：过门是运营/agent 的权限，执行侧不代任何一方拍板。 2026-11-12：decide_event 仍不覆盖——模板编排层不代任何一方过门；拍板入口在 API 仓的 SE 审核端点。 2026-11-13（add-period-close）：期间关账五个工具对模板层**故意不盖**——模板层负责把业务事实算对（按业务日期归期），「哪一期已定稿」的判定与拍板在内核/API。 2026-11-15 订正（fix-erp-decide-gate-transport）：decide_event 等七工具在**传输面**必须覆盖、在**编排面**仍故意不盖——纪律由 classes（KernelClient 协议）承载，覆盖由 transport（McpKernelClient）承载，两处不重叠。生产实历：api 的 /se/invoice-requests/{id}/decide 经 KernelProxy 调 decide_event，传输面缺方法 ⇒ AttributeError ⇒ 每单 500。",
       "must_cover": [
@@ -107,5 +117,26 @@
         "list_posting_gaps": "待补挂账清单由内核巡检面消费；模板层不读该清单"
       }
     }
-  ]
+  ],
+  "transport_param_scan": {
+    "note": "调用点扫描：代码不在客户端类里，前面三档看不见。2026-11-15 的 booked_on 就是这样——`self._kernel.submit_proposal(..., booked_on=day)` 在 14 处，而不收它的是「内核工具面 + 传输类」两处（三者互为镜像，所以只判客户端类漏掉它）。只认接收者白名单，不按方法名全仓扫：`proposals.submit_proposal(conn, settings=…)` 这种模块级同名函数会把 settings= 报成越界关键字，一条假红就够让闸被无视。",
+    "roots": [
+      "fd-erp-vertical-templates/fd_erp_vertical_templates",
+      "fd-erp-vertical-api/fd_erp_vertical_api"
+    ],
+    "receivers": [
+      "_kernel",
+      "kernel",
+      "_client",
+      "client",
+      "_proxy",
+      "proxy",
+      "_inner",
+      "inner"
+    ],
+    "allow": {
+      "decide_event.actor": "KernelProxy.decide_event 保留 actor 形参以兼容既有 REST 调用点，但**只用于校验**：lane != 'draft' 或 actor != 'human' 时抛 INVALID_ARGUMENT（不过门），校验通过后不传给内层（内核工具签名不收）。",
+      "decide_event.lane": "同上：只校验不过门，校验后丢弃（服务端不代任何一方拍板）。"
+    }
+  }
 }

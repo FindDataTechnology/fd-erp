@@ -12,6 +12,16 @@
      工具面**逐名全等** —— 缺一个转发就是那一档能力在生产断链（2026-11-15
      `decide_event` 生产 500 的订正：api 的 MCP 内层复用的就是模板仓传输类，
      而原先把传输类混进编排面比对，两个方向都会错）。
+  5. **参数名**（2026-11-15 补）：只判方法名会漏掉今天大半事故。三个方向各一档：
+     - `TRANSPORT_PARAM_MISSING`：内核工具收、传输类不收 ⇒ 该能力经 MCP 不可达；
+     - `TRANSPORT_PARAM_SWALLOWED`：传输类收了但不装进 payload ⇒ 静默不生效；
+     - `TRANSPORT_PARAM_EXTRA`：传输类收/发内核没有的参数 ⇒ MCP 形态 TypeError；
+     - `CALLSITE_UNKNOWN_KWARG`：消费仓在**内核客户端接收者**上调用工具时传了内核
+       没有的关键字 ⇒ 同样是 TypeError，但代码不在客户端类里，前面三档都看不见。
+
+     三档的例外全部声明在 `transport.param_policy`（`tenant_id` 构造时绑定、
+     `*_by` 由内核默认值填）。**没有声明就是缺陷**——这条纪律与 `intentionally_absent`
+     一致：说不出理由的缺口一律红。
 
 用法：
   python3 fd-erp/tools/check_kernel_client_contract.py
@@ -54,9 +64,137 @@ def client_methods(rel_path: str, classes: list[str]) -> dict[str, set[str]]:
     return out
 
 
+def kernel_tool_params() -> dict[str, dict]:
+    """内核工具面的**参数表**（真源仍是 tools.py 的 `@mcp.tool` 定义）。
+
+    返回 {工具名: {"params": [...], "payload": {...} or None}}，另外把
+    「必填参数」也带出来（无默认值的），因为缺必填参数与缺可选参数不是一回事。
+    """
+    p = ROOT / "fd-erp-ledger-mcp" / "fd_erp_ledger_mcp" / "tools.py"
+    if not p.is_file():
+        raise SystemExit(f"缺少内核工具面实现：{p.relative_to(ROOT)}")
+    src = p.read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    out: dict[str, dict] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not any(ast.unparse(d).startswith("mcp.tool") for d in node.decorator_list):
+            continue
+        args = node.args
+        positional = list(args.args)
+        n_default = len(args.defaults)
+        required = {a.arg for a in positional[:len(positional) - n_default]}
+        names = [a.arg for a in positional] + [a.arg for a in args.kwonlyargs]
+        out[node.name] = {"params": names, "required": required}
+    return out
+
+
+def transport_method_params(rel_path: str, classes: list[str]) -> dict[str, dict]:
+    """传输类每个方法的**接受参数**与**实际装进 payload 的键**。
+
+    `_call("tool", {...})` 的第二个实参是 payload 字典 —— 只认字面量键，
+    这样「接受但不转发」与「接受且转发」能分开（前者是静默不生效）。
+    """
+    p = ROOT / rel_path
+    if not p.is_file():
+        raise SystemExit(f"缺少客户端文件：{rel_path}")
+    tree = ast.parse(p.read_text(encoding="utf-8"))
+    out: dict[str, dict] = {}
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name not in classes:
+            continue
+        for item in node.body:
+            if not isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if item.name.startswith("_") or item.name == "__init__":
+                continue
+            params = ([a.arg for a in item.args.args][1:]
+                      + [a.arg for a in item.args.kwonlyargs])
+            payload: set[str] = set()
+            for sub in ast.walk(item):
+                if not isinstance(sub, ast.Call):
+                    continue
+                fn = sub.func
+                if getattr(fn, "attr", None) != "_call" and getattr(fn, "id", None) != "_call":
+                    continue
+                for arg in sub.args[1:2]:
+                    if isinstance(arg, ast.Dict):
+                        payload |= {k.value for k in arg.keys
+                                    if isinstance(k, ast.Constant)}
+                for kw in sub.keywords:
+                    if isinstance(kw.value, ast.Dict):
+                        payload |= {k.value for k in kw.value.keys
+                                    if isinstance(k, ast.Constant)}
+            out[item.name] = {"params": params, "payload": payload}
+    return out
+
+
+def _policy_key(policy: dict, tool: str, param: str) -> str | None:
+    """取声明：先查 `工具.参数`，再查 `*:参数`，最后查裸参数名（全局）。"""
+    for key in (f"{tool}.{param}", f"*.{param}", param):
+        if key in policy:
+            return key
+    return None
+
+
+def callsite_unknown_kwargs(scan: dict, kernel: dict[str, dict]) -> list[dict]:
+    """扫消费仓调用点：在内核客户端接收者上调用工具时传了内核没有的关键字。
+
+    只认**接收者白名单**（`_kernel`/`kernel`/`_client`…）。不按方法名全仓扫是必要的：
+    `proposals.submit_proposal(conn, settings=…)` 这种模块级同名函数会把
+    `settings=` 报成越界关键字，一条假红就够让闸被无视。
+    """
+    receivers = set(scan.get("receivers") or [])
+    allow = scan.get("allow") or {}
+    hits: list[dict] = []
+    for root in scan.get("roots") or []:
+        base = ROOT / root
+        if not base.exists():
+            hits.append({"code": "CALLSITE_ROOT_MISSING", "repo": root,
+                         "message": f"调用点扫描根不存在：{root}"})
+            continue
+        for py in sorted(base.rglob("*.py")):
+            rel = str(py.relative_to(ROOT))
+            if "/tests/" in rel or py.name.startswith("test_") or "/build/" in rel:
+                continue
+            try:
+                tree = ast.parse(py.read_text(encoding="utf-8"))
+            except SyntaxError as exc:
+                hits.append({"code": "CALLSITE_PARSE_ERROR", "repo": rel,
+                             "message": f"解析失败：{exc}"})
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                fn = node.func
+                if not isinstance(fn, ast.Attribute) or fn.attr not in kernel:
+                    continue
+                recv = fn.value
+                name = (recv.attr if isinstance(recv, ast.Attribute)
+                        else getattr(recv, "id", None))
+                if name not in receivers:
+                    continue
+                passed = {k.arg for k in node.keywords if k.arg}
+                unknown = passed - set(kernel[fn.attr]["params"])
+                for param in sorted(unknown):
+                    # 调用点只认 `工具.参数` 精确声明：接收者不是传输类本身，
+                    # 全局豁免（裸参数名 / `*.参数`）会把真断链一起放走。
+                    if f"{fn.attr}.{param}" in allow:
+                        continue
+                    hits.append({
+                        "code": "CALLSITE_UNKNOWN_KWARG", "repo": rel,
+                        "message": (f"{rel}:{node.lineno} {name}.{fn.attr}() "
+                                    f"传了内核工具面没有的关键字 {param!r}"
+                                    f" ⇒ MCP 形态 TypeError（同进程形态看不出来）"),
+                    })
+    return hits
+
+
 def check() -> dict:
     tools = surface_tools()
     tool_set = set(tools)
+    kernel = kernel_tool_params()
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     violations: list[dict] = []
     rows: list[dict] = []
@@ -140,6 +278,71 @@ def check() -> dict:
                     "message": f"{name} 标为故意不覆盖但没给出可读理由",
                 })
 
+        # ⑥ 参数名：传输类的接受参数 ↔ 内核工具签名（只判传输面，声明例外）
+        param_policy = transport_spec.get("param_policy") or {}
+        not_accepted = param_policy.get("not_accepted") or {}
+        if transport_classes:
+            tparams = transport_method_params(consumer["client"], transport_classes)
+            for tool in sorted(transport_actual & tool_set):
+                spec = tparams.get(tool)
+                if spec is None:
+                    continue  # 缺方法已由 TRANSPORT_COVERAGE 报过
+                accepted = set(spec["params"])
+                payload = spec["payload"]
+                kparams = kernel[tool]
+                for param in kparams["params"]:
+                    if param in accepted:
+                        # 收了必须真发：接受但不装进 payload = 静默不生效
+                        if param not in payload:
+                            if _policy_key(not_accepted, tool, param):
+                                continue
+                            violations.append({
+                                "code": "TRANSPORT_PARAM_SWALLOWED", "repo": repo,
+                                "message": (f"{tool}.{param}：传输类接受但没装进 payload"
+                                            f" ⇒ 调用方传了也不生效（静默）"),
+                            })
+                        continue
+                    if _policy_key(not_accepted, tool, param):
+                        continue
+                    if param in kparams["required"]:
+                        violations.append({
+                            "code": "TRANSPORT_PARAM_MISSING", "repo": repo,
+                            "message": (f"{tool}.{param}：内核**必填**而传输类不收"
+                                        f" ⇒ 该能力经 MCP 不可达"),
+                        })
+                    else:
+                        violations.append({
+                            "code": "TRANSPORT_PARAM_MISSING", "repo": repo,
+                            "message": (f"{tool}.{param}：内核可选而传输类不收"
+                                        f" ⇒ 调用方传它必 TypeError（2026-11-15 "
+                                        f"booked_on/provenance 同族）"),
+                        })
+                for param in spec["params"]:
+                    if param in kparams["params"]:
+                        continue
+                    if _policy_key(not_accepted, tool, param):
+                        continue
+                    violations.append({
+                        "code": "TRANSPORT_PARAM_EXTRA", "repo": repo,
+                        "message": (f"{tool}.{param}：传输类收/发内核工具面没有的参数"
+                                    f" ⇒ MCP 形态 pydantic 判非法（unexpected_keyword）"),
+                    })
+            for key, reason in not_accepted.items():
+                if len((reason or "").strip()) < 6:
+                    violations.append({
+                        "code": "PARAM_POLICY_NO_REASON", "repo": repo,
+                        "message": f"参数例外 {key} 没给出可读理由",
+                    })
+                bare = key.split(".", 1)[-1] if "." in key else key
+                if bare not in {p for t in transport_actual & tool_set
+                                for p in kernel[t]["params"]}:
+                    violations.append({
+                        "code": "PARAM_POLICY_STALE", "repo": repo,
+                        "message": (f"参数例外 {key} 指向内核工具面里不存在的参数"
+                                    f" —— 声明过期，删掉它（别留着给下一次漂移当"
+                                    f"豁免）"),
+                    })
+
         rows.append({
             "repo": repo,
             "covered": len(actual & tool_set),
@@ -148,8 +351,13 @@ def check() -> dict:
             "transport": len(transport_actual & tool_set) if transport_classes else None,
         })
 
+    # ⑦ 调用点：内核客户端接收者上传了内核没有的关键字（跨仓，只扫一次）
+    scan = ((contract.get("transport_param_scan")) or {})
+    if scan:
+        violations.extend(callsite_unknown_kwargs(scan, kernel))
+
     return {"ok": not violations, "violations": violations, "rows": rows,
-            "surface": len(tool_set)}
+            "surface": len(tool_set), "kernel_params": len(kernel)}
 
 
 def main() -> int:
