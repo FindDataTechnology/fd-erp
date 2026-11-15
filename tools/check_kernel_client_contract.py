@@ -7,7 +7,11 @@
 本闸把"故意不盖"变成声明：
   1. 每个消费仓声明的必须覆盖集合，必须与客户端实际方法集合逐名相等；
   2. 未覆盖的工具必须逐条在 `intentionally_absent` 里给出理由 —— 说不出理由就是缺口；
-  3. 客户端里不得出现工具面之外的发明方法。
+  3. 客户端里不得出现工具面之外的发明方法；
+  4. 声明了 `transport` 块的消费仓，其**传输适配器**（如 `McpKernelClient`）必须与
+     工具面**逐名全等** —— 缺一个转发就是那一档能力在生产断链（2026-11-15
+     `decide_event` 生产 500 的订正：api 的 MCP 内层复用的就是模板仓传输类，
+     而原先把传输类混进编排面比对，两个方向都会错）。
 
 用法：
   python3 fd-erp/tools/check_kernel_client_contract.py
@@ -103,7 +107,31 @@ def check() -> dict:
                 "message": f"客户端出现工具面之外的方法：{sorted(invented)}",
             })
 
-        # ④ 故意不覆盖的每一条必须有理由
+        # ④ 传输面：1:1 覆盖工具面（声明了 transport 块才判）
+        transport_spec = consumer.get("transport") or {}
+        transport_actual: set[str] = set()
+        transport_classes = transport_spec.get("classes") or []
+        if transport_classes:
+            for cls, names in client_methods(consumer["client"],
+                                             transport_classes).items():
+                if not names:
+                    violations.append({
+                        "code": "CLIENT_CLASS_EMPTY", "repo": repo,
+                        "message": (f"传输类 {cls} 未找到任何公开方法"
+                                    f"（类名改了？路径：{consumer['client']}）"),
+                    })
+                transport_actual |= names
+            if transport_actual != tool_set:
+                violations.append({
+                    "code": "TRANSPORT_COVERAGE", "repo": repo,
+                    "message": (f"传输面与工具面不一致："
+                                f"缺少 {sorted(tool_set - transport_actual)} "
+                                f"多出 {sorted(transport_actual - tool_set)}"
+                                f"（传输类 {transport_classes}；缺一个转发 = "
+                                f"复用它作 MCP 内层的消费仓那一端点在生产断链）"),
+                })
+
+        # ⑤ 故意不覆盖的每一条必须有理由
         for name in sorted(declared_absent):
             reason = (consumer["intentionally_absent"][name] or "").strip()
             if len(reason) < 6:
@@ -117,6 +145,7 @@ def check() -> dict:
             "covered": len(actual & tool_set),
             "absent": len(declared_absent),
             "surface": len(tool_set),
+            "transport": len(transport_actual & tool_set) if transport_classes else None,
         })
 
     return {"ok": not violations, "violations": violations, "rows": rows,
@@ -134,7 +163,10 @@ def main() -> int:
 
     print(f"内核工具面：{result['surface']} 个工具")
     for r in result["rows"]:
-        print(f"  {r['repo']:<32} 覆盖 {r['covered']:>2}/{r['surface']}  声明不覆盖 {r['absent']:>2}")
+        extra = (f"  传输面 {r['transport']}/{r['surface']}"
+                 if r.get("transport") is not None else "")
+        print(f"  {r['repo']:<32} 覆盖 {r['covered']:>2}/{r['surface']}  "
+              f"声明不覆盖 {r['absent']:>2}{extra}")
     if result["ok"]:
         print("契约闸：通过（声明 = 实际，未覆盖项均有理由）")
         return 0
