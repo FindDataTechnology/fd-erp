@@ -49,15 +49,16 @@
    "name_pattern": "^erp_(api_)?[a-z0-9_]+_(total|seconds)$",
    "no_cross_service_duplicate": "各服务导出到同一个 Prometheus，指标名不得跨服务重名（标签集不同更要命）"
   },
-  "declared_deviations": [
-   {
-    "kind": "histogram_buckets",
-    "service": "fd-erp-vertical-api",
-    "detail": "erp_api_request_seconds 的桶集比内核 erp_tool_latency_seconds 少一个 10.0 上界",
-    "reason": "两处 histogram 各自手写桶集，无共同出处",
-    "close_when": "两侧桶集统一（由同一常量生成），或明确声明两份桶集服务不同监控口径",
-    "task": "establish-erp-independent-root 3.5"
-   }
-  ]
+  "canonical": {
+   "histogram_seconds_buckets": [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+   "generated_files": {
+    "kernel": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/_buckets_generated.py",
+    "api": "fd-erp-vertical-api/fd_erp_vertical_api/_buckets_generated.py"
+   },
+   "generator": "fd-erp/tools/gen_metrics_buckets.py",
+   "note": "单一出处：本块的数组是唯一真源，gen_metrics_buckets.py 把它生成到两仓的 _buckets_generated.py；两侧 observability.py 只许 import，不许手写桶集。改口径＝改这里 + 重跑生成器。",
+   "task": "establish-erp-independent-root 3.5"
+  },
+  "declared_deviations": []
  }
 }

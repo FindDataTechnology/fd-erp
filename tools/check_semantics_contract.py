@@ -9,7 +9,9 @@
   2. 跨仓共享码在内核与 api 两侧 semantic_class / retryable / default_hint 逐字一致；
   3. 模板层码集 ⊆ 内核码 ∪ api 自有码 ∪ 模板自有码（不得凭空造码，也不得声明不存在的）；
   4. 指标名符合命名式，且不跨服务重名；
-  5. histogram 桶集不一致必须已声明（未声明的差异判红）。
+  5. histogram 桶集必须等于契约里的 canonical 数组（3.5 起由生成器落到两仓的
+     `_buckets_generated.py`）；**解析不出桶集也算违规**——否则「改成 import 之后
+     AST 里没有元组字面量」会让旧判据静默放行，那正是本闸要防的形状。
 
 用法：
   python3 fd-erp/tools/check_semantics_contract.py [--json]
@@ -73,8 +75,29 @@ def _tuple_class_attr(rel: str, cls: str, attr: str) -> list[str]:
     raise SystemExit(f"未在 {rel} 的 {cls}.{attr} 找到码元组")
 
 
-def _metrics(rel: str) -> list[dict]:
+def _tuple_constants(rel: str) -> dict[str, list]:
+    """模块级 `NAME = (数字, …)` 常量表（用于解析 `buckets=NAME`）。"""
+    out: dict[str, list] = {}
+    try:
+        tree = _read(rel)
+    except SystemExit:
+        return out
+    for node in tree.body:
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        target = node.targets[0] if isinstance(node, ast.Assign) else node.target
+        if not (isinstance(target, ast.Name) and isinstance(node.value, (ast.List, ast.Tuple))):
+            continue
+        vals = [e.value for e in node.value.elts if isinstance(e, ast.Constant)]
+        if vals and all(isinstance(v, (int, float)) for v in vals):
+            out[target.id] = vals
+    return out
+
+
+def _metrics(rel: str, consts: dict[str, list] | None = None) -> list[dict]:
     tree = _read(rel)
+    consts = dict(consts or {})
+    consts.update(_tuple_constants(rel))
     out = []
     for node in tree.body:
         if isinstance(node, ast.Assign):
@@ -93,8 +116,14 @@ def _metrics(rel: str) -> list[dict]:
         name = call.args[0].value if call.args and isinstance(call.args[0], ast.Constant) else None
         buckets = None
         for kw in call.keywords:
-            if kw.arg == "buckets" and isinstance(kw.value, (ast.List, ast.Tuple)):
+            if kw.arg != "buckets":
+                continue
+            if isinstance(kw.value, (ast.List, ast.Tuple)):
                 buckets = [e.value for e in kw.value.elts if isinstance(e, ast.Constant)]
+            elif isinstance(kw.value, ast.Name):
+                # 3.5 起桶集来自生成文件（`SECONDS_BUCKETS`）；解析不出就留 None，
+                # 由 ⑤ 判红——不许「读不到」被当成「没违规」。
+                buckets = consts.get(kw.value.id)
         out.append({"var": target.id, "kind": kind, "name": name, "buckets": buckets})
     return out
 
@@ -185,9 +214,19 @@ def check() -> dict:
     # ④ 指标：命名式 + 跨服务不重名
     mc = contract["metrics"]
     pattern = re.compile(mc["rules"]["name_pattern"])
+    canon = mc.get("canonical") or {}
+    # 桶集常量来自**各仓自己的**生成文件，必须按服务分开解析：两个生成文件里的常量
+    # 同名（都叫 `SECONDS_BUCKETS`），合并成一个 dict 会互相覆盖 —— 实测把 api 的生成
+    # 文件改坏后，内核也被一起判红（假红，且指向错误的仓）。红证抓到的，别改回合表。
+    gen_files = canon.get("generated_files") or {}
+
+    def _consts_for(key: str) -> dict[str, list]:
+        rel = gen_files.get(key)
+        return _tuple_constants(rel) if rel else {}
+
     per_service = {
-        "fd-erp-ledger-mcp": _metrics(mc["sources"]["kernel"]),
-        "fd-erp-vertical-api": _metrics(mc["sources"]["api"]),
+        "fd-erp-ledger-mcp": _metrics(mc["sources"]["kernel"], _consts_for("kernel")),
+        "fd-erp-vertical-api": _metrics(mc["sources"]["api"], _consts_for("api")),
     }
     seen: dict[str, str] = {}
     for svc, items in per_service.items():
@@ -206,29 +245,43 @@ def check() -> dict:
             seen[name] = svc
     summary["metrics"] = {svc: len(v) for svc, v in per_service.items()}
 
-    # ⑤ histogram 桶集：以内核为基准，偏离基准的服务必须已在 declared_deviations 里声明
+    # ⑤ histogram 桶集：必须等于契约的 canonical 数组（3.5）。
+    # 旧口径是「以内核为基准」——那让内核成了**偶然的**权威，且差异只要在
+    # declared_deviations 里声明一下就放行；本 change 把真源搬进契约（+ 生成器），
+    # 于是判据从「有没有声明」变成「等不等于唯一的那个数组」。
     declared = {d["service"] for d in mc.get("declared_deviations", [])
                 if d.get("kind") == "histogram_buckets"}
-    reference_service = "fd-erp-ledger-mcp"
-    ref_sets = {tuple(m["buckets"]) for m in per_service[reference_service]
-                if m["kind"] == "Histogram" and m["buckets"]}
-    if len(ref_sets) > 1:
+    canonical = canon.get("histogram_seconds_buckets")
+    if not canonical:
         violations.append({
-            "code": "HISTOGRAM_BUCKETS_INCONSISTENT_WITHIN_SERVICE",
-            "message": f"{reference_service} 内部多个 histogram 桶集不一致，无法作为基准",
+            "code": "HISTOGRAM_CANONICAL_MISSING",
+            "message": "契约缺 metrics.canonical.histogram_seconds_buckets：没有真源就没有这条判据",
         })
-    elif ref_sets:
-        ref = next(iter(ref_sets))
+    else:
+        want = [float(v) for v in canonical]
         for svc, items in per_service.items():
-            if svc == reference_service:
+            histograms = [m for m in items if m["kind"] == "Histogram"]
+            if not histograms:
                 continue
-            sets = {tuple(m["buckets"]) for m in items
-                    if m["kind"] == "Histogram" and m["buckets"]}
-            if sets and sets != {ref} and svc not in declared:
+            unresolved = [m["name"] for m in histograms if not m["buckets"]]
+            if unresolved:
+                # 关键一条：改成 import 之后 AST 里没有元组字面量。若这里放过，
+                # 「解析不出」与「没问题」就同形了（旧判据正是只看得到字面量）。
                 violations.append({
-                    "code": "HISTOGRAM_BUCKETS_UNDECLARED",
-                    "message": (f"{svc} 的 histogram 桶集与基准 {reference_service} 不一致，"
-                                f"且未在 declared_deviations 里声明"),
+                    "code": "HISTOGRAM_BUCKETS_UNRESOLVED",
+                    "message": (f"{svc} 的 histogram 桶集解析不出（{', '.join(map(str, unresolved))}）——"
+                                f"桶集要么写字面量、要么 import 契约生成的 `SECONDS_BUCKETS`；"
+                                f"生成文件在 {canon.get('generated_files', {}).get('kernel' if 'ledger' in svc else 'api', '?')}"),
+                })
+                continue
+            wrong = [m["name"] for m in histograms if [float(x) for x in m["buckets"]] != want]
+            if wrong and svc not in declared:
+                violations.append({
+                    "code": "HISTOGRAM_BUCKETS_OFF_CANONICAL",
+                    "message": (f"{svc} 的 histogram 桶集与契约 canonical 不一致：{', '.join(map(str, wrong))}；"
+                                f"canonical={want}。改口径＝改 shared/semantics-contract.json 的 "
+                                f"metrics.canonical 再跑 fd-erp/tools/gen_metrics_buckets.py，"
+                                f"别在服务里手写"),
                 })
 
     return {
