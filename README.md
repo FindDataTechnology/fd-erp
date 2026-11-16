@@ -3,7 +3,7 @@
 > 本文件由 `fd-erp/tools/gen_erp_docs.py` 从 `fd-erp/manifest.json` 与各仓机器可读产物派生，**不要手改**。
 > 生成日期：2026-11-17。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
 
-ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线。章程 `openspec/specs/erp-board/spec.md`；对外口径唯一出处 `docs/erp/README.md`。
+ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线。章程 `openspec/specs/erp-board/spec.md`；对外口径唯一出处 `fd-erp/docs/README.md`。
 
 ## 1. 代码仓
 
@@ -19,7 +19,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 |---|---|---|---|---|
 | ERP 舰队/角色/技能包（3 个） | `fleet-packs/erp` | 是 | `git@gitee.com:FindDataTechnology/fleet-packs.git` | 与 ERP 仓分离维护，漂移风险高 |
 | 客户演示包（跨境 / 餐饮，可复跑） | `fd-erp/collateral` | 是 | `git@gitee.com:FindDataTechnology/fd-erp.git` | 2026-11-16 从工作区根 collateral-erp/ 移入本仓（此前不在任何 git 仓内，改动无历史） |
-| 对外口径唯一出处（章程 + 不可宣称清单 + 发布状态） | `docs/erp` | **否** | — | 不在任何 git 仓内；claims 的 surfaces 直接引用此路径 |
+| 对外口径唯一出处（章程 + 不可宣称清单 + 发布状态） | `fd-erp/docs` | 是 | `git@gitee.com:FindDataTechnology/fd-erp.git` | 2026-11-16 从工作区根 docs/erp/ 移入本仓；claims 的 surfaces.board-doc 随之指向 fd-erp/docs/README.md |
 | ERP 全部主规格（15 erp-* + 4 ecommerce-*） | `openspec/specs` | 是 | `git@gitee.com:FindDataTechnology/finddata-openspec.git` | 与全仓 358 条规格共用一个根；ERP 无自己的 openspec 根 |
 | 官网 ERP 板块落地页（双语） | `fd-official-web/src/components/ErpLanding.astro` | 是 | `git@gitee.com:FindDataTechnology/fd-official-web.git` | 在官网仓内，与五线共用布局与 LineTabs |
 | 内核工具面 × 客户端覆盖面声明（谁盖哪些、哪些故意不盖及理由） | `fd-erp/shared/kernel-client-contract.json` | 是 | `fd-erp（本根仓）` | 跨仓契约：声明 ≠ 实际即被 check_kernel_client_contract.py 判红 |
@@ -171,8 +171,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 ## 8. 待办（结构性）
 
-- [ ] 把 docs/erp 纳入版本控制（collateral 已于 2026-11-16 移入 fd-erp/collateral/；docs/erp 仍不在任何 git 仓内）
-- [ ] 为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根
+- [ ] 为 ERP 建独立 openspec 根，或将 57 条 erp-*/ecommerce-* 规格（2026-11-16 实测；「19 条」在机器可读产物里没有出处）迁出全仓共用根
 - [ ] kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）
 - [ ] 错误码 / 指标名 / 环境变量收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）
 - [ ] REST 面访问日志已落（默认 errors 模式）：后续若要接日志平台，需评估 all 模式的量

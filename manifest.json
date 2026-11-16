@@ -13,7 +13,7 @@
    "/erp",
    "/zh/erp"
   ],
-  "charter_doc": "docs/erp/README.md"
+  "charter_doc": "fd-erp/docs/README.md"
  },
  "repos": [
   {
@@ -73,10 +73,10 @@
   {
    "id": "charter-doc",
    "what": "对外口径唯一出处（章程 + 不可宣称清单 + 发布状态）",
-   "path": "docs/erp",
-   "versioned": false,
-   "owner_repo": null,
-   "note": "不在任何 git 仓内；claims 的 surfaces 直接引用此路径"
+   "path": "fd-erp/docs",
+   "versioned": true,
+   "owner_repo": "git@gitee.com:FindDataTechnology/fd-erp.git",
+   "note": "2026-11-16 从工作区根 docs/erp/ 移入本仓；claims 的 surfaces.board-doc 随之指向 fd-erp/docs/README.md"
   },
   {
    "id": "specs",
@@ -328,8 +328,7 @@
   "log_contract": "fd-erp/shared/log-contract.json"
  },
  "open_tasks": [
-  "把 docs/erp 纳入版本控制（collateral 已于 2026-11-16 移入 fd-erp/collateral/；docs/erp 仍不在任何 git 仓内）",
-  "为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根",
+  "为 ERP 建独立 openspec 根，或将 57 条 erp-*/ecommerce-* 规格（2026-11-16 实测；「19 条」在机器可读产物里没有出处）迁出全仓共用根",
   "kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）",
   "错误码 / 指标名 / 环境变量收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）",
   "REST 面访问日志已落（默认 errors 模式）：后续若要接日志平台，需评估 all 模式的量",
