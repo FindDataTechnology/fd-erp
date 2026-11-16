@@ -398,7 +398,8 @@
         }
       ],
       "claims": [
-        "inventory.quantity-face"
+        "inventory.quantity-face",
+        "inventory.operations-lane"
       ]
     },
     {

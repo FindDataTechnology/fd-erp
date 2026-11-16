@@ -46,6 +46,11 @@ DEFAULT_PAGESETS_DIR = (ROOT / "fd-erp-vertical-templates" / "templates" / "supp
 #: 某个页集契约：内部面没有页面，塞进去会改变一个封闭空间的度量。
 INTERNAL_CONTRACT_FILES: tuple[tuple[Path, str], ...] = (
     (ROOT / "fd-erp-vertical-api" / "INTERNAL-API.md", "内部面契约"),
+    # 仓管作业面（内部页集 supply-chain.wh）：单独一份文件。理由是同族但更窄——
+    # fi 那份的字段承诺闸（tests/test_internal_api_field_promise.py）按 `fi` 前缀对齐
+    # OpenAPI 路由，混进 wh 行会被判成「文档里有、代码里没有」的幽灵行。
+    # 两面各按自己的前缀划人口，别让一份文件承载两个页集。
+    (ROOT / "fd-erp-vertical-api" / "INTERNAL-WH-API.md", "仓管作业内部面契约"),
 )
 
 #: 参与派生实现的文件（faces 是四个页面集的业务面，app 是服务级与少量 UE 面）
@@ -258,13 +263,18 @@ def main(argv: list[str] | None = None) -> int:
     problems = check(api_dir, pagesets_dir)
     code, _ = derive_code(api_dir)
     declared, _ = derive_declared(pagesets_dir)
+    # 内部面契约也进了判定人口（check() 里与页集契约合表比对），所以汇总行必须把它
+    # 算进去：只印页集数会让「验了多少条」比「比了多少条」少一截——读的人以为内部面
+    # 没被对拍过，或者以为数字变小是端点丢了。两处口径同源（同一个 derive 函数）。
+    internal, _ = _derive_declared_from_files(list(INTERNAL_CONTRACT_FILES))
     if problems:
         print(f"FAIL: REST 面与声明契约不一致（{len(problems)} 处）：")
         for p in problems:
             print("  " + p)
         return 1
-    print(f"OK: {len(code)} 条实现端点与 {len(declared)} 条契约声明双向一致"
-          f"（基础设施端点 {len(INFRA_ENDPOINTS)} 条已登记理由）")
+    print(f"OK: {len(code)} 条实现端点与 {len(declared) + len(internal)} 条契约声明"
+          f"双向一致（页集 {len(declared)} + 内部面 {len(internal)}；"
+          f"基础设施端点 {len(INFRA_ENDPOINTS)} 条已登记理由）")
     return 0
 
 
