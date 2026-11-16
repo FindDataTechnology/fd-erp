@@ -2,6 +2,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ERP 板块 — 能力与集成说明 · 寻数 FindData</title>
 <meta name="description" content="ERP 板块的能力面、接口面与边界，数据全部由仓内唯一出处派生。">
+<link rel="alternate" hreflang="zh-CN" href="./">
+<link rel="alternate" hreflang="en" href="en/index.html">
 <style>
 :root{
 --paper:#eaece5;--paper-2:#e3e7df;--paper-3:#dbe0d7;
@@ -162,6 +164,7 @@ a{border:0}
 <span class="brand">FindData</span>
 <span class="doc">ERP · 能力与集成说明</span>
 <span class="stamp">2026-11-17</span>
+<a class="lang" href="en/index.html" hreflang="en" rel="alternate">English</a>
 </div></header>
 <main id="main" class="sheet">
 <div class="hero">
@@ -169,7 +172,7 @@ a{border:0}
 <div class="rule-double"></div>
 <span class="mark" aria-hidden="true"><span>数据派生</span><span>勿手改</span></span>
 <p class="lede">ERP 是「集群 + 供给包」的组合式交付：一个行业无关的复式事件账内核，加行业模板资产（连接器 pack、舰队蓝图、科目映射、报表 preset），经同源入口对外提供 REST 面与 MCP 工具面。它不是单体 ERP 应用，也不提供表单式 UI。</p>
-<p class="basis">本页所有数字均由 <code>claims.json</code> / <code>gaps.json</code> / <code>tool-surface.json</code> / <code>coverage/</code> / 模板 manifest 在构建时派生，与 <code>claim_gate</code> 同源；不写价格、客户数、用量或上线日期。</p>
+<p class="basis">本页所有数字均由 claims.json / gaps.json / tool-surface.json / coverage/ / 模板 manifest 在构建时派生，与 claim_gate 同源；不写价格、客户数、用量或上线日期。</p>
 <table class="tb"><caption>本页口径</caption>
 <thead><tr><th scope="col">项目</th><th scope="col" class="num">数量</th><th scope="col">出处</th></tr></thead><tbody>
 <tr><td>MCP 工具</td><td class="num big">37<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td><td class="prov">tool-surface.json</td></tr>
@@ -178,14 +181,14 @@ a{border:0}
 <tr><td>可宣称能力</td><td class="num big">17<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td><td class="prov">claims.json</td></tr>
 <tr><td>明确不宣称</td><td class="num big">7<sup><a class="fn" href="#src" data-src="claims.json">5</a></sup></td><td class="prov">claims.json</td></tr>
 </tbody></table>
-<nav class="acts" aria-label="页内入口">
+<nav class="acts">
 <a href="#capability">看能力面</a>
 <a href="#routes">看接口面</a>
 <a class="ghost" href="#src">核验出处</a>
 <a class="ghost" href="https://www.finddatatech.cloud/" rel="noopener">寻数官网 ↗</a>
 </nav>
 </div>
-<nav class="index" aria-label="科目索引"><h2>科目索引</h2><ol>
+<nav class="index"><h2>科目索引</h2><ol>
 <li><a href="#form"><span class="k">形态</span><span class="v">五层</span></a></li>
 <li><a href="#capability"><span class="k">能力面</span><span class="v">17 条</span></a></li>
 <li><a href="#not-claimable"><span class="k">明确不宣称</span><span class="v">7 条</span></a></li>
@@ -197,7 +200,13 @@ a{border:0}
 <li><a href="#edges"><span class="k">边界</span><span class="v">四项</span></a></li>
 </ol></nav>
 <section id="form"><h2>形态：五层，各自独立升级</h2>
-<ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">145 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li></ul>
+<ul class="stack">
+<li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li>
+<li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li>
+<li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">145 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li>
+<li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li>
+<li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li>
+</ul>
 <table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th><th scope="col">面</th><th scope="col" class="num">源码行</th><th scope="col" class="num">测试行</th></tr></thead><tbody>
 <tr><td>账本内核（行业无关）</td><td><code>fd-erp-ledger-mcp</code></td><td class="muted">MCP 工具面</td><td class="num">4456</td><td class="num">2895</td></tr>
 <tr><td>行业模板工厂（差异全部上移至此）</td><td><code>fd-erp-vertical-templates</code></td><td class="muted">模板资产 + 连接器绑定 + 能力矩阵</td><td class="num">10715</td><td class="num">8536</td></tr>
@@ -224,7 +233,7 @@ a{border:0}
 <tr><td>库存作业车道：入库/出库/调拨/盘点的提交与查询走内核拟稿车道——提交只落 pending 事实、不投影不过账，拍板（确认门 + 投影 + 过账）是独立权限档；出库与调拨先整单核可用量，不足整单拒绝并点名行号与缺口，一行都不写；调拨同单两笔事实（源仓出 + 目的仓入，数量守恒），只拍一侧时整单状态不推进；盘点只对有差异的行出调整事实（盘盈正、盘亏负），账面数读本板块数量面、不接受调用方递来的账面数；单张读面给逐行当前状态（内核车道，不是提交时快照）与按侧汇总，调拨的「半边已确认」看得见。数量面余额是唯一出处，本面不回写外部 WMS。</td><td><code>inventory.operations-lane</code></td><td><span class=tag>code</span><span class=tag>endpoint</span><span class="cnt">×8</span></td></tr>
 </tbody></table></section>
 <section id="not-claimable"><h2>明确不宣称（对外如实守界）</h2>
-<p class="muted">以下条目以否定口径出现在本页与官网；任何肯定句式都会被 <code>claim_gate.py</code> 判红。</p>
+<p class="muted">以下条目以否定口径出现在本页与官网；任何肯定句式都会被 claim_gate.py 判红。</p>
 <table><thead><tr><th scope="col">能力</th><th scope="col">口径</th></tr></thead><tbody>
 <tr><td><span class="st no">不宣称：</span>开票自研 / 支持开票</td><td class="muted">开票自研当前不提供（挂账）：票据本体由客户既有合规渠道处理，平台不伪造不代开</td></tr>
 <tr><td><span class="st no">不宣称：</span>税务申报</td><td class="muted">税务申报当前不提供（挂账）</td></tr>
@@ -310,7 +319,7 @@ a{border:0}
 <tr><td><code>ue</code></td><td class="num">22</td><td><span class="st ok">已实施</span></td></tr>
 <tr><td><code>wh</code></td><td class="num">11</td><td><span class="st ok">已实施</span></td></tr>
 </tbody></table>
-<p class="muted">未实施端点按契约返回 <code>501 NOT_IMPLEMENTED</code> 并附计划车道，承载层不改写、不吞掉、不伪装成占位表单。</p></section>
+<p class="muted">未实施端点按契约返回 501 NOT_IMPLEMENTED 并附计划车道，承载层不改写、不吞掉、不伪装成占位表单。</p></section>
 <section id="templates"><h2>行业模板（差异全部上移至此）</h2>
 <table><thead><tr><th scope="col">行业</th><th scope="col">模板资产</th><th scope="col">上架状态</th></tr></thead><tbody>
 <tr><td>跨境电商对账模板 <span class="muted">v1.4.4</span></td><td><span class=tag>connector_pack</span><span class=tag>fleet_blueprint</span><span class=tag>account_mapping_pack</span><span class=tag>report_preset</span><span class=tag>capability_matrix</span></td><td><span class="st ok">已上架：市场 v2</span></td></tr>
@@ -319,7 +328,7 @@ a{border:0}
 </tbody></table></section>
 <section id="matrix"><h2>子模块全覆盖（21 格，四态封闭）</h2>
 <div class="matrix">
-<div class="bar" role="img" aria-label="已实现 8 格、模板可配 4 格、需一次接入 6 格、明确不做 3 格">
+<div class="bar" role="img" aria-label="已实现 8, 模板可配 4, 需一次接入 6, 明确不做 3">
 <span class="s1" style="width:38.095%"></span>
 <span class="s2" style="width:19.048%"></span>
 <span class="s3" style="width:28.571%"></span>
@@ -354,7 +363,7 @@ a{border:0}
 <tr><td>主数据</td><td><code>template_configured</code><br><span class="muted">模板可配</span></td><td class="muted">通用科目表在 universal_accounts；行业科目映射在每个行业模板的 account-mapping；对象身份在 objects（sku/客户/供应商/仓库）。跨系统的物料主数据同步仍走连接器。</td></tr>
 <tr><td>人力资源</td><td><code>not_doing</code><br><span class="muted">明确不做</span></td><td class="muted">不提供人事、考勤、薪酬。与 ERP 板块「经营账 + 对账」的定位无关，且薪酬涉及个人数据与合规另一套边界。<br><span class="muted">理由：HR 是独立产品域（个人数据、考勤、薪酬合规），与经营账内核无共用原语；纳入会稀释板块边界（复核 2027-06-30）</span></td></tr>
 </tbody></table>
-<p class="muted">「全覆盖」指决策空间全覆盖：每格恰好一态、一据、一理由，对外不问「做了几个模块」，只答这四种之一。判据 <code>tools/check_coverage_matrix.py</code>；矩阵漂移、不做格被宣称、宣称无模块背书都判红。</p>
+<p class="muted">「全覆盖」指决策空间全覆盖：每格恰好一态、一据、一理由，对外不问「做了几个模块」，只答这四种之一。判据 tools/check_coverage_matrix.py；矩阵漂移、不做格被宣称、宣称无模块背书都判红。</p>
 <p class="muted">另有一份按客户功能清单导入的行业点矩阵（supply-chain，36 点，按实现证据分类），用于单客户范围的实施盘点，不构成本页的四态口径。</p></section>
 <section id="gaps"><h2>连接器缺口（7 条，每项带机器判据）</h2>
 <table><thead><tr><th scope="col">缺口</th><th scope="col">能力</th><th scope="col">责任仓</th><th scope="col">状态</th></tr></thead><tbody>
@@ -380,6 +389,21 @@ a{border:0}
 <li>coverage/</li>
 <li>templates/*/manifest.json</li>
 </ul>
-<p class="say">本页由 <code>fd-erp/tools/gen_erp_docs.py</code> 于 2026-11-17 生成。数据出处：<code>claims/claims.json</code>、<code>gaps.json</code>、<code>publish-record.json</code>、<code>tool-surface.json</code>、<code>coverage/</code>、<code>templates/*/manifest.json</code>。本页不声称任何未在 <code>publish-record.json</code> 中记为 live 的状态。</p>
+<h2>术语表（两语言逐条对应）</h2><dl class="glossary">
+<div><dt>事实账内核</dt><dd>fact ledger kernel</dd></div>
+<div><dt>复式事件账</dt><dd>double-entry event ledger</dd></div>
+<div><dt>确认门</dt><dd>confirmation gate</dd></div>
+<div><dt>导入车道</dt><dd>ingestion lane</dd></div>
+<div><dt>过账规则</dt><dd>posting rules</dd></div>
+<div><dt>子模块全覆盖四态</dt><dd>full-coverage four states</dd></div>
+<div><dt>明确不做</dt><dd>explicitly out of scope</dd></div>
+<div><dt>需一次接入</dt><dd>needs one-time onboarding</dd></div>
+<div><dt>模板可配</dt><dd>configurable via template</dd></div>
+<div><dt>纵向 REST 服务面</dt><dd>vertical REST surface</dd></div>
+<div><dt>行业模板层</dt><dd>vertical template layer</dd></div>
+<div><dt>连接器缺口</dt><dd>connector gap</dd></div>
+<div><dt>不可宣称</dt><dd>not claimable</dd></div>
+</dl>
+<p class="say">本页由 fd-erp/tools/gen_erp_docs.py 于 2026-11-17 生成。数据出处：claims/claims.json、gaps.json、publish-record.json、tool-surface.json、coverage/、templates/*/manifest.json。本页不声称任何未在 publish-record.json 中记为 live 的状态。</p>
 </footer>
 </main></body></html>

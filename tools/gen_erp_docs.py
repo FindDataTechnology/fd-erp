@@ -25,6 +25,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 FD_ERP = ROOT / "fd-erp"
 
+#: 文案键必须**显式**把本文件所在目录放进 `sys.path`。`check_all.py` 用
+#: `[sys.executable, "-I", <script>]` 调本脚本，而 `-I` 隐含 `-P`（不预置脚本目录）
+#: ⇒ 只靠默认行为会 `ModuleNotFoundError: site_i18n`，症状是「派生文档漂移」那条闸
+#: 突然报判不出/红，而代码本身没错。这一行是那次教训的落地。
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from site_i18n import (COVERAGE_STATE_LABELS_EN, LANG_KEYS,  # noqa: E402
+                       STRINGS, TERMINOLOGY)
+from site_i18n import t as _t  # noqa: E402
+
+
+def _has_key(lang: str):
+    """该语言是否有这个键（层 1/3/4 有 `_hop`、2/5 没有，用键存在性而不是写死分支）。"""
+    return lambda key: key in STRINGS[lang]
+
+
 #: 全覆盖四态：标签与顺序与 fd-erp-vertical-templates/scripts/claim_gate.py 同源。
 #: 第五态不存在——矩阵里出现别的值由 check_coverage_matrix.py 判红，本脚本若读到
 #: 未知态会直接 MissingKeyError，不会把它印成空白。
@@ -551,7 +566,17 @@ def esc(x) -> str:
     return html.escape(str(x), quote=True)
 
 
-def render_site(d: dict) -> str:
+def render_site(d: dict, lang: str = "zh") -> str:
+    """渲染介绍站。`lang` 只换文案，**数据行一律沿用机器产物原样**（任务 4.2）。
+
+    文案键在 `fd-erp/tools/site_i18n.py`；两语言键集必须同构（`--check` 会核）。
+    """
+    T = _t(lang)
+    has = _has_key(lang)
+    state_labels = COVERAGE_STATE_LABELS if lang == "zh" else COVERAGE_STATE_LABELS_EN
+    alt_lang = T("alt_lang")
+    alt_href = T("alt_href")
+
     m = d["manifest"]
     b = m["board"]
     claims = d["claims"]["claims"]
@@ -562,112 +587,110 @@ def render_site(d: dict) -> str:
     groups = d["surface"]["tool_groups"]
     ann = d["surface"]["tool_annotations"]
     points = d["matrix"]["points"]
-    cls = Counter(p["classification"] for p in points)
     packs = d["publish"]["packs"]
     # 板块级全覆盖（21 格四态）：覆写页面上「覆盖」这一栏的口径——客户问「某子模块
     # 有没有」，答案必须落在这四种之一，不是「客户功能清单命中了几点」。
     cells = d["coverage"]["modules"]
     by_state = Counter(c["state"] for c in cells)
-    state_labels = COVERAGE_STATE_LABELS
 
     o: list[str] = []
     a = o.append
 
-    a("<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">")
+    a(f'<!doctype html><html lang="{T("lang")}"><head><meta charset="utf-8">')
     a('<meta name="viewport" content="width=device-width,initial-scale=1">')
-    a("<title>ERP 板块 — 能力与集成说明 · 寻数 FindData</title>")
-    a(f'<meta name="description" content="{esc(b["name"])} 板块的能力面、接口面与边界，数据全部由仓内唯一出处派生。">')
+    a(f"<title>{esc(T('title'))}</title>")
+    a(f'<meta name="description" content="{esc(T("meta_desc", name=b["name"]))}">')
+    # 两语言互指：搜索引擎按 hreflang 区分两份，别当成重复内容。
+    a(f'<link rel="alternate" hreflang="{T("lang")}" href="./">')
+    a(f'<link rel="alternate" hreflang="{alt_lang}" href="{alt_href}">')
     a(f"<style>{CSS}</style></head><body>")
-    a('<a class="skip" href="#main">跳到正文</a>')
+    a(f'<a class="skip" href="#main">{T("skip")}</a>')
 
     # 报头：账簿的页眉，不是标题上方的眉标
     a('<header class="masthead"><div class="sheet">')
     a('<span class="brand">FindData</span>')
-    a(f'<span class="doc">{esc(b["name"])} · 能力与集成说明</span>')
+    a(f'<span class="doc">{esc(T("doc", name=b["name"]))}</span>')
     a(f'<span class="stamp">{date.today().isoformat()}</span>')
+    a(f'<a class="lang" href="{alt_href}" hreflang="{alt_lang}" rel="alternate">{T("switch")}</a>')
     a("</div></header>")
 
     a('<main id="main" class="sheet">')
 
     # ── 首屏：定位 + 试算表 + 入口 ───────────────────────────────────────
     a('<div class="hero">')
-    a(f'<h1>{esc(b["name"])} {esc(b["tag_zh"])}<span class="sub">能力、接口与边界</span></h1>')
+    a(f'<h1>{esc(b["name"])} {esc(b["tag_zh"])}'
+      f'<span class="sub">{esc(T("h1_sub"))}</span></h1>')
     a('<div class="rule-double"></div>')
-    a('<span class="mark" aria-hidden="true"><span>数据派生</span><span>勿手改</span></span>')
-    a('<p class="lede">ERP 是「集群 + 供给包」的组合式交付：一个行业无关的复式事件账内核，'
-      "加行业模板资产（连接器 pack、舰队蓝图、科目映射、报表 preset），"
-      "经同源入口对外提供 REST 面与 MCP 工具面。它不是单体 ERP 应用，也不提供表单式 UI。</p>")
-    a('<p class="basis">本页所有数字均由 <code>claims.json</code> / <code>gaps.json</code> / '
-      "<code>tool-surface.json</code> / <code>coverage/</code> / 模板 manifest 在构建时派生，"
-      "与 <code>claim_gate</code> 同源；不写价格、客户数、用量或上线日期。</p>")
+    a(f'<span class="mark" aria-hidden="true"><span>{T("mark_a")}</span>'
+      f'<span>{T("mark_b")}</span></span>')
+    a(f'<p class="lede">{T("lede")}</p>')
+    a(f'<p class="basis">{T("basis")}</p>')
 
-    a('<table class="tb"><caption>本页口径</caption>')
-    a('<thead><tr><th scope="col">项目</th><th scope="col" class="num">数量</th>'
-      '<th scope="col">出处</th></tr></thead><tbody>')
-    a('<tr><td>MCP 工具</td>'
+    a(f'<table class="tb"><caption>{T("tb_caption")}</caption>')
+    a(f'<thead><tr><th scope="col">{T("th_item")}</th>'
+      f'<th scope="col" class="num">{T("th_count")}</th>'
+      f'<th scope="col">{T("th_prov")}</th></tr></thead><tbody>')
+    a(f'<tr><td>{T("row_tools")}</td>'
       f'<td class="num big">{len(ann)}<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td>'
       '<td class="prov">tool-surface.json</td></tr>')
-    a('<tr><td>业务路由</td>'
+    a(f'<tr><td>{T("row_routes")}</td>'
       f'<td class="num big">{rs["business"]}<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td>'
-      f'<td class="prov">coverage/ <span class="dim">（另有 {rs["health"]} 条健康探针；'
-      f'其中 {rs["placeholder"]} 条未实施）</span></td></tr>')
-    a('<tr><td>行业模板</td>'
+      f'<td class="prov">coverage/ <span class="dim">'
+      f'{esc(T("row_routes_note", health=rs["health"], ph=rs["placeholder"]))}</span></td></tr>')
+    a(f'<tr><td>{T("row_templates")}</td>'
       f'<td class="num big">{len(d["templates"])}<sup><a class="fn" href="#src" '
       'data-src="templates/*/manifest.json">3</a></sup></td>'
       '<td class="prov">templates/*/manifest.json</td></tr>')
-    a('<tr><td>可宣称能力</td>'
+    a(f'<tr><td>{T("row_claimable")}</td>'
       f'<td class="num big">{len(delivered)}<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td>'
       '<td class="prov">claims.json</td></tr>')
-    a('<tr><td>明确不宣称</td>'
+    a(f'<tr><td>{T("row_not_claimable")}</td>'
       f'<td class="num big">{len(not_claimable)}<sup><a class="fn" href="#src" data-src="claims.json">5</a></sup></td>'
       '<td class="prov">claims.json</td></tr>')
     a("</tbody></table>")
 
-    a('<nav class="acts" aria-label="页内入口">')
-    a('<a href="#capability">看能力面</a>')
-    a('<a href="#routes">看接口面</a>')
-    a('<a class="ghost" href="#src">核验出处</a>')
-    a('<a class="ghost" href="https://www.finddatatech.cloud/" rel="noopener">寻数官网 ↗</a>')
+    a('<nav class="acts">')
+    a(f'<a href="#capability">{T("act_capability")}</a>')
+    a(f'<a href="#routes">{T("act_routes")}</a>')
+    a(f'<a class="ghost" href="#src">{T("act_src")}</a>')
+    a(f'<a class="ghost" href="https://www.finddatatech.cloud/" rel="noopener">{T("act_home")}</a>')
     a("</nav>")
     a("</div>")
 
     # ── 科目索引 ────────────────────────────────────────────────────────
-    a('<nav class="index" aria-label="科目索引"><h2>科目索引</h2><ol>')
+    a(f'<nav class="index"><h2>{T("index_title")}</h2><ol>')
     for anchor, label, hint in (
-        ("form", "形态", "五层"),
-        ("capability", "能力面", f"{len(delivered)} 条"),
-        ("not-claimable", "明确不宣称", f"{len(not_claimable)} 条"),
-        ("tools", "MCP 工具面", f"{len(ann)} 个"),
-        ("routes", "REST 接口面", f"{rs['business']} 条"),
-        ("templates", "行业模板", f"{len(d['templates'])} 套"),
-        ("matrix", "子模块全覆盖", f"{len(cells)} 格四态"),
-        ("gaps", "连接器缺口", f"{len(gaps)} 条"),
-        ("edges", "边界", "四项"),
+        ("form", T("idx_form"), T("idx_form_hint")),
+        ("capability", T("idx_capability"), T("n_items", n=len(delivered))),
+        ("not-claimable", T("idx_not_claimable"), T("n_items", n=len(not_claimable))),
+        ("tools", T("idx_tools"), T("n_units", n=len(ann))),
+        ("routes", T("idx_routes"), T("n_items", n=rs["business"])),
+        ("templates", T("idx_templates"), T("n_sets", n=len(d["templates"]))),
+        ("matrix", T("idx_matrix"), T("idx_matrix_hint", n=len(cells))),
+        ("gaps", T("idx_gaps"), T("n_items", n=len(gaps))),
+        ("edges", T("idx_edges"), T("idx_edges_hint")),
     ):
         a(f'<li><a href="#{anchor}"><span class="k">{label}</span>'
           f'<span class="v">{esc(hint)}</span></a></li>')
     a("</ol></nav>")
 
     # ── 1 形态 ──────────────────────────────────────────────────────────
-    a('<section id="form"><h2>形态：五层，各自独立升级</h2>')
-    a('<ul class="stack">'
-      '<li><span class="layer">客户端<em>壹座 miniapp 四端</em></span>'
-      '<span class="what">UE / SE / SP / CP 四端页面集</span>'
-      '<span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li>'
-      '<li><span class="layer">平台网关<em>platform gateway</em></span>'
-      '<span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li>'
-      '<li><span class="layer">纵向 REST 服务面<em>vertical api</em></span>'
-      f'<span class="what">{rs["business"]} 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span>'
-      '<span class="hop">全程走内核工具面，不直连库表</span></li>'
-      '<li><span class="layer">行业模板层<em>vertical templates</em></span>'
-      '<span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span>'
-      '<span class="hop">仅 proposal，不直写</span></li>'
-      '<li><span class="layer">账本内核<em>fact ledger kernel</em></span>'
-      '<span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li>'
-      "</ul>")
-    a('<table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th>'
-      '<th scope="col">面</th><th scope="col" class="num">源码行</th>'
-      '<th scope="col" class="num">测试行</th></tr></thead><tbody>')
+    a(f'<section id="form"><h2>{T("form_h2")}</h2>')
+    a('<ul class="stack">')
+    for n in (1, 2, 3, 4, 5):
+        em = f'<em>{esc(T(f"layer{n}_em"))}</em>' if has(f"layer{n}_em") else ""
+        what = (esc(T(f"layer{n}_what", routes=rs["business"])) if n == 3
+                else esc(T(f"layer{n}_what")))
+        hop = (f'<span class="hop">{esc(T(f"layer{n}_hop"))}</span>'
+               if has(f"layer{n}_hop") else "")
+        a(f'<li><span class="layer">{esc(T(f"layer{n}"))}{em}</span>'
+          f'<span class="what">{what}</span>{hop}</li>')
+    a("</ul>")
+    a(f'<table><caption>{T("repo_caption")}</caption><thead><tr>'
+      f'<th scope="col">{T("th_role")}</th><th scope="col">{T("th_repo")}</th>'
+      f'<th scope="col">{T("th_surface")}</th>'
+      f'<th scope="col" class="num">{T("th_src_loc")}</th>'
+      f'<th scope="col" class="num">{T("th_tests_loc")}</th></tr></thead><tbody>')
     for r in m["repos"]:
         a(f'<tr><td>{esc(r["role"])}</td><td><code>{esc(r["path"])}</code></td>'
           f'<td class="muted">{esc(r["surface"])}</td>'
@@ -675,9 +698,10 @@ def render_site(d: dict) -> str:
     a("</tbody></table></section>")
 
     # ── 2 能力面 ────────────────────────────────────────────────────────
-    a('<section id="capability"><h2>能力面（可宣称，逐条带证据）</h2>')
-    a('<table><thead><tr><th scope="col">能力</th><th scope="col">标识</th>'
-      '<th scope="col">证据</th></tr></thead><tbody>')
+    a(f'<section id="capability"><h2>{T("cap_h2")}</h2>')
+    a(f'<table><thead><tr><th scope="col">{T("th_capability")}</th>'
+      f'<th scope="col">{T("th_id")}</th>'
+      f'<th scope="col">{T("th_evidence")}</th></tr></thead><tbody>')
     for c in delivered:
         kinds = sorted({e.get("kind", "?") for e in c.get("evidence", [])})
         a(f'<tr><td>{esc(c["capability"])}</td><td><code>{esc(c["id"])}</code></td>'
@@ -686,72 +710,75 @@ def render_site(d: dict) -> str:
     a("</tbody></table></section>")
 
     # ── 3 不宣称（红字，账面上的冲销） ──────────────────────────────────
-    a('<section id="not-claimable"><h2>明确不宣称（对外如实守界）</h2>')
-    a('<p class="muted">以下条目以否定口径出现在本页与官网；任何肯定句式都会被 '
-      "<code>claim_gate.py</code> 判红。</p>")
-    a('<table><thead><tr><th scope="col">能力</th><th scope="col">口径</th></tr></thead><tbody>')
+    a(f'<section id="not-claimable"><h2>{T("nc_h2")}</h2>')
+    a(f'<p class="muted">{T("nc_note")}</p>')
+    a(f'<table><thead><tr><th scope="col">{T("th_capability")}</th>'
+      f'<th scope="col">{T("th_scope")}</th></tr></thead><tbody>')
     for c in not_claimable:
         # 否定词必须落在同一句内：claim_gate 按句判否定语境，标题里的「不宣称」
-        # 不算，所以每行首字写「不宣称：」。
-        a(f'<tr><td><span class="st no">不宣称：</span>{esc(c["capability"])}</td>'
+        # 不算，所以每行首写前缀（中文「不宣称：」/ 英文 "Not claimed: "）。
+        a(f'<tr><td><span class="st no">{T("nc_prefix")}</span>{esc(c["capability"])}</td>'
           f'<td class="muted">{esc(c.get("reason", ""))}</td></tr>')
     a("</tbody></table></section>")
 
     # ── 4 MCP 工具面 ────────────────────────────────────────────────────
-    a(f'<section id="tools"><h2>MCP 工具面（{len(ann)} 个）</h2>')
+    a(f'<section id="tools"><h2>{T("tools_h2", n=len(ann))}</h2>')
     for g in groups:
         a(f'<h3>{esc(g["group"])}</h3>')
-        a('<table><thead><tr><th scope="col">工具</th><th scope="col">读 / 写</th>'
-          '<th scope="col">行为</th></tr></thead><tbody>')
-        for t in g["tools"]:
-            meta = ann.get(t, {})
-            rw = "读" if meta.get("readOnlyHint") else "写"
-            cls_ = "r" if rw == "读" else "w"
-            a(f'<tr><td><code>{esc(t)}</code></td>'
+        a(f'<table><thead><tr><th scope="col">{T("th_tool")}</th>'
+          f'<th scope="col">{T("th_rw")}</th>'
+          f'<th scope="col">{T("th_behavior")}</th></tr></thead><tbody>')
+        for tool in g["tools"]:
+            meta = ann.get(tool, {})
+            rw = T("rw_read") if meta.get("readOnlyHint") else T("rw_write")
+            cls_ = "r" if meta.get("readOnlyHint") else "w"
+            a(f'<tr><td><code>{esc(tool)}</code></td>'
               f'<td class="rw {cls_}">{rw}</td>'
               f'<td class="muted">{esc(meta.get("behavior", ""))}</td></tr>')
         a("</tbody></table>")
     a("</section>")
 
     # ── 5 REST 接口面 ───────────────────────────────────────────────────
-    a(f'<section id="routes"><h2>REST 接口面（{rs["business"]} 条业务路由，'
-      f'{rs["placeholder"]} 条未实施）</h2>')
-    a('<table><thead><tr><th scope="col">面</th><th scope="col" class="num">路由数</th>'
-      '<th scope="col">实施状态</th></tr></thead><tbody>')
+    a(f'<section id="routes"><h2>'
+      f'{T("routes_h2", business=rs["business"], ph=rs["placeholder"])}</h2>')
+    a(f'<table><thead><tr><th scope="col">{T("th_face")}</th>'
+      f'<th scope="col" class="num">{T("th_route_count")}</th>'
+      f'<th scope="col">{T("th_state")}</th></tr></thead><tbody>')
     for face, n in rs["by_face"].items():
         ph = rs["ph_by_face"].get(face, 0)
-        st = (f'<span class="st no">{ph} 未实施</span>' if ph
-              else '<span class="st ok">已实施</span>')
+        st = (f'<span class="st no">{T("st_ph", n=ph)}</span>' if ph
+              else f'<span class="st ok">{T("st_ok")}</span>')
         a(f'<tr><td><code>{esc(face)}</code></td><td class="num">{n}</td><td>{st}</td></tr>')
     a("</tbody></table>")
-    a('<p class="muted">未实施端点按契约返回 <code>501 NOT_IMPLEMENTED</code> 并附计划车道，'
-      "承载层不改写、不吞掉、不伪装成占位表单。</p></section>")
+    a(f'<p class="muted">{T("routes_note")}</p></section>')
 
     # ── 6 行业模板 ──────────────────────────────────────────────────────
-    a('<section id="templates"><h2>行业模板（差异全部上移至此）</h2>')
-    a('<table><thead><tr><th scope="col">行业</th><th scope="col">模板资产</th>'
-      '<th scope="col">上架状态</th></tr></thead><tbody>')
-    for key, t in d["templates"].items():
-        assets = t.get("assets", {})
+    a(f'<section id="templates"><h2>{T("tpl_h2")}</h2>')
+    a(f'<table><thead><tr><th scope="col">{T("th_industry")}</th>'
+      f'<th scope="col">{T("th_assets")}</th>'
+      f'<th scope="col">{T("th_shelf")}</th></tr></thead><tbody>')
+    for key, tp in d["templates"].items():
+        assets = tp.get("assets", {})
         parts = "".join(f"<span class=tag>{esc(k)}</span>" for k in assets)
         rec = packs.get(f"{key}/connector-pack", {})
         if rec.get("published"):
             # 措辞对齐 claims.json 里 market.connector-packs 的已登记 pattern
-            # （「已上架：市场 vN」）——否则声明闸会把本页判成未登记声明。
-            status = f'<span class="st ok">已上架：市场 v{rec.get("market_version")}</span>'
+            # （「已上架：市场 vN」/ "Published: marketplace vN"）——否则声明闸会把
+            # 本页判成未登记声明。
+            status = f'<span class="st ok">{T("shelf_ok", n=rec.get("market_version"))}</span>'
         else:
-            status = '<span class="st no">未上架</span>'
-        a(f'<tr><td>{esc(t["name_zh"])} <span class="muted">v{esc(t["version"])}</span></td>'
+            status = f'<span class="st no">{T("shelf_no")}</span>'
+        a(f'<tr><td>{esc(tp["name_zh"])} <span class="muted">v{esc(tp["version"])}</span></td>'
           f"<td>{parts}</td><td>{status}</td></tr>")
     a("</tbody></table></section>")
 
     # ── 7 全覆盖（21 格四态）──────────────────────────────────────────────
     total = max(len(cells), 1)
-    a(f'<section id="matrix"><h2>子模块全覆盖（{len(cells)} 格，四态封闭）</h2>')
+    a(f'<section id="matrix"><h2>{T("matrix_h2", n=len(cells))}</h2>')
     a('<div class="matrix">')
     a('<div class="bar" role="img" aria-label="'
-      + "、".join(f"{state_labels[k]} {by_state.get(k, 0)} 格"
-                  for k in COVERAGE_STATE_ORDER) + '">')
+      + esc(T("matrix_aria", parts=", ".join(
+          f"{state_labels[k]} {by_state.get(k, 0)}" for k in COVERAGE_STATE_ORDER))) + '">')
     for i, k in enumerate(COVERAGE_STATE_ORDER, start=1):
         pct = 100.0 * by_state.get(k, 0) / total
         if pct > 0:
@@ -761,61 +788,57 @@ def render_site(d: dict) -> str:
     for i, k in enumerate(COVERAGE_STATE_ORDER, start=1):
         a(f'<li><i class="s{i}"></i>{state_labels[k]} <b>{by_state.get(k, 0)}</b></li>')
     a("</ul></div>")
-    a('<table><thead><tr><th scope="col">子模块</th><th scope="col">状态</th>'
-      '<th scope="col">边界 / 需客户提供</th></tr></thead><tbody>')
+    a(f'<table><thead><tr><th scope="col">{T("th_module")}</th>'
+      f'<th scope="col">{T("th_state2")}</th>'
+      f'<th scope="col">{T("th_boundary")}</th></tr></thead><tbody>')
     for cell in cells:
         note = esc(cell["boundary"])
         if cell["state"] == "needs_onboarding":
-            note += f'<br><span class="muted">需客户提供：{esc(cell.get("blocker", ""))}</span>'
+            note += ('<br><span class="muted">'
+                     + esc(T("cell_blk", blocker=cell.get("blocker", ""))) + "</span>")
         elif cell["state"] == "not_doing":
-            note += (f'<br><span class="muted">理由：{esc(cell.get("reason", ""))}'
-                     f'（复核 {esc(cell.get("review_by", ""))}）</span>')
+            note += ('<br><span class="muted">'
+                     + esc(T("cell_reason", reason=cell.get("reason", ""),
+                             review=cell.get("review_by", ""))) + "</span>")
         a(f'<tr><td>{esc(cell["name_zh"])}</td>'
           f'<td><code>{esc(cell["state"])}</code><br>'
           f'<span class="muted">{state_labels[cell["state"]]}</span></td>'
           f'<td class="muted">{note}</td></tr>')
     a("</tbody></table>")
-    a('<p class="muted">「全覆盖」指决策空间全覆盖：每格恰好一态、一据、一理由，'
-      "对外不问「做了几个模块」，只答这四种之一。判据 <code>tools/check_coverage_matrix.py</code>；"
-      "矩阵漂移、不做格被宣称、宣称无模块背书都判红。</p>")
-    a(f'<p class="muted">另有一份按客户功能清单导入的行业点矩阵（'
-      f'{esc(d["matrix"]["vertical"])}，{len(points)} 点，按实现证据分类），'
-      "用于单客户范围的实施盘点，不构成本页的四态口径。</p></section>")
+    a(f'<p class="muted">{T("matrix_note")}</p>')
+    a(f'<p class="muted">'
+      f'{esc(T("matrix_note2", vertical=d["matrix"]["vertical"], n=len(points)))}</p></section>')
 
     # ── 8 缺口 ──────────────────────────────────────────────────────────
-    a(f'<section id="gaps"><h2>连接器缺口（{len(gaps)} 条，每项带机器判据）</h2>')
-    a('<table><thead><tr><th scope="col">缺口</th><th scope="col">能力</th>'
-      '<th scope="col">责任仓</th><th scope="col">状态</th></tr></thead><tbody>')
+    a(f'<section id="gaps"><h2>{T("gaps_h2", n=len(gaps))}</h2>')
+    a(f'<table><thead><tr><th scope="col">{T("th_gap")}</th>'
+      f'<th scope="col">{T("th_capability")}</th>'
+      f'<th scope="col">{T("th_responsible")}</th>'
+      f'<th scope="col">{T("th_status")}</th></tr></thead><tbody>')
     for g in gaps:
-        st = ('<span class="st no">open</span>' if g["status"] == "open"
+        st = (f'<span class="st no">{esc(g["status"])}</span>' if g["status"] == "open"
               else f'<span class="st ok">{esc(g["status"])}</span>')
         a(f'<tr><td><code>{esc(g["id"])}</code></td><td>{esc(g["capability"])}</td>'
           f'<td><code>{esc(g["responsible_repo"])}</code></td><td>{st}</td></tr>')
     a("</tbody></table></section>")
 
     # ── 9 边界 ──────────────────────────────────────────────────────────
-    a('<section id="edges"><h2>边界</h2><dl class="edges">')
-    a("<div><dt>资金（二清红线）</dt><dd>只产出对账结果与核对指令。"
-      "不提供资金池、代收代付、分账执行；资金归集与分账走客户自选的持牌通道。</dd></div>")
-    a("<div><dt>开票 / 税务</dt><dd>不自研、当前不提供（挂账）。"
-      "账内可记录发票类事件并参与对账；票据本体走客户既有合规渠道，不伪造、不代开。</dd></div>")
-    a("<div><dt>执行面</dt><dd>发货、支付、补货、开票等经营动作仅经采纳的外部 MCP server 完成；"
-      "凭证由租户自带（BYOK）、经环境变量注入，零落库零日志。</dd></div>")
-    a("<div><dt>租户隔离</dt><dd>同时服务寻数自用与外部商家/泛企业客户；"
-      "经营数据按租户隔离，任一客户租户不能读取其他租户的账、单据或报表。</dd></div>")
+    a(f'<section id="edges"><h2>{T("edges_h2")}</h2><dl class="edges">')
+    for n in (1, 2, 3, 4):
+        a(f'<div><dt>{T(f"edge{n}_dt")}</dt><dd>{T(f"edge{n}_dd")}</dd></div>')
     a("</dl></section>")
 
-    # ── 页脚：出处清单（脚注落点） ──────────────────────────────────────
-    a('<footer id="src"><h2>出处</h2><ul>')
+    # ── 页脚：出处清单（脚注落点）+ 术语表 ──────────────────────────────
+    a(f'<footer id="src"><h2>{T("src_h2")}</h2><ul>')
     for rel in ("claims/claims.json", "gaps.json", "publish-record.json",
                 "tool-surface.json", "coverage/", "templates/*/manifest.json"):
         a(f"<li>{esc(rel)}</li>")
     a("</ul>")
-    a(f'<p class="say">本页由 <code>fd-erp/tools/gen_erp_docs.py</code> 于 '
-      f"{date.today().isoformat()} 生成。数据出处：<code>claims/claims.json</code>、"
-      "<code>gaps.json</code>、<code>publish-record.json</code>、"
-      "<code>tool-surface.json</code>、<code>coverage/</code>、<code>templates/*/manifest.json</code>。"
-      "本页不声称任何未在 <code>publish-record.json</code> 中记为 live 的状态。</p>")
+    a(f'<h2>{T("glossary_h2")}</h2><dl class="glossary">')
+    for zh, en in TERMINOLOGY:
+        a(f"<div><dt>{esc(zh)}</dt><dd>{esc(en)}</dd></div>")
+    a("</dl>")
+    a(f'<p class="say">{esc(T("say", date=date.today().isoformat()))}</p>')
     a("</footer>")
     a("</main></body></html>")
     return "\n".join(o)
@@ -867,10 +890,26 @@ def main() -> int:
         return 2
 
     d = collect()
-    readme = render_readme(d)
-    site = render_site(d)
 
-    targets = {FD_ERP / "README.md": readme, FD_ERP / "site" / "index.html": site}
+    # 两语言**键集必须同构**（任务 4.2「文案键与中文同构」的机器可读形式）。
+    # 为什么这条要单独判：少一个键不会报错——`render_site` 只会在跑到那一节时
+    # KeyError，而英文页少一整节（比如少「明确不宣称」）是**对外材料缺一节**，
+    # 肉眼扫一遍页面看不出来。这里在渲染之前先把它判掉。
+    zh_keys, en_keys = LANG_KEYS["zh"], LANG_KEYS["en"]
+    if zh_keys != en_keys:
+        print("文案键不同构（英文版会缺节或印错，先修 fd-erp/tools/site_i18n.py）：")
+        for k in sorted(zh_keys - en_keys):
+            print(f"  - 只有中文：{k}")
+        for k in sorted(en_keys - zh_keys):
+            print(f"  - 只有英文：{k}")
+        return 1
+
+    readme = render_readme(d)
+    targets = {
+        FD_ERP / "README.md": readme,
+        FD_ERP / "site" / "index.html": render_site(d, "zh"),
+        FD_ERP / "site" / "en" / "index.html": render_site(d, "en"),
+    }
 
     if args.check:
         drift = [
