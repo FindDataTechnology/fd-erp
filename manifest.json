@@ -65,10 +65,10 @@
   {
    "id": "collateral",
    "what": "客户演示包（跨境 / 餐饮，可复跑）",
-   "path": "collateral-erp",
-   "versioned": false,
-   "owner_repo": null,
-   "note": "不在任何 git 仓内 —— 改动无历史、无法回滚"
+   "path": "fd-erp/collateral",
+   "versioned": true,
+   "owner_repo": "git@gitee.com:FindDataTechnology/fd-erp.git",
+   "note": "2026-11-16 从工作区根 collateral-erp/ 移入本仓（此前不在任何 git 仓内，改动无历史）"
   },
   {
    "id": "charter-doc",
@@ -328,7 +328,7 @@
   "log_contract": "fd-erp/shared/log-contract.json"
  },
  "open_tasks": [
-  "把 collateral-erp 与 docs/erp 纳入版本控制（当前不在任何 git 仓内）",
+  "把 docs/erp 纳入版本控制（collateral 已于 2026-11-16 移入 fd-erp/collateral/；docs/erp 仍不在任何 git 仓内）",
   "为 ERP 建独立 openspec 根，或将 19 条 erp-*/ecommerce-* 规格迁出全仓 358 条共用根",
   "kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）",
   "错误码 / 指标名 / 环境变量收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）",
