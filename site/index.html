@@ -173,7 +173,7 @@ a{border:0}
 <table class="tb"><caption>本页口径</caption>
 <thead><tr><th scope="col">项目</th><th scope="col" class="num">数量</th><th scope="col">出处</th></tr></thead><tbody>
 <tr><td>MCP 工具</td><td class="num big">37<sup><a class="fn" href="#src" data-src="tool-surface.json">1</a></sup></td><td class="prov">tool-surface.json</td></tr>
-<tr><td>业务路由</td><td class="num big">134<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td><td class="prov">coverage/ <span class="dim">（另有 2 条健康探针；其中 8 条未实施）</span></td></tr>
+<tr><td>业务路由</td><td class="num big">145<sup><a class="fn" href="#src" data-src="coverage/">2</a></sup></td><td class="prov">coverage/ <span class="dim">（另有 2 条健康探针；其中 8 条未实施）</span></td></tr>
 <tr><td>行业模板</td><td class="num big">3<sup><a class="fn" href="#src" data-src="templates/*/manifest.json">3</a></sup></td><td class="prov">templates/*/manifest.json</td></tr>
 <tr><td>可宣称能力</td><td class="num big">17<sup><a class="fn" href="#src" data-src="claims.json">4</a></sup></td><td class="prov">claims.json</td></tr>
 <tr><td>明确不宣称</td><td class="num big">7<sup><a class="fn" href="#src" data-src="claims.json">5</a></sup></td><td class="prov">claims.json</td></tr>
@@ -190,14 +190,14 @@ a{border:0}
 <li><a href="#capability"><span class="k">能力面</span><span class="v">17 条</span></a></li>
 <li><a href="#not-claimable"><span class="k">明确不宣称</span><span class="v">7 条</span></a></li>
 <li><a href="#tools"><span class="k">MCP 工具面</span><span class="v">37 个</span></a></li>
-<li><a href="#routes"><span class="k">REST 接口面</span><span class="v">134 条</span></a></li>
+<li><a href="#routes"><span class="k">REST 接口面</span><span class="v">145 条</span></a></li>
 <li><a href="#templates"><span class="k">行业模板</span><span class="v">3 套</span></a></li>
 <li><a href="#matrix"><span class="k">子模块全覆盖</span><span class="v">21 格四态</span></a></li>
 <li><a href="#gaps"><span class="k">连接器缺口</span><span class="v">7 条</span></a></li>
 <li><a href="#edges"><span class="k">边界</span><span class="v">四项</span></a></li>
 </ol></nav>
 <section id="form"><h2>形态：五层，各自独立升级</h2>
-<ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">134 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li></ul>
+<ul class="stack"><li><span class="layer">客户端<em>壹座 miniapp 四端</em></span><span class="what">UE / SE / SP / CP 四端页面集</span><span class="hop">/erp/supply-chain/v1/*　同源入口，剥掉客户端自带的 X-ERP-*</span></li><li><span class="layer">平台网关<em>platform gateway</em></span><span class="what">按会话 + 绑定记录重注入身份；无会话 401，未绑角色不注入</span></li><li><span class="layer">纵向 REST 服务面<em>vertical api</em></span><span class="what">145 路由；单副本；闸序 租户 → 页面集 → grant → 身份域</span><span class="hop">全程走内核工具面，不直连库表</span></li><li><span class="layer">行业模板层<em>vertical templates</em></span><span class="what">跨境 / 餐饮 / 仓配；四件套 + 定价 + 页面集；边界由 AST 审计</span><span class="hop">仅 proposal，不直写</span></li><li><span class="layer">账本内核<em>fact ledger kernel</em></span><span class="what">复式事件账；agent 拟稿经确认门才成为事实；外部系统事实经导入车道按来源权威直接成为事实；两者都按人工确认的过账规则派生分录，缺规则即挂待补、不猜科目；借贷必平由 DB 约束强制</span></li></ul>
 <table><caption>仓构成</caption><thead><tr><th scope="col">角色</th><th scope="col">仓</th><th scope="col">面</th><th scope="col" class="num">源码行</th><th scope="col" class="num">测试行</th></tr></thead><tbody>
 <tr><td>账本内核（行业无关）</td><td><code>fd-erp-ledger-mcp</code></td><td class="muted">MCP 工具面</td><td class="num">4456</td><td class="num">2895</td></tr>
 <tr><td>行业模板工厂（差异全部上移至此）</td><td><code>fd-erp-vertical-templates</code></td><td class="muted">模板资产 + 连接器绑定 + 能力矩阵</td><td class="num">10715</td><td class="num">8536</td></tr>
@@ -221,7 +221,7 @@ a{border:0}
 <tr><td>数量面：库存/在途/占用等余额由事件确定性重算，物化值带水位（as_of_event_id）且可全量重算校验；余额是投影产物、不可直写；同一对象维度下单位冲突（kg 与 pcs）拒写而非静默相加。数量只在对象面，账本面只记金额。</td><td><code>inventory.quantity-face</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×3</span></td></tr>
 <tr><td>过账规则：事件经版本化规则确定性映射为复式分录；规则须审批上线、同一事件类型仅一条生效、升版不重写历史分录；未命中规则的事件挂待补清单、不猜科目、余额不变。</td><td><code>posting.versioned-rules</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×3</span></td></tr>
 <tr><td>事件与分录互为两套真相，二者逐笔对齐可核：以同一 stable_id 比两侧，差异四类（缺失/多余/金额不符/状态不符）各带双侧引用；只读、对外部系统零写入。</td><td><code>recon.event-vs-entry</code></td><td><span class=tag>code</span><span class=tag>mcp_tool</span><span class="cnt">×2</span></td></tr>
-<tr><td>库存作业车道：入库/出库/调拨/盘点的提交与查询走内核拟稿车道——提交只落 pending 事实、不投影不过账，拍板（确认门 + 投影 + 过账）是独立权限档；出库与调拨**先整单核可用量**，不足整单拒绝并点名行号与缺口，一行都不写；调拨同单两笔事实（源仓出 + 目的仓入，数量守恒），只拍一侧时整单状态不推进；盘点只对有差异的行出调整事实（盘盈正、盘亏负），账面数读本板块数量面、不接受调用方递来的账面数；单张读面给逐行**当前**状态（内核车道，不是提交时快照）与按侧汇总，调拨的「半边已确认」看得见。数量面余额是唯一出处，本面不回写外部 WMS。</td><td><code>inventory.operations-lane</code></td><td><span class=tag>code</span><span class=tag>endpoint</span><span class="cnt">×8</span></td></tr>
+<tr><td>库存作业车道：入库/出库/调拨/盘点的提交与查询走内核拟稿车道——提交只落 pending 事实、不投影不过账，拍板（确认门 + 投影 + 过账）是独立权限档；出库与调拨先整单核可用量，不足整单拒绝并点名行号与缺口，一行都不写；调拨同单两笔事实（源仓出 + 目的仓入，数量守恒），只拍一侧时整单状态不推进；盘点只对有差异的行出调整事实（盘盈正、盘亏负），账面数读本板块数量面、不接受调用方递来的账面数；单张读面给逐行当前状态（内核车道，不是提交时快照）与按侧汇总，调拨的「半边已确认」看得见。数量面余额是唯一出处，本面不回写外部 WMS。</td><td><code>inventory.operations-lane</code></td><td><span class=tag>code</span><span class=tag>endpoint</span><span class="cnt">×8</span></td></tr>
 </tbody></table></section>
 <section id="not-claimable"><h2>明确不宣称（对外如实守界）</h2>
 <p class="muted">以下条目以否定口径出现在本页与官网；任何肯定句式都会被 <code>claim_gate.py</code> 判红。</p>
@@ -300,7 +300,7 @@ a{border:0}
 <tr><td><code>list_periods</code></td><td class="rw r">读</td><td class="muted">read · 列出有记录的期间与当前状态（期间升序）</td></tr>
 </tbody></table>
 </section>
-<section id="routes"><h2>REST 接口面（134 条业务路由，8 条未实施）</h2>
+<section id="routes"><h2>REST 接口面（145 条业务路由，8 条未实施）</h2>
 <table><thead><tr><th scope="col">面</th><th scope="col" class="num">路由数</th><th scope="col">实施状态</th></tr></thead><tbody>
 <tr><td><code>cp</code></td><td class="num">12</td><td><span class="st no">1 未实施</span></td></tr>
 <tr><td><code>fi</code></td><td class="num">68</td><td><span class="st ok">已实施</span></td></tr>
@@ -308,6 +308,7 @@ a{border:0}
 <tr><td><code>se</code></td><td class="num">17</td><td><span class="st no">1 未实施</span></td></tr>
 <tr><td><code>sp</code></td><td class="num">14</td><td><span class="st no">6 未实施</span></td></tr>
 <tr><td><code>ue</code></td><td class="num">22</td><td><span class="st ok">已实施</span></td></tr>
+<tr><td><code>wh</code></td><td class="num">11</td><td><span class="st ok">已实施</span></td></tr>
 </tbody></table>
 <p class="muted">未实施端点按契约返回 <code>501 NOT_IMPLEMENTED</code> 并附计划车道，承载层不改写、不吞掉、不伪装成占位表单。</p></section>
 <section id="templates"><h2>行业模板（差异全部上移至此）</h2>

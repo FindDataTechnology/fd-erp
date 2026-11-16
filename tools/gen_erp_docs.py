@@ -838,10 +838,33 @@ def _lock_payload(targets: dict) -> dict:
     }
 
 
+#: 出处文件 11 个路径里有 7 个在**兄弟仓**（`fd-erp-vertical-templates` /
+#: `fd-erp-ledger-mcp`）。CI 只 checkout 本仓 ⇒ 那 7 个必然不在，`load()` 会
+#: `SystemExit("缺少出处文件")`，`check_all.py` 把它记 FAIL —— 于是这段只能被放进
+#: `if not args.ci`，而它在 CI 里就**一次都没跑过**（判据齐全、调用方缺失）。
+#: 退出码按 `check_all.py` 对跨仓闸的既有约定分三档：0 一致 / 1 漂移 / **2 判不出**。
+def _missing_sources() -> list[str]:
+    m = load("fd-erp/manifest.json")
+    src = m["sources"]
+    want = [src["claims"], src["gaps"], src["publish_record"], src["tool_surface"],
+            src["evidence"], f"{src['matrices']}/supply-chain.json",
+            src["kernel_client_contract"]]
+    want += [f"{src['templates']}/{v}/manifest.json" for v in (m.get("templates") or {})]
+    return [rel for rel in want if not (ROOT / rel).is_file()]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="只比对不落盘")
     args = ap.parse_args()
+
+    missing = _missing_sources()
+    if missing:
+        print("判不出：出处文件不全（本仓看不到兄弟仓，CI 单仓形态如此）——")
+        for rel in missing:
+            print("  -", rel)
+        print("这不是「一致」；完整判定要在工作区里跑：python3 fd-erp/tools/check_all.py")
+        return 2
 
     d = collect()
     readme = render_readme(d)

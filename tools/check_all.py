@@ -152,6 +152,18 @@ def main() -> int:
     rows.append(("边缘配置（bind 不抢地址）", host_state, tail))
     failed = failed or code not in (0, 2)
 
+    # 派生文档漂移：**两种模式都跑**（2026-11-16）。
+    # 先前它整段在 `if not args.ci` 里，而 CI 跑的正是 `--ci` ⇒ 这条闸在 CI 里一次都
+    # 没跑过（判据齐全、调用方缺失）。现在生成器对「出处文件不全」退 **2**，这里据此记
+    # SKIP 并点名缺什么——与跨仓闸同一口径：判不出就不许装成通过。
+    # 两句分工要说清：CI 由「生成物指纹」（artifact-lock，见下）抓「有人手改了生成物」；
+    # 「上游数字变了没重生成」只有看得到兄弟仓时判得出，归工作区那次全跑。
+    code, out = _run([sys.executable, "-I", str(TOOLS / "gen_erp_docs.py"), "--check"])
+    drift_tail = (out.splitlines() or ["（无输出）"])[0]
+    drift_state = "PASS" if code == 0 else ("SKIP" if code == 2 else "FAIL")
+    rows.append(("派生文档漂移", drift_state, drift_tail))
+    failed = failed or code not in (0, 2)
+
     if not args.ci:
         ok, missing = _siblings_present()
         for label, script in CROSS_REPO_GATES:
@@ -162,10 +174,6 @@ def main() -> int:
             tail = (out.splitlines() or ["（无输出）"])[-1]
             rows.append((label, "PASS" if code == 0 else "FAIL", tail))
             failed = failed or code != 0
-
-        code, out = _run([sys.executable, "-I", str(TOOLS / "gen_erp_docs.py"), "--check"])
-        rows.append(("派生文档漂移", "PASS" if code == 0 else "FAIL", (out.splitlines() or ["（无输出）"])[-1]))
-        failed = failed or code != 0
 
         for label, gate in EXTERNAL_GATES:
             if not gate.is_file():
@@ -190,6 +198,14 @@ def main() -> int:
     schema_problems = check_contract_schema()
     rows.append(("契约 schema 自洽", "FAIL" if schema_problems else "PASS",
                  f"{len(schema_problems)} 处问题" if schema_problems else "全部契约结构合法"))
+
+    # 规格归属：可复算枚举（不写死条数——写死要么常年红、要么被随手改数改绿）。
+    # 只读工作区的 openspec 根，单仓也能跑；CI 看不到根时退 2 ⇒ SKIP。
+    code, out = _run([sys.executable, "-I", str(TOOLS / "check_spec_ownership.py")])
+    own_tail = (out.splitlines() or ["（无输出）"])[-1]
+    own_state = "PASS" if code == 0 else ("SKIP" if code == 2 else "FAIL")
+    rows.append(("规格归属枚举", own_state, own_tail))
+    failed = failed or code not in (0, 2)
 
     lock_problems = check_artifact_lock()
     rows.append(("生成物指纹", "FAIL" if lock_problems else "PASS",

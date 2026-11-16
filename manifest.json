@@ -339,5 +339,23 @@
   "备份机（103.236.89.174）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used",
   "源站 fd-deploy 上 certbot 为 erp 域名留了一张用不上的证书（TLS 在雷池终止），其 timer 仍每 60 天穿到雷池验域；清理需人工确认：sudo certbot delete --cert-name erp.finddatatech.cloud",
   "ERP API 的单副本 + Recreate + local-path PV 钉在 liuliangjkiimypbdzxa：该机一旦 DiskPressure，Pod 无处调度即整服务不可用（2026-11-11 19:34–19:52 实际发生 18 分钟）。缓解=该机 kubelet 已加 ephemeral 预留+软硬阈值；根治=把事件档 PVC 换成可跨节点的存储，或允许双副本（需先解决 JSONL 双写）"
- ]
+ ],
+ "specs": {
+  "openspec_root": "openspec/specs",
+  "owner_change": "establish-erp-independent-root",
+  "decision": "本次不迁独立规格根（迁移会打断 claim_gate 的 surfaces 与 19 条主规格的互相引用）",
+  "name_prefixes": [
+   "erp-",
+   "ecommerce-"
+  ],
+  "enumeration": "ls openspec/specs | grep -c '^erp-\\|^ecommerce-'",
+  "observed": {
+   "at": "2026-11-16",
+   "erp": 53,
+   "ecommerce": 4,
+   "total": 57,
+   "note": "**proposal 里的「19 条主规格（15 erp-* + 4 ecommerce-*）」是策展子集，且没有机器可读出处**（claims.json 只提到 7 个名字，其中 4 个是仓名/产物名不是 spec）。所以本表登记的是**可复算的全集**；主规格子集要落地得先有出处，不在此凭空列举。"
+  },
+  "criterion": "python3 fd-erp/tools/check_spec_ownership.py（复算枚举 + 每个前缀名必须是含 spec.md 的目录；读不到 openspec 根 ⇒ 退 2 判不出）"
+ }
 }
