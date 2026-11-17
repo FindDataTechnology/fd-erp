@@ -329,12 +329,11 @@
   "log_contract": "fd-erp/shared/log-contract.json"
  },
  "open_tasks": [
-  "为 ERP 建独立 openspec 根，或将 57 条 erp-*/ecommerce-* 规格（2026-11-16 实测；「19 条」在机器可读产物里没有出处）迁出全仓共用根",
-  "kernel_client 收敛为单一共享包（当前仅声明式契约 + 覆盖面闸；跨仓依赖受 CI 可见性限制）",
+  "为 ERP 建独立 openspec 根，或将 58 条 erp-*/ecommerce-* 规格（2026-11-17 实测 54+4；「19 条」在机器可读产物里没有出处）迁出全仓共用根。**2026-11-17 已裁决本次不迁**：CLI 1.12 有 `openspec store` 官方通道，真要迁走 store 而不搬目录，前置与影响清单见 `reports/spec-root-migration-impact.md`",
+  "kernel_client 收敛为「实现」单一共享包（当前只有声明面：`shared/kernel-client-contract.json` + 覆盖面/参数/调用点闸）。**2026-11-17 裁决不做**：判据要求「删掉任一仓的签名副本后两仓测试仍全绿」，而本机判不出（api 套件 125 passed / 288 errors，全是连不上测试库）。**仍在生效的具体风险**：`fd-erp-vertical-templates/tests/conftest.py` 的进程内替身不在闸内，它与真生产者的返回信封曾经不同（`{proposals:…}` vs `paginate()` 的 `{data,total,…}`）⇒ 错键名读在单测里全绿、只有打真内核才 500；已手工对齐两处、没有闸守着。改契约 `covers` 里任一客户端时必须一并人读那个替身（`coverage_boundary`）",
   "错误码 / 指标名 / 环境变量收敛到单一常量源（当前为契约 + 闸，仍是各仓各写一份）",
   "REST 面访问日志已落（默认 errors 模式）：后续若要接日志平台，需评估 all 模式的量",
-  "histogram 桶集统一（当前 api 少 10.0 上界，已在契约里声明为偏差）",
-  "ERP 独立介绍/文档站的英文版",
+  "**公网站点落后一代（待发布，对外动作）**：4.2 之后本地 `fd-erp/site/index.html` md5 `ea6bac0d…`、公网仍是上一代 `028d3fd1…`；且 `/en/`、`/en/index.html` 返回 200 但正文是中文页（nginx 兜底）。发布＝`scp -r fd-erp/site/. fd-deploy:/opt/fd/erp/site/`（必须整目录，漏 `en/` 正好造出那个 200 假象）",
   "erp-daily-billing 启用前置：WMS 日终快照只读 provider 接通（open-connector-mt 侧）",
   "备份机（103.236.89.174）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used",
   "源站 fd-deploy 上 certbot 为 erp 域名留了一张用不上的证书（TLS 在雷池终止），其 timer 仍每 60 天穿到雷池验域；清理需人工确认：sudo certbot delete --cert-name erp.finddatatech.cloud",
