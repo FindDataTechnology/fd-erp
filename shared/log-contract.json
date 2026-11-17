@@ -1,6 +1,6 @@
 {
  "schema": "erp-log-contract/v1",
- "updated_at": "2026-11-11",
+ "updated_at": "2026-11-17",
  "note": "ERP 结构化日志契约。做两件事：①声明信封字段与服务覆盖现状；②把「打码必须有效」变成可执行向量（只看源码里有没有 password 关键字不算验证）。由 fd-erp/tools/check_log_redaction.py 执行。",
  "envelope": {
   "required": ["ts", "event"],
@@ -29,7 +29,8 @@
   },
   "fd-erp-vertical-templates": {
    "structured_logs": false,
-   "gap": "模板层不写日志（审计靠 JSONL 事件档与内核日志）。事件档本身是业务事实，不等同运行日志。"
+   "gap": "模板层不写日志（审计靠 JSONL 事件档与内核日志）。事件档本身是业务事实，不等同运行日志。",
+   "audit_attribution_limitation": "已知限制（change 3.7 裁决，2026-11-17）：模板层调 approve_billing_rule / submit_billing_rule / reverse_fee 时**不透传** approved_by / submitted_by / reversed_by，内核按缺省值填 human / ops / human（内核实测缺省：billing.py approve_billing_rule approved_by=\"human\"、submit_billing_rule submitted_by=\"ops\"、reverse_fee reversed_by=\"human\"）。append-only 账里这三个字段因此记的是**席位默认值、不是真实身份**——它诚实地表示「由席位执行、身份未上送」，不是假装已解决。透传真实身份需改模板层 kernel_client 三个调用点，且当前调用链里没有身份上下文可用；等其他环节有了身份上下文再顺带接上，届时删掉本条。另一处**不是**缺口、别误读：release_credit 的 released_by 两侧都是 system（模板层显式传、内核缺省同值），表示「程序释放」，与人工身份无关。核对方式：账里这三列出现 human/ops/human 三连即符合本条；出现别的值说明有人开始透传了，须同步删本条。"
   }
  },
  "redaction": {
