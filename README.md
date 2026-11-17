@@ -106,7 +106,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 ## 6. 独立站发布
 
-站点 `erp.finddatatech.cloud`，内容 `fd-erp/site/index.html`（生成物，勿手改）。
+站点 `erp.finddatatech.cloud`，内容 `fd-erp/site/（index.html 中文站 + en/index.html 英文站，两页 hreflang 互指；同一份生成器产出）`（生成物，勿手改）。
 
 | 环节 | 位置 | 备注 |
 |---|---|---|
@@ -123,7 +123,8 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 已验证：
 - 源站：curl --resolve erp.finddatatech.cloud:80:124.220.7.175 → 200，正文与生成物 md5 一致（2026-11-11）
 - 边缘：curl -H 'Host: erp.finddatatech.cloud' http://172.22.222.1:8080/ → 200，md5 同上（2026-11-11）
-- 公网（子域）：http 404（雷池自身页面）/ https 握手失败（无该域名证书）—— 见未打通说明
+- 公网（子域）：**2026-11-17 复核 → 200 / 31,504 字节**，证书 `subject=CN=erp.finddatatech.cloud` 且 SAN 含该域名。此行此前记的是 2026-11-11 打通**前**的「404 / 握手失败」，已过期（留痕说明它曾阻塞，不代表现状）
+- **2026-11-17 已知落后**：本地生成物在 4.2（英文版 + hreflang 互指 + 切换链接）后 md5 = `ea6bac0d…`，公网仍是上一代 `028d3fd1…`（31,504 字节，无 hreflang）；且 `/en/`、`/en/index.html` 目前返回 **200 但正文是中文页**（nginx 兜底，200 不等于拿到了英文页）。重新发布是把 `fd-erp/site/` 整目录 scp 到 `fd-deploy:/opt/fd/erp/site/`——对外动作，未在本轮执行
 - 公网（官网子路径）：https://www.finddatatech.cloud/erp-docs/ → 200 / 19087 字节 / md5 与生成物一致（经腾讯 CDN）
 
 ## 7. 能力与缺口（派生，勿手写）
