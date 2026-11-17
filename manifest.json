@@ -349,13 +349,13 @@
    "ecommerce-"
   ],
   "enumeration": "ls openspec/specs | grep -c '^erp-\\|^ecommerce-'",
-  "observed": {
-   "at": "2026-11-16",
-   "erp": 53,
-   "ecommerce": 4,
-   "total": 57,
-   "note": "**proposal 里的「19 条主规格（15 erp-* + 4 ecommerce-*）」是策展子集，且没有机器可读出处**（claims.json 只提到 7 个名字，其中 4 个是仓名/产物名不是 spec）。所以本表登记的是**可复算的全集**；主规格子集要落地得先有出处，不在此凭空列举。"
-  },
+ "observed": {
+  "at": "2026-11-17",
+  "erp": 54,
+  "ecommerce": 4,
+  "total": 58,
+  "note": "**proposal 里的「19 条主规格（15 erp-* + 4 ecommerce-*）」是策展子集，且没有机器可读出处**（claims.json 只提到 7 个名字，其中 4 个是仓名/产物名不是 spec）。所以本表登记的是**可复算的全集**；主规格子集要落地得先有出处，不在此凭空列举。2026-11-17：`erp-*` 从 53 增到 54 是本 change 归档新建了 `erp-module-boundary`（doc 里那句「新加 capability 是常态、更新 observed 即可」就是这一步）。"
+ },
   "criterion": "python3 fd-erp/tools/check_spec_ownership.py（复算枚举 + 每个前缀名必须是含 spec.md 的目录；读不到 openspec 根 ⇒ 退 2 判不出）"
  }
 }
