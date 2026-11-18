@@ -1,7 +1,7 @@
 # fd-erp — ERP 板块独立维护根
 
 > 本文件由 `fd-erp/tools/gen_erp_docs.py` 从 `fd-erp/manifest.json` 与各仓机器可读产物派生，**不要手改**。
-> 生成日期：2026-11-17。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
+> 生成日期：2026-11-19。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
 
 ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线。章程 `openspec/specs/erp-board/spec.md`；对外口径唯一出处 `fd-erp/docs/README.md`。
 
@@ -102,7 +102,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 |---|---|---|---|---|---|
 | `erp-daily-billing` | `10 0 * * *` | Asia/Shanghai | **是** | 从未 | 日终计费快照。suspend=true 是**有意挂账**（清单头已写明）：--snapshot-file 需要 WMS 日终库存快照，而 WMS 只读 provider 未接通（connector-status.json: wms candidates=[]/install_blocked=true）；接通后改 false 并指向 WMS 同步产出 |
 | `erp-event-archive-backup` | `37 3 * * *` | Asia/Shanghai | 否 | 2026-11-10T19:37:00Z | 事件档备份。实测 lastScheduleTime 19:37Z = 03:37 CST（集群 controller 按 CST解释未声明 timeZone 的任务）；2026-11-11 已补显式 timeZone，去掉隐式依赖 |
-| `erp-ledger-backup` | `12 4 * * *` | Asia/Shanghai | 否 | 2026-11-10T20:12:00Z | 账本库备份。**两处落盘**：本地 PVC（近端快取）+ 异地 103.236.89.174:/opt/backups/erp-ledger（2026-11-11 新增，两端 sha256 逐字节核对，不一致即 Job 失败）。与事件档备份实际相隔 35 分钟（03:37/04:12 CST），均为秒级，不争 IO。残余：备份机本身仍是单点（30G 盘，73% used） |
+| `erp-ledger-backup` | `12 4 * * *` | Asia/Shanghai | 否 | 2026-11-10T20:12:00Z | 账本库备份。**两处落盘**：本地 PVC（近端快取）+ 异地 <backup-host>:/opt/backups/erp-ledger（2026-11-11 新增，两端 sha256 逐字节核对，不一致即 Job 失败）。与事件档备份实际相隔 35 分钟（03:37/04:12 CST），均为秒级，不争 IO。残余：备份机本身仍是单点（30G 盘，73% used） |
 
 ## 6. 独立站发布
 
@@ -110,18 +110,18 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 | 环节 | 位置 | 备注 |
 |---|---|---|
-| 源站 | `fd-deploy`（124.220.7.175）`/opt/fd/erp/site` | nginx `/etc/nginx/sites-enabled/erp.finddatatech.cloud` |
-| 边缘 | 雷池 WAF（终止 TLS）+ 同机 Caddy（按 Host 分发）（103.236.89.212） | Caddy `/etc/caddy/Caddyfile`，upstream `124.220.7.175:80` |
+| 源站 | `fd-deploy`（<origin-host>）`/opt/fd/erp/site` | nginx `/etc/nginx/sites-enabled/erp.finddatatech.cloud` |
+| 边缘 | 雷池 WAF（终止 TLS）+ 同机 Caddy（按 Host 分发）（<edge-host>） | Caddy `/etc/caddy/Caddyfile`，upstream `<origin-host>:80` |
 
 **公网状态：live（子域 https://erp.finddatatech.cloud/ + 官网子路径 /erp-docs/，两处同一份生成物）**
 
 | 公开地址 | 状态 | 形态 | 验收 |
 |---|---|---|---|
 | https://www.finddatatech.cloud/erp-docs/ | **live** | www 站点 nginx 加 location /erp-docs/ → alias /opt/fd/erp/site/（复用 www 现成证书，经腾讯 CDN） | 2026-11-11 curl 200 / 19087 字节 / md5 与生成物一致 |
-| https://erp.finddatatech.cloud/ | **live** | 雷池站点 35（ports 80+443_ssl）→ 同机 Caddy :8080 → 源站 124.220.7.175:80；证书 66 由 acme.sh 签发并入库，续期走 /data/safeline/renew-and-push.sh | 2026-11-11 curl 200 / 19087 字节 / sha256 2012a9038d33205a 与生成物一致；TLS 指纹 BF:1B:B4:44:…:71:32 与 cert_66.crt 相同；六个邻居站同时回归正常（www 200 / platform 200 / mcp 302 / token 200 / lawbench 401 / facet 200） |
+| https://erp.finddatatech.cloud/ | **live** | 雷池站点 35（ports 80+443_ssl）→ 同机 Caddy :8080 → 源站 <origin-host>:80；证书 66 由 acme.sh 签发并入库，续期走 /data/safeline/renew-and-push.sh | 2026-11-11 curl 200 / 19087 字节 / sha256 2012a9038d33205a 与生成物一致；TLS 指纹 BF:1B:B4:44:…:71:32 与 cert_66.crt 相同；六个邻居站同时回归正常（www 200 / platform 200 / mcp 302 / token 200 / lawbench 401 / facet 200） |
 
 已验证：
-- 源站：curl --resolve erp.finddatatech.cloud:80:124.220.7.175 → 200，正文与生成物 md5 一致（2026-11-11）
+- 源站：curl --resolve erp.finddatatech.cloud:80:<origin-host> → 200，正文与生成物 md5 一致（2026-11-11）
 - 边缘：curl -H 'Host: erp.finddatatech.cloud' http://172.22.222.1:8080/ → 200，md5 同上（2026-11-11）
 - 公网（子域）：**2026-11-17 复核 → 200 / 31,504 字节**，证书 `subject=CN=erp.finddatatech.cloud` 且 SAN 含该域名。此行此前记的是 2026-11-11 打通**前**的「404 / 握手失败」，已过期（留痕说明它曾阻塞，不代表现状）
 - **2026-11-17 已知落后**：本地生成物在 4.2（英文版 + hreflang 互指 + 切换链接）后 md5 = `ea6bac0d…`，公网仍是上一代 `028d3fd1…`（31,504 字节，无 hreflang）；且 `/en/`、`/en/index.html` 目前返回 **200 但正文是中文页**（nginx 兜底，200 不等于拿到了英文页）。重新发布是把 `fd-erp/site/` 整目录 scp 到 `fd-deploy:/opt/fd/erp/site/`——对外动作，未在本轮执行
@@ -177,6 +177,6 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - [ ] REST 面访问日志已落（默认 errors 模式）：后续若要接日志平台，需评估 all 模式的量
 - [ ] **公网站点落后一代（待发布，对外动作）**：4.2 之后本地 `fd-erp/site/index.html` md5 `ea6bac0d…`、公网仍是上一代 `028d3fd1…`；且 `/en/`、`/en/index.html` 返回 200 但正文是中文页（nginx 兜底）。发布＝`scp -r fd-erp/site/. fd-deploy:/opt/fd/erp/site/`（必须整目录，漏 `en/` 正好造出那个 200 假象）
 - [ ] erp-daily-billing 启用前置：WMS 日终快照只读 provider 接通（open-connector-mt 侧）
-- [ ] 备份机（103.236.89.174）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used
+- [ ] 备份机（<backup-host>）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used
 - [ ] 源站 fd-deploy 上 certbot 为 erp 域名留了一张用不上的证书（TLS 在雷池终止），其 timer 仍每 60 天穿到雷池验域；清理需人工确认：sudo certbot delete --cert-name erp.finddatatech.cloud
 - [ ] ERP API 的单副本 + Recreate + local-path PV 钉在 liuliangjkiimypbdzxa：该机一旦 DiskPressure，Pod 无处调度即整服务不可用（2026-11-11 19:34–19:52 实际发生 18 分钟）。缓解=该机 kubelet 已加 ephemeral 预留+软硬阈值；根治=把事件档 PVC 换成可跨节点的存储，或允许双副本（需先解决 JSONL 双写）

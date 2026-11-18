@@ -1,6 +1,6 @@
 # 雷池站点 35 / 证书 66（`erp.finddatatech.cloud` 的公网入口）
 
-公网入口在**雷池**（`103.236.89.212`），不在源站。源站只提供 :80 静态内容，TLS 与
+公网入口在**雷池**（`<edge-host>`），不在源站。源站只提供 :80 静态内容，TLS 与
 按 Host 分发都在这一层。这段配置**不在任何仓里**，只存在于雷池的 PostgreSQL 行与
 它生成的 nginx 文件里，重装/换机就无声消失，所以把事实与回滚步骤记在这里。
 
@@ -61,7 +61,7 @@ acme.sh（雷池本机，webroot /var/www/acme，Caddy 侧有 acme-challenge 处
 curl -s -o /dev/null -w 'lawbench %{http_code} %{size_download}\n' https://lawbench.finddatatech.cloud/healthz
 
 # 2) 删站点行与证书行，移除生成文件，再 reload
-ssh root@103.236.89.212 '
+ssh root@<edge-host> '
   docker exec safeline-pg psql -U safeline-ce -d safeline-ce -c "delete from mgt_website where id=35;"
   docker exec safeline-pg psql -U safeline-ce -d safeline-ce -c "delete from mgt_ssl_cert where id in (65,66);"
   rm -f /data/safeline/resources/nginx/sites-enabled/IF_backend_35 \

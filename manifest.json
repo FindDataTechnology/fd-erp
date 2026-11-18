@@ -221,7 +221,7 @@
     "timezone": "Asia/Shanghai",
     "suspend": false,
     "last_schedule": "2026-11-10T20:12:00Z",
-    "note": "账本库备份。**两处落盘**：本地 PVC（近端快取）+ 异地 103.236.89.174:/opt/backups/erp-ledger（2026-11-11 新增，两端 sha256 逐字节核对，不一致即 Job 失败）。与事件档备份实际相隔 35 分钟（03:37/04:12 CST），均为秒级，不争 IO。残余：备份机本身仍是单点（30G 盘，73% used）"
+    "note": "账本库备份。**两处落盘**：本地 PVC（近端快取）+ 异地 <backup-host>:/opt/backups/erp-ledger（2026-11-11 新增，两端 sha256 逐字节核对，不一致即 Job 失败）。与事件档备份实际相隔 35 分钟（03:37/04:12 CST），均为秒级，不争 IO。残余：备份机本身仍是单点（30G 盘，73% used）"
    }
   ],
   "site": {
@@ -230,17 +230,17 @@
    "origin": {
     "role": "内容源站（与官网同一台）",
     "ssh_alias": "fd-deploy",
-    "ip": "124.220.7.175",
+    "ip": "<origin-host>",
     "path": "/opt/fd/erp/site",
     "nginx_conf": "/etc/nginx/sites-enabled/erp.finddatatech.cloud",
     "deploy_step": "scp -r fd-erp/site/. fd-deploy:/opt/fd/erp/site/   # 4.2 起是**目录**不是单文件：index.html（中文站）+ en/index.html（英文站），漏掉 en/ 会在公网留下一个「200 但正文是中文页」的路径"
    },
    "edge": {
     "role": "雷池 WAF（终止 TLS）+ 同机 Caddy（按 Host 分发）",
-    "ip": "103.236.89.212",
+    "ip": "<edge-host>",
     "caddy_conf": "/etc/caddy/Caddyfile",
     "caddy_backup": "/etc/caddy/Caddyfile.bak-20261111-erp",
-    "upstream": "124.220.7.175:80",
+    "upstream": "<origin-host>:80",
     "note": "边缘只转发，不持有内容副本",
     "safeline": {
      "site_id": 35,
@@ -262,7 +262,7 @@
    },
    "public_status": "live（子域 https://erp.finddatatech.cloud/ + 官网子路径 /erp-docs/，两处同一份生成物）",
    "verified": [
-    "源站：curl --resolve erp.finddatatech.cloud:80:124.220.7.175 → 200，正文与生成物 md5 一致（2026-11-11）",
+    "源站：curl --resolve erp.finddatatech.cloud:80:<origin-host> → 200，正文与生成物 md5 一致（2026-11-11）",
     "边缘：curl -H 'Host: erp.finddatatech.cloud' http://172.22.222.1:8080/ → 200，md5 同上（2026-11-11）",
     "公网（子域）：**2026-11-17 复核 → 200 / 31,504 字节**，证书 `subject=CN=erp.finddatatech.cloud` 且 SAN 含该域名。此行此前记的是 2026-11-11 打通**前**的「404 / 握手失败」，已过期（留痕说明它曾阻塞，不代表现状）",
     "**2026-11-17 已知落后**：本地生成物在 4.2（英文版 + hreflang 互指 + 切换链接）后 md5 = `ea6bac0d…`，公网仍是上一代 `028d3fd1…`（31,504 字节，无 hreflang）；且 `/en/`、`/en/index.html` 目前返回 **200 但正文是中文页**（nginx 兜底，200 不等于拿到了英文页）。重新发布是把 `fd-erp/site/` 整目录 scp 到 `fd-deploy:/opt/fd/erp/site/`——对外动作，未在本轮执行",
@@ -278,7 +278,7 @@
     {
      "url": "https://erp.finddatatech.cloud/",
      "status": "live",
-     "how": "雷池站点 35（ports 80+443_ssl）→ 同机 Caddy :8080 → 源站 124.220.7.175:80；证书 66 由 acme.sh 签发并入库，续期走 /data/safeline/renew-and-push.sh",
+     "how": "雷池站点 35（ports 80+443_ssl）→ 同机 Caddy :8080 → 源站 <origin-host>:80；证书 66 由 acme.sh 签发并入库，续期走 /data/safeline/renew-and-push.sh",
      "verified": "2026-11-11 curl 200 / 19087 字节 / sha256 2012a9038d33205a 与生成物一致；TLS 指纹 BF:1B:B4:44:…:71:32 与 cert_66.crt 相同；六个邻居站同时回归正常（www 200 / platform 200 / mcp 302 / token 200 / lawbench 401 / facet 200）"
     }
    ],
@@ -296,7 +296,7 @@
      },
      {
       "path": "fd-erp/deploy/host/caddy-erp-route.conf",
-      "target": "root@103.236.89.212:/etc/caddy/Caddyfile（追加）"
+      "target": "root@<edge-host>:/etc/caddy/Caddyfile（追加）"
      },
      {
       "path": "fd-erp/deploy/host/safeline-erp-site.md",
@@ -335,7 +335,7 @@
   "REST 面访问日志已落（默认 errors 模式）：后续若要接日志平台，需评估 all 模式的量",
   "**公网站点落后一代（待发布，对外动作）**：4.2 之后本地 `fd-erp/site/index.html` md5 `ea6bac0d…`、公网仍是上一代 `028d3fd1…`；且 `/en/`、`/en/index.html` 返回 200 但正文是中文页（nginx 兜底）。发布＝`scp -r fd-erp/site/. fd-deploy:/opt/fd/erp/site/`（必须整目录，漏 `en/` 正好造出那个 200 假象）",
   "erp-daily-billing 启用前置：WMS 日终快照只读 provider 接通（open-connector-mt 侧）",
-  "备份机（103.236.89.174）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used",
+  "备份机（<backup-host>）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used",
   "源站 fd-deploy 上 certbot 为 erp 域名留了一张用不上的证书（TLS 在雷池终止），其 timer 仍每 60 天穿到雷池验域；清理需人工确认：sudo certbot delete --cert-name erp.finddatatech.cloud",
   "ERP API 的单副本 + Recreate + local-path PV 钉在 liuliangjkiimypbdzxa：该机一旦 DiskPressure，Pod 无处调度即整服务不可用（2026-11-11 19:34–19:52 实际发生 18 分钟）。缓解=该机 kubelet 已加 ephemeral 预留+软硬阈值；根治=把事件档 PVC 换成可跨节点的存储，或允许双副本（需先解决 JSONL 双写）"
  ],
@@ -348,13 +348,13 @@
    "ecommerce-"
   ],
   "enumeration": "ls openspec/specs | grep -c '^erp-\\|^ecommerce-'",
- "observed": {
-  "at": "2026-11-17",
-  "erp": 54,
-  "ecommerce": 4,
-  "total": 58,
-  "note": "**proposal 里的「19 条主规格（15 erp-* + 4 ecommerce-*）」是策展子集，且没有机器可读出处**（claims.json 只提到 7 个名字，其中 4 个是仓名/产物名不是 spec）。所以本表登记的是**可复算的全集**；主规格子集要落地得先有出处，不在此凭空列举。2026-11-17：`erp-*` 从 53 增到 54 是本 change 归档新建了 `erp-module-boundary`（doc 里那句「新加 capability 是常态、更新 observed 即可」就是这一步）。"
- },
+  "observed": {
+   "at": "2026-11-17",
+   "erp": 54,
+   "ecommerce": 4,
+   "total": 58,
+   "note": "**proposal 里的「19 条主规格（15 erp-* + 4 ecommerce-*）」是策展子集，且没有机器可读出处**（claims.json 只提到 7 个名字，其中 4 个是仓名/产物名不是 spec）。所以本表登记的是**可复算的全集**；主规格子集要落地得先有出处，不在此凭空列举。2026-11-17：`erp-*` 从 53 增到 54 是本 change 归档新建了 `erp-module-boundary`（doc 里那句「新加 capability 是常态、更新 observed 即可」就是这一步）。"
+  },
   "criterion": "python3 fd-erp/tools/check_spec_ownership.py（复算枚举 + 每个前缀名必须是含 spec.md 的目录；读不到 openspec 根 ⇒ 退 2 判不出）"
  }
 }

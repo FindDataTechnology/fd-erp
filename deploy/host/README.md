@@ -7,7 +7,7 @@
 |---|---|---|
 | `nginx-erp-subdomain.conf` | `fd-deploy:/etc/nginx/sites-enabled/erp.finddatatech.cloud` | `erp.finddatatech.cloud` 静态站（源站 :80；TLS 由雷池终止，证书见下节） |
 | `nginx-www-erp-docs.snippet.conf` | 插进 `fd-deploy:/etc/nginx/sites-enabled/www.finddatatech.cloud` 的 `location / {` 之前 | `www.finddatatech.cloud/erp-docs/`（复用 www 证书） |
-| `caddy-erp-route.conf` | 追加到 `root@103.236.89.212:/etc/caddy/Caddyfile` | 雷池同机 Caddy 按 Host 转发到源站 124.220.7.175:80；**含 acme-challenge 处理器，别删** |
+| `caddy-erp-route.conf` | 追加到 `root@<edge-host>:/etc/caddy/Caddyfile` | 雷池同机 Caddy 按 Host 转发到源站 <origin-host>:80；**含 acme-challenge 处理器，别删** |
 
 ## 边缘 TLS（雷池站点 35 / 证书 66）
 
@@ -76,18 +76,18 @@ ssh fd-deploy 'grep -q "location /erp-docs/" /etc/nginx/sites-enabled/www.findda
 ssh fd-deploy 'sudo nginx -t && sudo systemctl reload nginx'
 
 # 5) 边缘：追加 Caddy 块（先备份，再 validate，最后 reload）
-ssh root@103.236.89.212 'cp -a /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak-$(date +%Y%m%d)'
-scp fd-erp/deploy/host/caddy-erp-route.conf root@103.236.89.212:/tmp/erp.caddy
-ssh root@103.236.89.212 'cat /tmp/erp.caddy >> /etc/caddy/Caddyfile && caddy validate --config /etc/caddy/Caddyfile && caddy reload --config /etc/caddy/Caddyfile'
+ssh root@<edge-host> 'cp -a /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak-$(date +%Y%m%d)'
+scp fd-erp/deploy/host/caddy-erp-route.conf root@<edge-host>:/tmp/erp.caddy
+ssh root@<edge-host> 'cat /tmp/erp.caddy >> /etc/caddy/Caddyfile && caddy validate --config /etc/caddy/Caddyfile && caddy reload --config /etc/caddy/Caddyfile'
 ```
 
 ## 验收（不看 200，看正文指纹）
 
 ```bash
 # 源站
-curl -s --resolve erp.finddatatech.cloud:80:124.220.7.175 http://erp.finddatatech.cloud/ | sha256sum
+curl -s --resolve erp.finddatatech.cloud:80:<origin-host> http://erp.finddatatech.cloud/ | sha256sum
 # 边缘
-ssh root@103.236.89.212 'curl -s -H "Host: erp.finddatatech.cloud" http://172.22.222.1:8080/ | sha256sum'
+ssh root@<edge-host> 'curl -s -H "Host: erp.finddatatech.cloud" http://172.22.222.1:8080/ | sha256sum'
 # 公网
 curl -s https://www.finddatatech.cloud/erp-docs/ | sha256sum
 # 三者都必须等于本地 site/index.html 的 sha256
@@ -141,7 +141,7 @@ curl -s -o /dev/null -w 'lawbench/healthz %{http_code} %{size_download}\n' \
 
    正本守卫：`tools/check_host_configs.py`（本地静态检查 `deploy/host/*.conf`，
    `--live` 还能连上边缘校验线上 Caddyfile 有没有出现地址集分叉）。
-   `:9000` 那个 `bind 100.64.0.11` 是安全的——该端口上只有它一个站点。
+   `:9000` 那个 `bind <object-store-host>` 是安全的——该端口上只有它一个站点。
 3. **`erp.finddatatech.cloud` 的公网入口在雷池** —— 雷池里没有该站点时，`:80` 返回
    雷池自己的 404 页（14591B）、`:443` 因 SNI 无匹配证书而握手失败（curl 000）。
    2026-11-11 已登记为站点 35 并配好证书，现状见上文「边缘 TLS」。

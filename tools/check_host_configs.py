@@ -32,7 +32,7 @@ import sys
 from pathlib import Path
 
 HOST_DIR = Path(__file__).resolve().parents[1] / "deploy" / "host"
-EDGE = "root@103.236.89.212"
+EDGE = "root@<edge-host>"
 CADDYFILE = "/etc/caddy/Caddyfile"
 
 #: 这些绑定写法等价于"所有网卡"，不算收窄，因此不构成地址集分叉
@@ -265,8 +265,8 @@ http://a.example:8080 {
 http://b.example:8080 {
 	reverse_proxy 127.0.0.1:1
 }
-http://100.64.0.11:9000 {
-	bind 100.64.0.11
+http://<object-store-host>:9000 {
+	bind <object-store-host>
 	reverse_proxy 127.0.0.1:2
 }
 """
