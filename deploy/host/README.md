@@ -23,10 +23,10 @@
 
 | 项 | 值 |
 |---|---|
-| 雷池站点 | id **35**，`server_names=["erp.finddatatech.cloud"]`，`ports=["80","443_ssl"]`，upstream `http://172.22.222.1:8080` |
-| 证书 | id **66**，`CN=erp.finddatatech.cloud`，Let's Encrypt（YE2），有效期至 2027-02-09；线上指纹 `BF:1B:B4:44:…:71:32` 与 `cert_66.crt` 相同 |
-| 私钥/全链 | `/root/.acme.sh/erp.finddatatech.cloud_ecc/`（续期走 `/data/safeline/renew-and-push.sh` → `push-cert.py`：每次上传新证书再 PUT 站点，**不写死 cert id**，所以「现在绑 66」不影响续期） |
-| 续期 | 已加入 `/data/safeline/renew-and-push.sh` 的 `CERTS` 数组，`--cron` 到期自动重签+推送 |
+| 雷池站点 | id **35**，`server_names=["erp.finddatatech.cloud"]`，`ports=["80","443_ssl"]`，upstream `http://<edge-gateway>:8080` |
+| 证书 | id **66**，`CN=erp.finddatatech.cloud`，Let's Encrypt（YE2），有效期至 2027-02-09；线上指纹已与签发文件核对一致 |
+| 私钥/全链 | acme.sh 的站点证书目录（续期走 雷池的续期脚本 → `push-cert.py`：每次上传新证书再 PUT 站点，**不写死 cert id**，所以「现在绑 66」不影响续期） |
+| 续期 | 已加入 雷池的续期脚本 的 `CERTS` 数组，`--cron` 到期自动重签+推送 |
 | 孤儿行 | 证书 **65**（同日 18:20 早一次上传）已不被任何站点引用，下次推送由 `push-cert.py` 清理段删除；**不要手工绑回** |
 
 **acme.sh 的两个硬要求**（少一个就签不出来）：
@@ -36,7 +36,7 @@
 #    会报 "Please update your account with an email address first" 直接失败。
 # 2) 必须 --setenv=HOME=/root：否则 systemd-run 下 acme.sh 找不到自己的账户目录。
 systemd-run --unit=acme-erp --collect --setenv=HOME=/root \
-  /opt/acme-src/acme.sh --issue --force --server letsencrypt \
+  acme.sh --issue --force --server letsencrypt \
   -d erp.finddatatech.cloud -w /var/www/acme
 ```
 
@@ -87,7 +87,7 @@ ssh root@<edge-host> 'cat /tmp/erp.caddy >> /etc/caddy/Caddyfile && caddy valida
 # 源站
 curl -s --resolve erp.finddatatech.cloud:80:<origin-host> http://erp.finddatatech.cloud/ | sha256sum
 # 边缘
-ssh root@<edge-host> 'curl -s -H "Host: erp.finddatatech.cloud" http://172.22.222.1:8080/ | sha256sum'
+ssh root@<edge-host> 'curl -s -H "Host: erp.finddatatech.cloud" http://<edge-gateway>:8080/ | sha256sum'
 # 公网
 curl -s https://www.finddatatech.cloud/erp-docs/ | sha256sum
 # 三者都必须等于本地 site/index.html 的 sha256
@@ -119,22 +119,22 @@ curl -s -o /dev/null -w 'lawbench/healthz %{http_code} %{size_download}\n' \
 1. **nginx 备份不能留在 `sites-enabled/`** —— 该目录下所有文件都会被 include，
    备份会被当成第二份配置加载，`nginx -t` 报 `duplicate listen options`。
    备份放 `/root/` 或 `/etc/nginx/backups/`。
-2. **绝对不要给单站点写 `bind 127.0.0.1 172.22.222.1`** —— 这行曾两次把整个平台打白。
+2. **绝对不要给单站点写 `bind 127.0.0.1 <edge-gateway>`** —— 这行曾两次把整个平台打白。
 
    Caddy 按**监听地址集**分组 server，不是按端口。给 erp 这一个站点写
-   `bind 127.0.0.1 172.22.222.1`，Caddy 会为这组地址单开一个 server（`srv1`），
-   并把 `172.22.222.1:8080` **从共享的 `:8080` server 里抢走**（更具体的地址胜出）。
-   而雷池的转发目标恰好就是 `172.22.222.1:8080` —— 于是所有
+   `bind 127.0.0.1 <edge-gateway>`，Caddy 会为这组地址单开一个 server（`srv1`），
+   并把 `<edge-gateway>:8080` **从共享的 `:8080` server 里抢走**（更具体的地址胜出）。
+   而雷池的转发目标恰好就是 `<edge-gateway>:8080` —— 于是所有
    `*.finddatatech.cloud` 的请求都落到 srv1 上，那里只有 erp 一条路由，
    其余 37 条路由的 host 匹配不上 → 返回**空 200**（`http=200 size=0`，不是 404、
    不是 502，所以任何"看状态码"的巡检都会说它是健康的）。
 
-   实测：`srv1 ['127.0.0.1:8080','172.22.222.1:8080'] routes=1` vs
+   实测：`srv1 ['127.0.0.1:8080','<edge-gateway>:8080'] routes=1` vs
    `srv2 [':8080'] routes=37`。
 
    **想让 :8080 少暴露**，用这两个办法之一，别用单站点 bind：
    - 不动 Caddy，在防火墙上收口：
-     `iptables -I INPUT -p tcp --dport 8080 ! -s 172.22.222.1 -j DROP`（雷池同机，
+     `iptables -I INPUT -p tcp --dport 8080 ! -s <edge-gateway> -j DROP`（雷池同机，
        源地址就是本机对外地址）；
    - 或者给**每一个** :8080 站点块写**同一组** bind（这样仍是一个 server）——
      38 个块要一起改，漏一个就复现上面的故障，所以不推荐。

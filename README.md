@@ -1,5 +1,7 @@
 # fd-erp — ERP 板块独立维护根
 
+> **Part of the [Base line (寻数·壹座)](https://www.finddatatech.cloud/products/base) of [FindData](https://www.finddatatech.cloud)** — the ERP board: an industry-neutral double-entry event core plus vertical template assets, served as REST and MCP surfaces.
+
 > 本文件由 `fd-erp/tools/gen_erp_docs.py` 从 `fd-erp/manifest.json` 与各仓机器可读产物派生，**不要手改**。
 > 生成日期：2026-11-19。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
 

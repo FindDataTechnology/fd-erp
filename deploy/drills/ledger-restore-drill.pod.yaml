@@ -13,6 +13,11 @@ spec:
     - name: drill
       image: postgres:16-alpine
       imagePullPolicy: IfNotPresent
+      env:
+        # 备份机的 SSH 端口随部署不同，从与密钥同一份 secret 读。
+        - name: BACKUP_SSH_PORT
+          valueFrom:
+            secretKeyRef: { name: wanxing-backup-ssh, key: port, optional: true }
       command: ["/bin/sh", "-c"]
       args:
         - |
@@ -22,7 +27,7 @@ spec:
           echo "https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.20/community" >> /etc/apk/repositories
           apk add --quiet --no-cache openssh-client rsync >/dev/null 2>&1 || { echo "FATAL: 装不上 ssh/rsync"; exit 1; }
           install -m 600 /keys/ssh_key /tmp/ssh_key
-          SSH="ssh -i /tmp/ssh_key -p 40925 -o UserKnownHostsFile=/keys/known_hosts -o StrictHostKeyChecking=yes"
+          SSH="ssh -i /tmp/ssh_key -p ${BACKUP_SSH_PORT:?BACKUP_SSH_PORT must be set from the backup-ssh secret} -o UserKnownHostsFile=/keys/known_hosts -o StrictHostKeyChecking=yes"
           LATEST=$($SSH root@<backup-host> "ls -1t /opt/backups/erp-ledger/*.dump 2>/dev/null | head -1")
           [ -n "$LATEST" ] || { echo "FATAL: 备份机上没有 dump"; exit 1; }
           echo "latest=$LATEST"
