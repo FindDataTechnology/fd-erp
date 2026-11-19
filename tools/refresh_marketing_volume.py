@@ -116,7 +116,14 @@ def main(argv: list[str] | None = None) -> int:
     else:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(text, encoding="utf-8")
-        print(f"wrote {OUT.relative_to(ROOT)}：{'可用' if body['available'] else body['reason']}")
+        # 快照内容也上 stdout：在集群里跑时日志是唯一的读数通道，只写文件等于
+        # 「跑了但没人看得见」——`line-seam-proof` 要求读数可从作业日志读到。
+        sys.stdout.write(text)
+        try:
+            shown = OUT.relative_to(ROOT)
+        except ValueError:
+            shown = OUT            # pod 里 OUT 不在仓库内，照原样打
+        print(f"wrote {shown}：{'可用' if body['available'] else body['reason']}")
     return code
 
 
