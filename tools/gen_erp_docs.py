@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import re
 import sys
 from collections import Counter
@@ -81,6 +82,8 @@ def collect() -> dict:
         "coverage": load("fd-erp/shared/coverage-matrix.json"),
         #: 营销（第二个生产者）已登记的事实类型——从种子 SQL 解析，不另存清单
         "marketing_types": marketing_event_types(),
+        #: 同一批类型的**实测**读数（登记 ≠ 生产）。读不到事件库时报「未取得」。
+        "marketing_readings": marketing_readings(),
         "templates": {
             v: load(f"{src['templates']}/{v}/manifest.json")
             for v in ("crossborder", "restaurant-chain", "supply-chain")
@@ -101,6 +104,51 @@ def _gate(script: str) -> dict:
 
 def _semantics() -> dict:
     return _gate("check_semantics_contract.py")
+
+
+#: 事件库 DSN。与 `fd_erp_ledger_mcp` 的 Settings 同源（`ERP_LEDGER_DATABASE_URL`）；
+#: 未配置时读数报「未取得」而不是 0——生成器在 CI/本机跑时常没有这个 DSN。
+LEDGER_DSN_ENV = "ERP_LEDGER_DATABASE_URL"
+
+#: 每个租户一个 schema（`tenant_<id>`），表名不带库级限定。凭 `pg_namespace` 枚举，
+#: 不假设租户名、不读 `ERP_TENANT_ID`：本页报的是**全库**事实，只看一个租户会把
+#: 「别的租户在生产」读成「没有生产」。
+_TENANT_SCHEMA_SQL = (
+    "SELECT nspname FROM pg_namespace "
+    " WHERE nspname LIKE 'tenant\\_%' AND nspname NOT LIKE 'tenant\\_%\\_%' "
+    " ORDER BY nspname"
+)
+
+
+def marketing_readings() -> dict:
+    """营销事实的**实测**读数：按 producer 分组的事件数与最后写入时刻。
+
+    为什么要有它：§7.2 登记的是「类型允许被写」（种子 SQL 的派生），不是「有没有
+    真的写进来」。只有登记而没有任何调用方读事件表时，「已接入」这句话在数据里
+    不可查——`query_events(producer=…)` 早就存在且有测试，缺的是一个读者。
+
+    **读的是快照，不是库**：本脚本是纯本地产物生成器（`--check` 要在没有数据库的
+    CI 上跑得绿），所以它只读 `fd-erp/shared/marketing-volume.json`。那张快照由
+    `tools/refresh_marketing_volume.py` 刷新——那个脚本才是真正连库的定时读者，
+    两件事分开，否则「生成物能不能复现」与「数字真不真」会互相绑架。
+
+    快照缺失/未取得时如实报「未取得」：判不出 ≠ 报绿（`fleet-acceptance-readings`
+    同一条纪律）。写 0 会把「没读」说成「没写」，那是最坏的一种假数。
+    """
+    p = ROOT / "fd-erp/shared/marketing-volume.json"
+    try:
+        body = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"available": False,
+                "reason": "未取得：事件库读数快照（shared/marketing-volume.json 缺失）"}
+    if not body.get("available"):
+        return {"available": False,
+                "reason": body.get("reason") or "未取得：事件库读数快照未取得"}
+    return {
+        "available": True,
+        "by_producer": body.get("by_producer") or {},
+        "as_of": body.get("as_of"),
+    }
 
 
 #: 营销事件类型登记在迁移里（注册表是封闭集，种子 SQL 就是唯一出处）。
@@ -411,6 +459,35 @@ def render_readme(d: dict) -> str:
     a("- 闸：类型注册表的前缀自洽、载体出处必填、黑名单三条判据在 "
       "`fd-erp-ledger-mcp/tests/test_marketing_producers.py`；"
       "接线脚本 `fd-wire/scripts/publish_facts_to_kernel.py`（可手动跑、可重放，不进常驻调度）。")
+    a("")
+    # 登记 ≠ 生产。上表回答「允许被写」，下面这段回答「有没有真的写进来」——
+    # 没有这段，表里的「当前可生产」读起来像「已在生产」，而两者差着一整条写链。
+    readings = d["marketing_readings"]
+    a("#### 实测读数（登记 ≠ 生产）")
+    a("")
+    if not readings.get("available"):
+        a(f"- {readings.get('reason')}——**读不到不等于 0 条**：事实条数此处不做估计。")
+    else:
+        mkt_rows = (readings.get("by_producer") or {}).get("marketing") or []
+        erp_rows = (readings.get("by_producer") or {}).get("erp") or []
+        a("| 板块 (`producer`) | 类型数 | 事实条数 | 最后写入 |")
+        a("| --- | --- | --- | --- |")
+        for label, rows in (("营销 `marketing`", mkt_rows), ("ERP `erp`", erp_rows)):
+            total = sum(r["count"] for r in rows)
+            last = max((r["last_at"] for r in rows if r.get("last_at")), default=None)
+            a(f"| {label} | {len(rows)} | {total} | {last or '—'} |")
+        a("")
+        # 按类型逐个点名，且**不合并**两组：合并会把一个板块的沉默算成另一个的产量。
+        by_type = {r["event_type"]: r for r in mkt_rows}
+        silent = [t["event_type"] for t in mkt if by_type.get(t["event_type"], {}).get("count", 0) == 0]
+        if silent:
+            a(f"- **已登记、无生产**：{'、'.join(f'`{n}`' for n in silent)}——"
+              "注册表允许它们被写，但事件表里还没有任何一条。对外材料 MUST NOT 表述为「已接入」。")
+        else:
+            a("- 三类均已产生事实（条数见上表）。")
+        a("- 两组数字**分别报，不相加**：同租户内事实不设板块墙（可按 `producer` 过滤读），"
+          "但「营销生产了多少」与「ERP 生产了多少」是两个问题，合并会把一个板块的沉默"
+          "读成另一个板块的产量。")
     a("<!-- claim-gate:end:marketing-producers -->")
     a("")
     a("## 8. 待办（结构性）")

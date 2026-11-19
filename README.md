@@ -72,7 +72,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 |---|---|
 | `fd-erp-ledger-mcp` | 5 |
 | `fd-erp-vertical-api` | 16 |
-| `fd-erp-vertical-templates` | 8 |
+| `fd-erp-vertical-templates` | 9 |
 
 - 跨仓共享且已登记：**4** 个 —— `ERP_BASE_CURRENCY`、`ERP_CREDIT_RESERVATION_MAX_DAYS`、`ERP_LEDGER_DATABASE_URL`、`ERP_TENANT_ID`
 - 共享变量默认值必须逐字一致（同名不同默认值 = 同一份部署清单在两个进程里两种行为）
@@ -160,6 +160,16 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 - **只有这三类**：投放花费、线索、活动、转化四类在仓内没有任何载体，登记即被黑名单拒绝（`ERP_EVENT_FABRICATED_FACT`）——「先补载体再登记类型」，不许先登记再找人填数。
 - **营销账不并入 ERP 账本**：两侧共用的是事件流水与纪律，不是账。营销事件全部 `requires_posting=false`，ERP 的账本仍只由 ERP 的过账规则产生；跨板块看数是同租户内的**只读聚合**（按 `producer` 过滤），不是并账。（`line-integration-charter`：六本账不并成一本。）
 - 闸：类型注册表的前缀自洽、载体出处必填、黑名单三条判据在 `fd-erp-ledger-mcp/tests/test_marketing_producers.py`；接线脚本 `fd-wire/scripts/publish_facts_to_kernel.py`（可手动跑、可重放，不进常驻调度）。
+
+#### 实测读数（登记 ≠ 生产）
+
+| 板块 (`producer`) | 类型数 | 事实条数 | 最后写入 |
+| --- | --- | --- | --- |
+| 营销 `marketing` | 0 | 0 | — |
+| ERP `erp` | 1 | 1 | 2026-11-15T17:45:50.399953+00:00 |
+
+- **已登记、无生产**：`marketing.content.published`、`marketing.desk.conversation_closed`、`marketing.channel.order_paid`——注册表允许它们被写，但事件表里还没有任何一条。对外材料 MUST NOT 表述为「已接入」。
+- 两组数字**分别报，不相加**：同租户内事实不设板块墙（可按 `producer` 过滤读），但「营销生产了多少」与「ERP 生产了多少」是两个问题，合并会把一个板块的沉默读成另一个板块的产量。
 <!-- claim-gate:end:marketing-producers -->
 
 ## 8. 待办（结构性）
