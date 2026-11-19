@@ -108,24 +108,15 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 站点 `erp.finddatatech.cloud`，内容 `fd-erp/site/（index.html 中文站 + en/index.html 英文站，两页 hreflang 互指；同一份生成器产出）`（生成物，勿手改）。
 
-| 环节 | 位置 | 备注 |
-|---|---|---|
-| 源站 | `fd-deploy`（<origin-host>）`/opt/fd/erp/site` | nginx `/etc/nginx/sites-enabled/erp.finddatatech.cloud` |
-| 边缘 | 雷池 WAF（终止 TLS）+ 同机 Caddy（按 Host 分发）（<edge-host>） | Caddy `/etc/caddy/Caddyfile`，upstream `<origin-host>:80` |
+部署拓扑与验收记录内网留存，不随仓公开。
 
 **公网状态：live（子域 https://erp.finddatatech.cloud/ + 官网子路径 /erp-docs/，两处同一份生成物）**
 
-| 公开地址 | 状态 | 形态 | 验收 |
-|---|---|---|---|
-| https://www.finddatatech.cloud/erp-docs/ | **live** | www 站点 nginx 加 location /erp-docs/ → alias /opt/fd/erp/site/（复用 www 现成证书，经腾讯 CDN） | 2026-11-11 curl 200 / 19087 字节 / md5 与生成物一致 |
-| https://erp.finddatatech.cloud/ | **live** | 雷池站点 35（ports 80+443_ssl）→ 同机 Caddy :8080 → 源站 <origin-host>:80；证书 66 由 acme.sh 签发并入库，续期走 /data/safeline/renew-and-push.sh | 2026-11-11 curl 200 / 19087 字节 / sha256 2012a9038d33205a 与生成物一致；TLS 指纹 BF:1B:B4:44:…:71:32 与 cert_66.crt 相同；六个邻居站同时回归正常（www 200 / platform 200 / mcp 302 / token 200 / lawbench 401 / facet 200） |
+| 公开地址 | 状态 |
+|---|---|
+| https://www.finddatatech.cloud/erp-docs/ | **live** |
+| https://erp.finddatatech.cloud/ | **live** |
 
-已验证：
-- 源站：curl --resolve erp.finddatatech.cloud:80:<origin-host> → 200，正文与生成物 md5 一致（2026-11-11）
-- 边缘：curl -H 'Host: erp.finddatatech.cloud' http://172.22.222.1:8080/ → 200，md5 同上（2026-11-11）
-- 公网（子域）：**2026-11-17 复核 → 200 / 31,504 字节**，证书 `subject=CN=erp.finddatatech.cloud` 且 SAN 含该域名。此行此前记的是 2026-11-11 打通**前**的「404 / 握手失败」，已过期（留痕说明它曾阻塞，不代表现状）
-- **2026-11-17 已知落后**：本地生成物在 4.2（英文版 + hreflang 互指 + 切换链接）后 md5 = `ea6bac0d…`，公网仍是上一代 `028d3fd1…`（31,504 字节，无 hreflang）；且 `/en/`、`/en/index.html` 目前返回 **200 但正文是中文页**（nginx 兜底，200 不等于拿到了英文页）。重新发布是把 `fd-erp/site/` 整目录 scp 到 `fd-deploy:/opt/fd/erp/site/`——对外动作，未在本轮执行
-- 公网（官网子路径）：https://www.finddatatech.cloud/erp-docs/ → 200 / 19087 字节 / md5 与生成物一致（经腾讯 CDN）
 
 ## 7. 能力与缺口（派生，勿手写）
 

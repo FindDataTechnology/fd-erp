@@ -306,7 +306,21 @@ def render_readme(d: dict) -> str:
     a("## 6. 独立站发布")
     a("")
     site = m["deploy"].get("site")
-    if site:
+    if site and site.get("redact"):
+        # 部署细节（host 路径、证书指纹、SSH 目标）不进公开面：README 是对外文档，
+        # 这些是运维手册内容。详尽版留在 manifest.deploy.json（不入库）。
+        a(f"站点 `{site['host']}`，内容 `{site['content']}`（生成物，勿手改）。")
+        a("")
+        a("部署拓扑与验收记录内网留存，不随仓公开。")
+        a("")
+        a(f"**公网状态：{site['public_status']}**")
+        a("")
+        a("| 公开地址 | 状态 |")
+        a("|---|---|")
+        for u in site.get("public_urls", []):
+            a(f"| {u['url']} | **{u['status']}** |")
+        a("")
+    elif site:
         a(f"站点 `{site['host']}`，内容 `{site['content']}`（生成物，勿手改）。")
         a("")
         a("| 环节 | 位置 | 备注 |")
