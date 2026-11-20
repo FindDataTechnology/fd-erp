@@ -621,6 +621,8 @@ footer h2::after{display:none}
 footer ul{list-style:none;margin:0 0 18px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 28px}
 footer li{font-family:var(--mono);font-size:12.5px}
 footer .say{max-width:78ch;margin:0}
+footer .filing{margin:18px 0 0;font:400 12.5px/1.7 var(--mono);color:var(--ink-2)}
+footer .filing a{color:inherit}
 
 @media (max-width:900px){
 :root{--rail:0px}
@@ -698,6 +700,8 @@ def render_site(d: dict, lang: str = "zh") -> str:
     # 两语言互指：搜索引擎按 hreflang 区分两份，别当成重复内容。
     a(f'<link rel="alternate" hreflang="{T("lang")}" href="./">')
     a(f'<link rel="alternate" hreflang="{alt_lang}" href="{alt_href}">')
+    a('<link rel="icon" type="image/svg+xml" href="favicon.svg">')
+    a('<meta property="og:image" content="https://erp.finddatatech.cloud/og.png">')
     a(f"<style>{CSS}</style></head><body>")
     a(f'<a class="skip" href="#main">{T("skip")}</a>')
 
@@ -934,6 +938,8 @@ def render_site(d: dict, lang: str = "zh") -> str:
         a(f"<div><dt>{esc(zh)}</dt><dd>{esc(en)}</dd></div>")
     a("</dl>")
     a(f'<p class="say">{esc(T("say", date=date.today().isoformat()))}</p>')
+    a('<p class="filing"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026118740号-1</a> · '
+      '<a href="https://beian.mps.gov.cn/#/query/webSearch?code=44030002016558" target="_blank" rel="noopener noreferrer">粤公网安备44030002016558号</a></p>')
     a("</footer>")
     a("</main></body></html>")
     return "\n".join(o)
