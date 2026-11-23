@@ -338,7 +338,7 @@
   "erp-daily-billing 启用前置：WMS 日终快照只读 provider 接通（open-connector-mt 侧）",
   "备份机（<backup-host>）本身是单点：ERP 账本与事件档的异地副本都在它上面，30G 盘 73% used",
   "源站 fd-deploy 上 certbot 为 erp 域名留了一张用不上的证书（TLS 在雷池终止），其 timer 仍每 60 天穿到雷池验域；清理需人工确认：sudo certbot delete --cert-name erp.finddatatech.cloud",
-  "ERP API 的单副本 + Recreate + local-path PV 钉在 liuliangjkiimypbdzxa：该机一旦 DiskPressure，Pod 无处调度即整服务不可用（2026-11-11 19:34–19:52 实际发生 18 分钟）。缓解=该机 kubelet 已加 ephemeral 预留+软硬阈值；根治=把事件档 PVC 换成可跨节点的存储，或允许双副本（需先解决 JSONL 双写）"
+  "ERP API 的单副本 + Recreate + local-path PV 钉在一台工作节点（具体节点见运维台账）：该机一旦 DiskPressure，Pod 无处调度即整服务不可用（2026-11-11 19:34–19:52 实际发生 18 分钟）。缓解=该机 kubelet 已加 ephemeral 预留+软硬阈值；根治=把事件档 PVC 换成可跨节点的存储，或允许双副本（需先解决 JSONL 双写）"
  ],
  "specs": {
   "openspec_root": "openspec/specs",
