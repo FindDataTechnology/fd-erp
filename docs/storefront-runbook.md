@@ -52,6 +52,21 @@ export ERP_RETAIL_CHANNEL=retail-online
 
 ## 2. 四步链路验收（**全部真发生才算开张**）
 
+**一条命令跑完**（推荐；它就是下面四步的可执行形态）：
+
+```bash
+python3 fd-erp/tools/verify_shop_opening.py --base "$BASE" --tenant "$TENANT"
+# 退出码 0 = 开张成立 / 1 = 未开张（点名哪一步） / 2 = 判不出（连不上/缺参数）
+```
+
+判据不是 HTTP 200，是响应体里的字段：读面非空且不泄露内部口径、订单 `settlement_mode=prepaid`
+且 `payment_state=awaiting_payment`、到账 `requires_posting=false`、订单显示 `payment_state=received`。
+任一步不成立即判未开张，不会继续往下打。
+
+以下是手工版（同一条链路，便于逐步排查）：
+
+
+
 ```bash
 BASE=http://<api-host>          # 例：http://10.43.153.194
 TENANT=<ERP_TENANT_ID>
