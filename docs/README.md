@@ -107,9 +107,9 @@
 
 <!-- claim-gate:begin:release-status -->
 **发布状态（数据派生，勿手改）**：唯一出处 `publish-record.json`。
-- `crossborder/connector-pack`：已上架 市场 v2（packId `cv0kj9mRHGrz6nNMA7glVg`，2026-11-08）
-- `restaurant-chain/connector-pack`：已上架 市场 v2（packId `3RZRBdc66rKdLV5I8tuKIg`，2026-11-08）
-- `supply-chain/connector-pack`：已上架 市场 v3（packId `y8gnMHFMze-Mylsd6JXpkA`，2026-11-08）
+- `crossborder/connector-pack`：已上架 市场 v10（packId `cv0kj9mRHGrz6nNMA7glVg`，2026-11-24）
+- `restaurant-chain/connector-pack`：已上架 市场 v10（packId `3RZRBdc66rKdLV5I8tuKIg`，2026-11-24）
+- `supply-chain/connector-pack`：已上架 市场 v11（packId `y8gnMHFMze-Mylsd6JXpkA`，2026-11-24）
 - `official-web.deploy`：未上线（挂账）——本地内容完整性 gate 通过（0 hits）；site deploy 需真实凭据，未执行
 - `gateway.rollout`：未上线（挂账）——无集群变更记录
 - `registry.snapshot`：未上线（挂账）——未写入 registry

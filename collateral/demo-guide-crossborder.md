@@ -64,10 +64,10 @@ append-only 触发器 + 唯一索引）——「我们相信约束，不相信 a
 
 - **能不能接我们的真店？** 能，商家自带 Shopify API 凭证（BYOK）逐店开通，
   token 不落库不出日志；**当前是「需一次接入」而非已接通**——今天演示用的是合成店，
-  签约后第一件事就是接您真店做只读 POC。<!-- capability:shopify.orders=unmapped -->
+  签约后第一件事就是接您真店做只读 POC。<!-- capability:shopify.orders=available -->
 - **收款/结算对账能做吗？** 结算面（payouts）待补 provider 动作，当前标**不可得**，
-  不拿订单金额推算结算额。<!-- capability:shopify.settlements=unmapped -->
-- **库存腿呢？** 同上，未接通前不出「库存零差异」的结论。<!-- capability:shopify.inventory=unmapped -->
+  不拿订单金额推算结算额。<!-- capability:shopify.settlements=unavailable -->
+- **库存腿呢？** 同上，未接通前不出「库存零差异」的结论。<!-- capability:shopify.inventory=available -->
 - **国内平台（淘宝/天猫/京东）？** 是「需一次接入」，不是「不支持」：目录里还没有这三家的
   provider，接进来需要一次接入；商家电商 ERP 通道是补库存腿的首选。<!-- capability:taobao.orders=unmapped -->
 - **拼多多？** 当前不提供（上游接口 schema 缺失），如实告知，不承诺接入日期。<!-- capability:pinduoduo.orders=unavailable -->
