@@ -46,11 +46,110 @@ h1{font-size:28px;font-weight:600;margin:0 0 6px;}
 .card .cat{color:var(--ink3);font-size:12px;}
 .price{margin-top:10px;font-family:var(--mono);font-size:18px;color:var(--accent);}
 .price small{font-size:12px;color:var(--ink3);margin-left:6px;}
+.card button{margin-top:12px;width:100%;padding:9px 12px;border:1px solid var(--accent);
+border-radius:2px;background:var(--accent);color:#fff;font:inherit;font-size:14px;cursor:pointer;}
+.card button:disabled{opacity:.5;cursor:default;}
+form.order{border:1px solid var(--rule);border-radius:3px;background:#fff;padding:20px;
+margin-top:28px;}
+form.order h2{font-size:18px;margin:0 0 4px;}
+form.order .hint{color:var(--ink3);font-size:13px;margin-bottom:14px;}
+form.order label{display:block;margin:10px 0 4px;font-size:13px;color:var(--ink2);}
+form.order input{width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:2px;
+font:inherit;font-size:14px;}
+form.order .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+form.order button{margin-top:16px;padding:10px 18px;border:1px solid var(--accent);
+border-radius:2px;background:var(--accent);color:#fff;font:inherit;cursor:pointer;}
+#order-result{margin-top:16px;font-size:14px;white-space:pre-wrap;}
+#order-result.err{color:#a33;}
+#order-result.ok{color:var(--accent);}
 .empty{border:1px dashed var(--rule);border-radius:3px;padding:40px 20px;text-align:center;
 color:var(--ink3);}
 .empty strong{display:block;color:var(--ink);font-size:18px;margin-bottom:8px;}
 .note{margin-top:28px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--rule);
 padding-top:14px;}
+"""
+
+
+def _order_form() -> str:
+    """下单表单 + 提交脚本。
+
+    为什么表单在页面里而数据不在：页面是静态产物（可缓存、可私域部署），
+    但下单必须打 API —— 所以只带**接口地址**（`api_base`，从快照来），不带任何
+    订单数据。买家填的收货信息只经浏览器直接 POST 给 API，不经过本页任何存储。
+    """
+    return """
+<form class="order" id="order-form">
+  <h2>下单</h2>
+  <div class="hint">预付单：提交后本店会告知付款方式，钱进本店自有账户，平台不经手资金。</div>
+  <div class="row">
+    <div><label for="ship-name">收货人</label><input id="ship-name" name="name" required></div>
+    <div><label for="ship-phone">联系电话</label><input id="ship-phone" name="phone" required></div>
+  </div>
+  <label for="ship-address">收货地址</label><input id="ship-address" name="address">
+  <div class="row">
+    <div><label for="line-code">商品编码</label><input id="line-code" name="code" required></div>
+    <div><label for="line-qty">数量</label><input id="line-qty" name="qty" type="number" min="1" value="1" required></div>
+  </div>
+  <button type="submit" id="order-submit">提交订单</button>
+  <div id="order-result" role="status" aria-live="polite"></div>
+</form>
+<script>
+(function () {
+  var API = document.body.dataset.api;
+  var tenant = document.body.dataset.tenant;
+  var form = document.getElementById("order-form");
+  var out = document.getElementById("order-result");
+  var submit = document.getElementById("order-submit");
+  // 「加入订单」把编码填进表单：不引入购物车状态，页面保持无状态
+  document.querySelectorAll("[data-add]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.getElementById("line-code").value = btn.getAttribute("data-add");
+      document.getElementById("line-qty").focus();
+    });
+  });
+  form.addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    if (!API || !tenant) {
+      out.className = "err";
+      out.textContent = "本页未配置店面接口地址，无法提交订单。";
+      return;
+    }
+    submit.disabled = true;
+    out.className = "";
+    out.textContent = "提交中…";
+    try {
+      var res = await fetch(API.replace(/\\/+$/, "") + "/shop/" + encodeURIComponent(tenant) + "/orders", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "idempotency-key": "web-" + Date.now() + "-" + Math.random().toString(36).slice(2)
+        },
+        body: JSON.stringify({
+          lines: [{ productId: form.code.value.trim(), qty: Number(form.qty.value) }],
+          shipTo: { name: form.name.value.trim(), phone: form.phone.value.trim(), address: form.address.value.trim() }
+        })
+      });
+      var body = await res.json();
+      if (!res.ok || !body.ok) {
+        var err = (body && body.error) || {};
+        out.className = "err";
+        out.textContent = "下单未成功：" + (err.message || res.status) +
+          (err.detail && err.detail.missing ? "（缺 " + err.detail.missing + "）" : "");
+        return;
+      }
+      var d = body.data;
+      out.className = "ok";
+      out.textContent = "已受理。订单号 " + d.order_ref + "，金额 " + d.amount_total + " " +
+        d.currency + "。当前状态：待付款——付款方式由本店另行告知。";
+    } catch (e) {
+      out.className = "err";
+      out.textContent = "网络错误：" + (e && e.message ? e.message : e);
+    } finally {
+      submit.disabled = false;
+    }
+  });
+})();
+</script>
 """
 
 
@@ -65,6 +164,10 @@ def render(snapshot: dict) -> str:
     shop = snapshot.get("shop") or {}
     title = shop.get("title") or "网上商店"
     note = shop.get("note") or ""
+    # 接口地址与租户来自快照（**不含任何订单/买家数据**），用于页内下单表单。
+    # 二者为空时不出表单：宁可不给入口，也不给一个点了必然失败的按钮。
+    api_base = str(snapshot.get("api_base") or "").strip()
+    tenant = str(snapshot.get("tenant") or "").strip()
 
     body: list[str] = []
     if not snapshot.get("available", False):
@@ -77,22 +180,29 @@ def render(snapshot: dict) -> str:
         body.append('<div class="grid">')
         for p in products:
             img = (p.get("images") or [None])[0]
-            body.append('<article class="card">')
+            code = _esc(p.get("productId"))
+            body.append(f'<article class="card" data-product="{code}">')
             if img:
                 # 相对路径：私域/内网部署时绝对 URL 会失效（0.16 验收项之一）
                 body.append(f'<img src="{_esc(img)}" alt="{_esc(p.get("title"))}" loading="lazy">')
             body.append(f'<div class="body"><h2>{_esc(p.get("title"))}</h2>'
                         f'<span class="cat">{_esc(p.get("category"))}</span>'
                         f'<div class="price">{_esc(p.get("unit_price"))}'
-                        f'<small>{_esc(p.get("currency"))}</small></div></div>')
+                        f'<small>{_esc(p.get("currency"))}</small></div>'
+                        + (f'<button type="button" data-add="{code}">加入订单</button>'
+                           if api_base else '')
+                        + '</div>')
             body.append("</article>")
         body.append("</div>")
+        if api_base:
+            body.append(_order_form())
 
     as_of_line = (f'<span class="sub">数据期 {_esc(as_of[:10])}</span>' if as_of else "")
     return "\n".join([
         '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'<title>{_esc(title)}</title><style>{CSS}</style></head><body><div class="wrap">',
+        f'<title>{_esc(title)}</title><style>{CSS}</style></head>',
+        f'<body data-api="{_esc(api_base)}" data-tenant="{_esc(tenant)}"><div class="wrap">',
         '<header>',
         f'<h1>{_esc(title)}</h1>',
         f'<div class="sub">{_esc(note)}</div>{as_of_line}',

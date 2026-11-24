@@ -19,9 +19,11 @@ TOOLS = Path(__file__).resolve().parents[1] / "tools"
 sys.path.insert(0, str(TOOLS))
 import gen_storefront as gs  # type: ignore  # noqa: E402
 
-def _snap(products, *, available=True, reason="", title="示例商店", note=""):
+def _snap(products, *, available=True, reason="", title="示例商店", note="",
+          api_base="", tenant="acme"):
     return {"schema": "erp-storefront-snapshot/v1", "as_of": "2026-11-24T00:00:00+00:00",
-            "tenant": "acme", "shop": {"title": title, "note": note},
+            "tenant": tenant, "api_base": api_base,
+            "shop": {"title": title, "note": note},
             "available": available, "products": products, "reason": reason}
 
 
@@ -32,11 +34,37 @@ def _p(code="SKU-1", title="商品甲", price="99.000000", cur="CNY", images=Non
 
 
 def test_products_render_as_cards_with_snapshot_price():
-    page = gs.render(_snap([_p(), _p("SKU-2", "商品乙", "12.50")]))
-    assert page.count('<article class="card">') == 2
+    page = gs.render(_snap([_p(), _p("SKU-2", "商品乙", "12.50")],
+                           api_base="https://api.example.com"))
+    assert page.count('<article class="card"') == 2
     assert "商品甲" in page and "商品乙" in page
     assert "99.000000" in page          # 原样透出，不重算
     assert "12.50" in page
+    # 每张卡带一个「加入订单」按钮，把商品编码填进下单表单
+    assert page.count('data-add="SKU-1"') == 1
+    assert page.count('data-add="SKU-2"') == 1
+
+
+def test_order_form_only_when_api_base_present():
+    """没有接口地址就不出表单——宁可不给入口，也不给点了必然失败的按钮。"""
+    with_api = gs.render(_snap([_p()], api_base="https://api.example.com"))
+    assert 'id="order-form"' in with_api
+    assert 'data-api="https://api.example.com"' in with_api
+
+    without = gs.render(_snap([_p()]))       # api_base 缺省为空
+    assert 'id="order-form"' not in without
+    assert "加入订单" not in without
+
+
+def test_order_form_never_embeds_order_or_buyer_data():
+    """表单是空的：下单数据只由买家在浏览器里填，不经快照。
+
+    注意区分「字段名」与「数据」：脚本里出现 `d.order_ref` 是读响应字段，正常；
+    出现一个**具体的**订单号 / 手机号才是泄露。
+    """
+    page = gs.render(_snap([_p()], api_base="https://api.example.com"))
+    for forbidden in ("SO-", "PMT-", "13800000000", "bank-ref"):
+        assert forbidden not in page, forbidden
 
 
 def test_empty_catalog_is_honest_not_placeholder():

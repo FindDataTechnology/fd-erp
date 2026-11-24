@@ -41,6 +41,9 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out)
     record = {"schema": "erp-storefront-snapshot/v1", "as_of": _now(),
               "tenant": args.tenant,
+              # 页内下单表单要打这个地址（买家浏览器直连 API）。存的是**对外可达**的
+              # 基址——不是集群内 ClusterIP，否则买家浏览器到不了。
+              "api_base": args.base_url.rstrip("/") if args.base_url else "",
               "shop": {"title": args.title or "网上商店", "note": args.note}}
 
     if not args.base_url:
