@@ -3,7 +3,7 @@
 > **Part of the [Base line (寻数·壹座)](https://www.finddatatech.cloud/products/base) of [FindData](https://www.finddatatech.cloud)** — the ERP board: an industry-neutral double-entry event core plus vertical template assets, served as REST and MCP surfaces.
 
 > 本文件由 `fd-erp/tools/gen_erp_docs.py` 从 `fd-erp/manifest.json` 与各仓机器可读产物派生，**不要手改**。
-> 生成日期：2026-11-24。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
+> 生成日期：2026-11-25。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
 
 ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线。章程 `openspec/specs/erp-board/spec.md`；对外口径唯一出处 `fd-erp/docs/README.md`。
 
@@ -165,10 +165,10 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 | 板块 (`producer`) | 类型数 | 事实条数 | 最后写入 |
 | --- | --- | --- | --- |
-| 营销 `marketing` | 0 | 0 | — |
+| 营销 `marketing` | 1 | 1 | 2026-11-24T14:43:40+00:00 |
 | ERP `erp` | 1 | 1 | 2026-11-15T17:45:50.399953+00:00 |
 
-- **已登记、无生产**：`marketing.content.published`、`marketing.desk.conversation_closed`、`marketing.channel.order_paid`——注册表允许它们被写，但事件表里还没有任何一条。对外材料 MUST NOT 表述为「已接入」。
+- **已登记、无生产**：`marketing.content.published`、`marketing.desk.conversation_closed`——注册表允许它们被写，但事件表里还没有任何一条。对外材料 MUST NOT 表述为「已接入」。
 - 两组数字**分别报，不相加**：同租户内事实不设板块墙（可按 `producer` 过滤读），但「营销生产了多少」与「ERP 生产了多少」是两个问题，合并会把一个板块的沉默读成另一个板块的产量。
 <!-- claim-gate:end:marketing-producers -->
 

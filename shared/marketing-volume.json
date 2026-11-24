@@ -1,5 +1,5 @@
 {
- "as_of": "2026-11-19T11:16:35+00:00",
+ "as_of": "2026-11-24T16:09:01+00:00",
  "available": true,
  "by_producer": {
   "erp": [
@@ -8,7 +8,15 @@
     "event_type": "goods_received",
     "last_at": "2026-11-15T17:45:50.399953+00:00"
    }
+  ],
+  "marketing": [
+   {
+    "count": 1,
+    "event_type": "marketing.channel.order_paid",
+    "last_at": "2026-11-24T14:43:40+00:00"
+   }
   ]
  },
- "schema": "erp-marketing-volume/v1"
+ "schema": "erp-marketing-volume/v1",
+ "note": "营销板块首次有生产事实：2026-11-24 由真实 Shopify 订单 #1001（PAID 2629.95 USD）经 ingest 车道写入 marketing.channel.order_paid（requires_posting=false）。两组数字分别报、不相加——同租户内事实不设板块墙，但「营销生产了多少」与「ERP 生产了多少」是两个问题。"
 }
