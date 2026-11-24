@@ -4,7 +4,28 @@
 > **四步链路 = 开张的判据**（spec `ecommerce-tenant-provisioning`「开张判据以真实读取为证」）；
 > 只部署成功不算开张。
 
-## 0. 前置：这台机器能做什么
+## 0. 开一家新店的唯一入口
+
+```bash
+cp tenants/example-shop.json tenants/<你的店>.json   # 改 tenant_id / shop_title / retail_channel
+python3 fd-erp/tools/open_shop.py tenants/<你的店>.json --dry-run   # 先校验
+python3 fd-erp/tools/open_shop.py tenants/<你的店>.json             # 建 schema + 数据根
+```
+
+脚本做四件事：校验清单 → 建租户 schema（内核侧，幂等）→ 建店面数据根 →
+打印部署三件套（环境变量、快照命令、四步验收）。
+
+**不改代码**。清单缺项逐条点名并拒绝，不产生任何 schema 或目录。
+
+### 隔离靠进程边界，不靠同进程多租户
+
+每个商家店是**一个绑定单一租户的进程** + 它自己的数据根。**不要**让同一进程服务两个租户：
+`/shop/{tenant}` 的路径参数校验只是「这个进程是不是这个租户」的一道确认，
+真正的隔离来自进程与数据根分离。第二家店 = 第二个进程。
+
+（实测：甲店进程读 `/shop/shop_b/products` → 404，且响应不回显 `shop_b`。）
+
+## 0.1 前置：这台机器能做什么
 
 | 项 | 要求 | 怎么验 |
 |---|---|---|

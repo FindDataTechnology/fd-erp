@@ -1,0 +1,10 @@
+{
+  "tenant_id": "shop_example",
+  "shop_title": "示例商店",
+  "retail_channel": "retail-online",
+  "settlement": "offline_transfer",
+  "payee": "商家自有银行账户（到账后由商家后台人工确认）",
+  "fulfillment": "own_warehouse",
+  "data_dir": "/tmp/shop_example_data",
+  "note": "这是一份可复制的租户清单：改 id/title/channel 就能开第二家店"
+}
