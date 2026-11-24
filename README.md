@@ -3,7 +3,7 @@
 > **Part of the [Base line (寻数·壹座)](https://www.finddatatech.cloud/products/base) of [FindData](https://www.finddatatech.cloud)** — the ERP board: an industry-neutral double-entry event core plus vertical template assets, served as REST and MCP surfaces.
 
 > 本文件由 `fd-erp/tools/gen_erp_docs.py` 从 `fd-erp/manifest.json` 与各仓机器可读产物派生，**不要手改**。
-> 生成日期：2026-11-20。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
+> 生成日期：2026-11-24。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
 
 ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线。章程 `openspec/specs/erp-board/spec.md`；对外口径唯一出处 `fd-erp/docs/README.md`。
 
@@ -13,7 +13,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 |---|---|---|---|---|---|
 | 账本内核（行业无关） | `fd-erp-ledger-mcp` | `git@github.com:scs001/fd-erp-ledger-mcp.git` | MCP 工具面 | 4456 / 2895 行 | 行业无关；不存行业逻辑；agent 写路径只出 proposal，外部事实经导入车道直收 |
 | 行业模板工厂（差异全部上移至此） | `fd-erp-vertical-templates` | `git@github.com:scs001/fd-erp-vertical-templates.git` | 模板资产 + 连接器绑定 + 能力矩阵 | 10715 / 8536 行 | 零旁路账务、零直连库表、回写仅经内核白名单车道、对外部系统零写入（boundary.py 机械审计） |
-| 纵向 REST 服务面 | `fd-erp-vertical-api` | `git@github.com:scs001/fd-erp-vertical-api.git` | REST 65 路由（含 20 placeholder） | 3174 / 1797 行 | 单副本；闸序 租户→页面集→grant→身份域；不直连内核库 |
+| 纵向 REST 服务面 | `fd-erp-vertical-api` | `git@github.com:scs001/fd-erp-vertical-api.git` | REST 147 路由（含 2 条探针、8 条如实 501 placeholder） | 3174 / 1797 行 | 单副本；闸序 租户→页面集→grant→身份域；不直连内核库 |
 
 ## 2. 资产与规格
 
@@ -60,7 +60,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 码表与指标名一律从源码 AST 现读，契约文件只写「必须逐字一致的部分」与「允许不同但必须声明的部分」。闸：`fd-erp/tools/check_semantics_contract.py`。
 
-- 错误码：内核封闭集 **25** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **13** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 10 个、模板层自有 9 个，均须在契约里声明并给理由
+- 错误码：内核封闭集 **25** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **13** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 11 个、模板层自有 9 个，均须在契约里声明并给理由
 - 指标：内核 11 个 / api 3 个，同一 Prometheus 下不得跨服务重名
 - 闸门状态：通过
 
@@ -71,7 +71,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 | 仓 | 读取的 `ERP_` 变量数 |
 |---|---|
 | `fd-erp-ledger-mcp` | 5 |
-| `fd-erp-vertical-api` | 16 |
+| `fd-erp-vertical-api` | 17 |
 | `fd-erp-vertical-templates` | 9 |
 
 - 跨仓共享且已登记：**4** 个 —— `ERP_BASE_CURRENCY`、`ERP_CREDIT_RESERVATION_MAX_DAYS`、`ERP_LEDGER_DATABASE_URL`、`ERP_TENANT_ID`

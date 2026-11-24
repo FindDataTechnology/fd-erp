@@ -49,7 +49,7 @@
    "lang": "python",
    "src_loc": 3174,
    "tests_loc": 1797,
-   "surface": "REST 65 路由（含 20 placeholder）",
+   "surface": "REST {routes} 路由（含 2 条探针、{placeholders} 条如实 501 placeholder）",
    "boundary": "单副本；闸序 租户→页面集→grant→身份域；不直连内核库"
   }
  ],

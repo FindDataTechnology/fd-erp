@@ -102,6 +102,22 @@ def _gate(script: str) -> dict:
     return mod.check()
 
 
+def _rest_surface_counts() -> dict[str, int]:
+    """REST 面的**路由数**与**如实 501 数**：从 evidence 快照现读，不手写。
+
+    manifest.json 里曾写死「REST 65 路由（含 20 placeholder）」，2026-11-24 实测是
+    147 / 8——对外少报能力、多报未实施，破了本文件「每个数字现算」的原则。
+    数字来自 `coverage/evidence.json` 的 `counts`（同一份快照 claim_gate 也在核验），
+    不在生成器里再写一套 AST 派生。
+    """
+    ev = ROOT / "fd-erp-vertical-templates" / "coverage" / "evidence.json"
+    if not ev.is_file():
+        raise SystemExit(f"缺少出处文件：{ev}（REST 路由数无法派生）")
+    counts = json.loads(ev.read_text(encoding="utf-8")).get("counts") or {}
+    return {"routes": int(counts.get("routes") or 0),
+            "placeholders": int(counts.get("placeholder_routes") or 0)}
+
+
 def _semantics() -> dict:
     return _gate("check_semantics_contract.py")
 
@@ -239,9 +255,14 @@ def render_readme(d: dict) -> str:
     a("")
     a("| 角色 | 目录 | 远端 | 形态 | 源码 / 测试 | 边界 |")
     a("|---|---|---|---|---|---|")
+    rest = _rest_surface_counts()
     for r in m["repos"]:
+        # surface 里的 {routes}/{placeholders} 是模板占位：数字从快照现读，
+        # 不写死在 manifest 里（手写数会漂，且没有任何闸会盯它）。
+        surface = str(r["surface"]).format(**rest) if "{" in str(r["surface"]) \
+            else r["surface"]
         a(
-            f"| {r['role']} | `{r['path']}` | `{r['remote']}` | {r['surface']} "
+            f"| {r['role']} | `{r['path']}` | `{r['remote']}` | {surface} "
             f"| {r['src_loc']} / {r['tests_loc']} 行 | {r['boundary']} |"
         )
     a("")
@@ -790,9 +811,12 @@ def render_site(d: dict, lang: str = "zh") -> str:
       f'<th scope="col">{T("th_surface")}</th>'
       f'<th scope="col" class="num">{T("th_src_loc")}</th>'
       f'<th scope="col" class="num">{T("th_tests_loc")}</th></tr></thead><tbody>')
+    rest = _rest_surface_counts()
     for r in m["repos"]:
+        surface = str(r["surface"]).format(**rest) if "{" in str(r["surface"]) \
+            else r["surface"]
         a(f'<tr><td>{esc(r["role"])}</td><td><code>{esc(r["path"])}</code></td>'
-          f'<td class="muted">{esc(r["surface"])}</td>'
+          f'<td class="muted">{esc(surface)}</td>'
           f'<td class="num">{r["src_loc"]}</td><td class="num">{r["tests_loc"]}</td></tr>')
     a("</tbody></table></section>")
 

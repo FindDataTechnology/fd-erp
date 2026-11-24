@@ -164,6 +164,14 @@ def main() -> int:
     rows.append(("派生文档漂移", drift_state, drift_tail))
     failed = failed or code not in (0, 2)
 
+    # 店面产物漂移（change establish-ai-native-ecommerce-stack 0.14）：快照变过但没
+    # 重新生成就判红。它只读仓内快照，**两种模式都跑**（CI 也能验）。
+    code, out = _run([sys.executable, "-I", str(TOOLS / "gen_storefront.py"), "--check"])
+    shop_tail = (out.splitlines() or ["（无输出）"])[-1]
+    shop_state = "PASS" if code == 0 else ("SKIP" if code == 2 else "FAIL")
+    rows.append(("店面产物漂移", shop_state, shop_tail))
+    failed = failed or code not in (0, 2)
+
     if not args.ci:
         ok, missing = _siblings_present()
         for label, script in CROSS_REPO_GATES:

@@ -36,7 +36,8 @@
     "NOT_IMPLEMENTED": "契约端点已定义、后端能力未就绪（如实 501，无假实现）；详见 README 未实现清单。",
     "SHARE_EXECUTION_DENIED": "试图输出资金执行面（红线），拒绝。",
     "DATA_SCOPE_DENIED": "越权操作非名下/非本域数据（业务员-客户归属、代理身份越权校验失败）。",
-    "STAFF_NOT_AUTHORIZED": "调用者不在财务任职名单内（或名单未配置）——财务后台按人授权，需管理员登记。"
+    "STAFF_NOT_AUTHORIZED": "调用者不在财务任职名单内（或名单未配置）——财务后台按人授权，需管理员登记。",
+    "RATE_LIMITED_PUBLIC": "公开读面（店面）按来源地址限流；匿名面无调用者身份可归因，故只能按地址计；retryable 表示退避后可过。"
    }
   }
  },
@@ -50,7 +51,19 @@
    "no_cross_service_duplicate": "各服务导出到同一个 Prometheus，指标名不得跨服务重名（标签集不同更要命）"
   },
   "canonical": {
-   "histogram_seconds_buckets": [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+   "histogram_seconds_buckets": [
+    0.005,
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    1.0,
+    2.5,
+    5.0,
+    10.0
+   ],
    "generated_files": {
     "kernel": "fd-erp-ledger-mcp/fd_erp_ledger_mcp/_buckets_generated.py",
     "api": "fd-erp-vertical-api/fd_erp_vertical_api/_buckets_generated.py"

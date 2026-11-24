@@ -44,6 +44,12 @@ DEFAULT_PAGESETS_DIR = (ROOT / "fd-erp-vertical-templates" / "templates" / "supp
 #: **内部面**契约（没有页面集的服务端面）：与页面集契约同格式，只是所在的那一层
 #: 不被覆盖矩阵度量（功能点对账表、域计数、已提交快照）。声明在这里而不是塞进
 #: 某个页集契约：内部面没有页面，塞进去会改变一个封闭空间的度量。
+# 店面公开面（change establish-ai-native-ecommerce-stack 0.4）：匿名可读，
+# 故**不进**四张页面集表（那四张的前提是页面集授权 + 身份域）；
+# 单独一份文件，逐条标身份要求（匿名路由必须写理由与声明出处）。
+STOREFRONT_CONTRACT = (ROOT / "fd-erp-vertical-api" / "STOREFRONT-API.md",
+                       "店面公开面契约")
+
 INTERNAL_CONTRACT_FILES: tuple[tuple[Path, str], ...] = (
     (ROOT / "fd-erp-vertical-api" / "INTERNAL-API.md", "内部面契约"),
     # 仓管作业面（内部页集 supply-chain.wh）：单独一份文件。理由是同族但更窄——
@@ -53,8 +59,13 @@ INTERNAL_CONTRACT_FILES: tuple[tuple[Path, str], ...] = (
     (ROOT / "fd-erp-vertical-api" / "INTERNAL-WH-API.md", "仓管作业内部面契约"),
 )
 
-#: 参与派生实现的文件（faces 是四个页面集的业务面，app 是服务级与少量 UE 面）
-API_FILES = ("faces.py", "app.py")
+#: 店面契约的身份取值封闭集（见 STOREFRONT-API.md §0）
+_STOREFRONT_IDENTITIES = ("匿名", "商家", "买家凭据")
+
+#: 参与派生实现的文件（faces 是四个页面集的业务面，app 是服务级与少量 UE 面，
+#: storefront 是店面公开面）。漏登记一个文件 = 那个文件的端点全被判成「未声明」以外的
+#: 另一种错：它压根不进实现面，于是契约行会被误判为悬空。
+API_FILES = ("faces.py", "app.py", "storefront.py")
 
 #: 声明表行：`| GET | `/erp/...` | ... |`
 ROW_RE = re.compile(r"^\|\s*(GET|POST|PUT|PATCH|DELETE)\s*\|\s*`([^`]+)`")
@@ -191,6 +202,31 @@ def _derive_declared_from_files(files: list[tuple[Path, str]],
     return declared, problems
 
 
+def check_storefront_identity(path: Path) -> list[str]:
+    """店面契约表每行必须标身份要求，且取值在封闭集内。
+
+    这条守的是「匿名是显式决定」：匿名路由如果只是没人给它加身份头，那它跟
+    「忘了加鉴权」长得一模一样。表格强制写出来，人才会想一次。
+    """
+    problems: list[str] = []
+    if not path.is_file():
+        return [f"店面契约文件不存在：{path}"]
+    rows = 0
+    for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not ROW_RE.match(line):
+            continue
+        rows += 1
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        identity = cells[-1] if cells else ""
+        if identity not in _STOREFRONT_IDENTITIES:
+            problems.append(
+                f"{path.name}:{i} 身份列={identity!r} 不在 {_STOREFRONT_IDENTITIES}——"
+                f"店面每行必须标身份要求（匿名/商家/买家凭据）")
+    if rows == 0:
+        problems.append(f"{path.name} 解析到 0 条端点——表行格式变了？")
+    return problems
+
+
 def check(api_dir: Path, pagesets_dir: Path) -> list[str]:
     """返回问题清单（空 = 通过）。每条都写「怎么修」。"""
     problems: list[str] = []
@@ -204,6 +240,11 @@ def check(api_dir: Path, pagesets_dir: Path) -> list[str]:
     for key, value in internal.items():      # 内部面与页集面同一张「已声明」表
         declared.setdefault(key, value)
     parse_problems.extend(internal_problems)
+    storefront, storefront_problems = _derive_declared_from_files([STOREFRONT_CONTRACT])
+    for key, value in storefront.items():    # 店面单独一份文件，同样进「已声明」表
+        declared.setdefault(key, value)
+    parse_problems.extend(storefront_problems)
+    parse_problems.extend(check_storefront_identity(STOREFRONT_CONTRACT[0]))
     problems.extend(parse_problems)
     problems.extend(dupes)
 
@@ -267,14 +308,15 @@ def main(argv: list[str] | None = None) -> int:
     # 算进去：只印页集数会让「验了多少条」比「比了多少条」少一截——读的人以为内部面
     # 没被对拍过，或者以为数字变小是端点丢了。两处口径同源（同一个 derive 函数）。
     internal, _ = _derive_declared_from_files(list(INTERNAL_CONTRACT_FILES))
+    storefront, _ = _derive_declared_from_files([STOREFRONT_CONTRACT])
     if problems:
         print(f"FAIL: REST 面与声明契约不一致（{len(problems)} 处）：")
         for p in problems:
             print("  " + p)
         return 1
-    print(f"OK: {len(code)} 条实现端点与 {len(declared) + len(internal)} 条契约声明"
-          f"双向一致（页集 {len(declared)} + 内部面 {len(internal)}；"
-          f"基础设施端点 {len(INFRA_ENDPOINTS)} 条已登记理由）")
+    print(f"OK: {len(code)} 条实现端点与 {len(declared) + len(internal) + len(storefront)}"
+          f" 条契约声明双向一致（页集 {len(declared)} + 内部面 {len(internal)}"
+          f" + 店面 {len(storefront)}；基础设施端点 {len(INFRA_ENDPOINTS)} 条已登记理由）")
     return 0
 
 

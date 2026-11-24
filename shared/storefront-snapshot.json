@@ -1,0 +1,12 @@
+{
+  "schema": "erp-storefront-snapshot/v1",
+  "as_of": "2026-11-24T08:36:10+00:00",
+  "tenant": "acme",
+  "shop": {
+    "title": "网上商店",
+    "note": ""
+  },
+  "available": false,
+  "products": [],
+  "reason": "未配置取数地址（STOREFRONT_API_BASE 为空）"
+}
