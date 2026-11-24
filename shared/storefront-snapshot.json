@@ -1,13 +1,42 @@
 {
   "schema": "erp-storefront-snapshot/v1",
-  "as_of": "2026-11-24T09:49:55+00:00",
+  "as_of": "2026-11-24T23:35:45+00:00",
   "tenant": "acme",
-  "api_base": "",
+  "api_base": "https://erp.finddatatech.cloud/shop-api",
   "shop": {
     "title": "网上商店",
     "note": ""
   },
-  "available": false,
-  "products": [],
-  "reason": "未配置取数地址（STOREFRONT_API_BASE 为空）"
+  "available": true,
+  "products": [
+    {
+      "productId": "SKU-DEMO-001",
+      "title": "矿泉水 550ml",
+      "category": "饮品",
+      "images": [],
+      "unit_price": "128",
+      "currency": "CNY",
+      "price_source": "retail/price-list/acme/v1"
+    },
+    {
+      "productId": "SKU-DEMO-002",
+      "title": "苏打水 380ml",
+      "category": "饮品",
+      "images": [],
+      "unit_price": "66",
+      "currency": "CNY",
+      "price_source": "retail/price-list/acme/v1"
+    },
+    {
+      "productId": "SKU-DEMO-003",
+      "title": "纸杯 200 只",
+      "category": "耗材",
+      "images": [],
+      "unit_price": "299",
+      "currency": "CNY",
+      "price_source": "retail/price-list/acme/v1"
+    }
+  ],
+  "channel": "retail-online",
+  "caliber_note": "只含零售渠道可见、已上架且有零售价的商品"
 }

@@ -40,11 +40,95 @@ color:var(--ink3);}
 .note{margin-top:28px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--rule);
 padding-top:14px;}
 </style></head>
-<body data-api="" data-tenant="acme"><div class="wrap">
+<body data-api="https://erp.finddatatech.cloud/shop-api" data-tenant="acme"><div class="wrap">
 <header>
 <h1>网上商店</h1>
 <div class="sub"></div><span class="sub">数据期 2026-11-24</span>
 </header>
-<div class="empty"><strong>暂无在售商品</strong><span>未配置取数地址（STOREFRONT_API_BASE 为空）</span></div>
+<div class="grid">
+<article class="card" data-product="SKU-DEMO-001">
+<div class="body"><h2>矿泉水 550ml</h2><span class="cat">饮品</span><div class="price">128<small>CNY</small></div><button type="button" data-add="SKU-DEMO-001">加入订单</button></div>
+</article>
+<article class="card" data-product="SKU-DEMO-002">
+<div class="body"><h2>苏打水 380ml</h2><span class="cat">饮品</span><div class="price">66<small>CNY</small></div><button type="button" data-add="SKU-DEMO-002">加入订单</button></div>
+</article>
+<article class="card" data-product="SKU-DEMO-003">
+<div class="body"><h2>纸杯 200 只</h2><span class="cat">耗材</span><div class="price">299<small>CNY</small></div><button type="button" data-add="SKU-DEMO-003">加入订单</button></div>
+</article>
+</div>
+
+<form class="order" id="order-form">
+  <h2>下单</h2>
+  <div class="hint">预付单：提交后本店会告知付款方式，钱进本店自有账户，平台不经手资金。</div>
+  <div class="row">
+    <div><label for="ship-name">收货人</label><input id="ship-name" name="name" required></div>
+    <div><label for="ship-phone">联系电话</label><input id="ship-phone" name="phone" required></div>
+  </div>
+  <label for="ship-address">收货地址</label><input id="ship-address" name="address">
+  <div class="row">
+    <div><label for="line-code">商品编码</label><input id="line-code" name="code" required></div>
+    <div><label for="line-qty">数量</label><input id="line-qty" name="qty" type="number" min="1" value="1" required></div>
+  </div>
+  <button type="submit" id="order-submit">提交订单</button>
+  <div id="order-result" role="status" aria-live="polite"></div>
+</form>
+<script>
+(function () {
+  var API = document.body.dataset.api;
+  var tenant = document.body.dataset.tenant;
+  var form = document.getElementById("order-form");
+  var out = document.getElementById("order-result");
+  var submit = document.getElementById("order-submit");
+  // 「加入订单」把编码填进表单：不引入购物车状态，页面保持无状态
+  document.querySelectorAll("[data-add]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.getElementById("line-code").value = btn.getAttribute("data-add");
+      document.getElementById("line-qty").focus();
+    });
+  });
+  form.addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    if (!API || !tenant) {
+      out.className = "err";
+      out.textContent = "本页未配置店面接口地址，无法提交订单。";
+      return;
+    }
+    submit.disabled = true;
+    out.className = "";
+    out.textContent = "提交中…";
+    try {
+      var res = await fetch(API.replace(/\/+$/, "") + "/shop/" + encodeURIComponent(tenant) + "/orders", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "idempotency-key": "web-" + Date.now() + "-" + Math.random().toString(36).slice(2)
+        },
+        body: JSON.stringify({
+          lines: [{ productId: form.code.value.trim(), qty: Number(form.qty.value) }],
+          shipTo: { name: form.name.value.trim(), phone: form.phone.value.trim(), address: form.address.value.trim() }
+        })
+      });
+      var body = await res.json();
+      if (!res.ok || !body.ok) {
+        var err = (body && body.error) || {};
+        out.className = "err";
+        out.textContent = "下单未成功：" + (err.message || res.status) +
+          (err.detail && err.detail.missing ? "（缺 " + err.detail.missing + "）" : "");
+        return;
+      }
+      var d = body.data;
+      out.className = "ok";
+      out.textContent = "已受理。订单号 " + d.order_ref + "，金额 " + d.amount_total + " " +
+        d.currency + "。当前状态：待付款——付款方式由本店另行告知。";
+    } catch (e) {
+      out.className = "err";
+      out.textContent = "网络错误：" + (e && e.message ? e.message : e);
+    } finally {
+      submit.disabled = false;
+    }
+  });
+})();
+</script>
+
 <div class="note">本页是静态快照：商品与价格由店面 API 的公开读面导出，页面只展示「当前可售」的商品。下单经同一 API 提交（预付单，钱进商家自有账户，平台不经手资金）。无可售商品时如实标注，不摆样例，不写占位价。</div>
 </div></body></html>
