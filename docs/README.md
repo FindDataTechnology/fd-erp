@@ -115,7 +115,6 @@
 - `registry.snapshot`：未上线（挂账）——未写入 registry
 - 缺口 `unionpay-no-provider`：银联收款渠道（结算流水只读）（责任仓 open-connector-mt）——对外标注不可用
 - 缺口 `wms-no-provider`：客户 WMS（库存快照只读，角色绑定 wms）（责任仓 open-connector-mt）——对外标注不可用
-- 缺口 `kingdee-no-executor-test`：金蝶云星空（凭证/单据同步）（责任仓 open-connector-mt）——对外标注不可用
 - 缺口 `chatwoot-facts-not-wired`：客服会话事实回流（Chatwoot 会话关闭 → 事件层 marketing.desk.conversation_closed）（责任仓 paas）——对外标注不可用
 - 缺口 `channel-order-facts-not-wired`：渠道订单付款事实回流（Shopify admin / 国内电商只读面 → 事件层 marketing.channel.order_paid）（责任仓 open-connector-mt）——对外标注不可用
 - 缺口 `aftersale-disposition-lane-missing`：售后处置面（运营侧：接单/审核/退货入库/换货出库，推进 accepted→processing→completed/rejected）（责任仓 fd-erp-vertical-api）——对外标注不可用
