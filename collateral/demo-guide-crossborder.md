@@ -64,7 +64,7 @@ append-only 触发器 + 唯一索引）——「我们相信约束，不相信 a
 
 - **能不能接我们的真店？** 能，商家自带 Shopify API 凭证（BYOK）逐店开通，
   token 不落库不出日志；**当前是「需一次接入」而非已接通**——今天演示用的是合成店，
-  签约后第一件事就是接您真店做只读 POC。<!-- capability:shopify.orders=available -->
+  签约后第一件事就是接您真店做只读 POC。<!-- capability:shopify.orders=unavailable -->
 - **收款/结算对账能做吗？** 结算面（payouts）待补 provider 动作，当前标**不可得**，
   不拿订单金额推算结算额。<!-- capability:shopify.settlements=unavailable -->
 - **库存腿呢？** 同上，未接通前不出「库存零差异」的结论。<!-- capability:shopify.inventory=available -->
