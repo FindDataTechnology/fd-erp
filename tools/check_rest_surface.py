@@ -331,11 +331,13 @@ def main(argv: list[str] | None = None) -> int:
         for p in problems:
             print("  " + p)
         return 1
-    print(f"OK: {len(code)} 条实现端点与 "
-          f"{len(declared) + len(internal) + len(storefront) + len(trade)}"
-          f" 条契约声明双向一致（页集 {len(declared)} + 内部面 {len(internal)}"
-          f" + 店面 {len(storefront)} + 协商 {len(trade)}；"
-          f"基础设施端点 {len(INFRA_ENDPOINTS)} 条已登记理由）")
+    n_decl = len(declared) + len(internal) + len(storefront) + len(trade)
+    # 打「实现 = 契约 + 基础设施」的等式而不是两个近似数：此前 prints 两个都能凑成
+    # 同一个数（158 vs 158），读的人以为「正好一一对应」，其实有 3 条是实现里有、
+    # 契约里没有、靠白名单放行的——那个 3 恰恰是最该被看见的量。
+    print(f"OK: {len(code)} 条实现端点 = {n_decl} 条契约声明"
+          f"（页集 {len(declared)} + 内部面 {len(internal)} + 店面 {len(storefront)}"
+          f" + 协商 {len(trade)}）+ {len(INFRA_ENDPOINTS)} 条基础设施端点（已登记理由）")
     return 0
 
 
