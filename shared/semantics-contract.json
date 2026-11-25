@@ -1,6 +1,6 @@
 {
  "schema": "erp-shared-semantics/v1",
- "updated_at": "2026-11-14",
+ "updated_at": "2026-11-25",
  "note": "ERP 三仓之间的跨仓语义契约（错误码 + 指标名）。本文件只写「必须逐字一致的部分」和「允许不同但必须声明的部分」，码表与指标名本身不抄写——一律从源码 AST 现读，避免第二份真相。由 fd-erp/tools/check_semantics_contract.py 执行。",
  "error_codes": {
   "sources": {
@@ -24,8 +24,7 @@
     "AUTH_FAILED": "凭据无效或权限不足（去连接器重授权）",
     "RATE_LIMITED": "上游配额（可退避重试，归因「配额」非「无数据」）",
     "BAD_RESPONSE": "动作返回结构不符契约（契约漂移）",
-    "BOUNDARY_VIOLATION": "模板边界审计发现违规",
-    "BUDGET_EXHAUSTED": "本次委托的授权额度不足以支付该笔订单（agent 自主下单的上限）；与信用额度 CREDIT_EXCEEDED 不同：后者是客户赊销额度，前者是委托人给 agent 的花钱上限。detail 带 limit/used/remaining/order_total，可解释拒绝。"
+    "BOUNDARY_VIOLATION": "模板边界审计发现违规"
    },
    "fd-erp-vertical-api": {
     "CREDIT_NOT_REGISTERED": "该客户未在内核登记信用额度，无法受理订单；请运维登记额度（set_credit_limit）后重试。",
@@ -38,7 +37,8 @@
     "SHARE_EXECUTION_DENIED": "试图输出资金执行面（红线），拒绝。",
     "DATA_SCOPE_DENIED": "越权操作非名下/非本域数据（业务员-客户归属、代理身份越权校验失败）。",
     "STAFF_NOT_AUTHORIZED": "调用者不在财务任职名单内（或名单未配置）——财务后台按人授权，需管理员登记。",
-    "RATE_LIMITED_PUBLIC": "公开读面（店面）按来源地址限流；匿名面无调用者身份可归因，故只能按地址计；retryable 表示退避后可过。"
+    "RATE_LIMITED_PUBLIC": "公开读面（店面）按来源地址限流；匿名面无调用者身份可归因，故只能按地址计；retryable 表示退避后可过。",
+    "BUDGET_EXHAUSTED": "本次委托的授权额度不足以支付该笔订单（agent 自主下单的上限）；与信用额度 CREDIT_EXCEEDED 不同：后者是客户赊销额度，前者是委托人给 agent 的花钱上限。detail 带 limit/used/remaining/order_total，可解释拒绝。"
    }
   }
  },

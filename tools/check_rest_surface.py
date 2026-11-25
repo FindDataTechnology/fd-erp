@@ -49,6 +49,10 @@ DEFAULT_PAGESETS_DIR = (ROOT / "fd-erp-vertical-templates" / "templates" / "supp
 # 单独一份文件，逐条标身份要求（匿名路由必须写理由与声明出处）。
 STOREFRONT_CONTRACT = (ROOT / "fd-erp-vertical-api" / "STOREFRONT-API.md",
                        "店面公开面契约")
+# 交易协商面（change establish-ai-native-trade-discovery 2.x）：不是页面集、也不是匿名面，
+# 故同样单立一份。混进四张页集表会改变那层「封闭空间」的度量（与店面同一理由）。
+TRADE_CONTRACT = (ROOT / "fd-erp-vertical-api" / "TRADE-API.md",
+                  "交易协商面契约")
 
 INTERNAL_CONTRACT_FILES: tuple[tuple[Path, str], ...] = (
     (ROOT / "fd-erp-vertical-api" / "INTERNAL-API.md", "内部面契约"),
@@ -65,7 +69,15 @@ _STOREFRONT_IDENTITIES = ("匿名", "商家", "买家凭据")
 #: 参与派生实现的文件（faces 是四个页面集的业务面，app 是服务级与少量 UE 面，
 #: storefront 是店面公开面）。漏登记一个文件 = 那个文件的端点全被判成「未声明」以外的
 #: 另一种错：它压根不进实现面，于是契约行会被误判为悬空。
-API_FILES = ("faces.py", "app.py", "storefront.py")
+#: 扫**整个 api 包目录**，不手抄文件名清单。手抄清单的腐化形态是静默的：新增一个
+#: `trade.py` 后，它声明的路由不被派生 ⇒ 契约里写了反而判「悬空」（2026-11-25 实测）。
+#: 仅排除兼容用的 `__init__.py`（不挂路由）。
+API_FILES_EXCLUDE = {"__init__.py"}
+
+
+def _api_files(api_dir: Path) -> list[str]:
+    return sorted(p.name for p in api_dir.glob("*.py")
+                  if p.name not in API_FILES_EXCLUDE)
 
 #: 声明表行：`| GET | `/erp/...` | ... |`
 ROW_RE = re.compile(r"^\|\s*(GET|POST|PUT|PATCH|DELETE)\s*\|\s*`([^`]+)`")
@@ -131,7 +143,7 @@ def derive_code(api_dir: Path) -> tuple[dict[tuple[str, str], tuple[str, str]], 
     """
     code: dict[tuple[str, str], tuple[str, str]] = {}
     dupes: list[str] = []
-    for fname in API_FILES:
+    for fname in _api_files(api_dir):
         path = api_dir / fname
         if not path.is_file():
             continue
@@ -244,6 +256,10 @@ def check(api_dir: Path, pagesets_dir: Path) -> list[str]:
     for key, value in storefront.items():    # 店面单独一份文件，同样进「已声明」表
         declared.setdefault(key, value)
     parse_problems.extend(storefront_problems)
+    trade, trade_problems = _derive_declared_from_files([TRADE_CONTRACT])
+    for key, value in trade.items():
+        declared.setdefault(key, value)
+    parse_problems.extend(trade_problems)
     parse_problems.extend(check_storefront_identity(STOREFRONT_CONTRACT[0]))
     problems.extend(parse_problems)
     problems.extend(dupes)
@@ -309,14 +325,17 @@ def main(argv: list[str] | None = None) -> int:
     # 没被对拍过，或者以为数字变小是端点丢了。两处口径同源（同一个 derive 函数）。
     internal, _ = _derive_declared_from_files(list(INTERNAL_CONTRACT_FILES))
     storefront, _ = _derive_declared_from_files([STOREFRONT_CONTRACT])
+    trade, _ = _derive_declared_from_files([TRADE_CONTRACT])
     if problems:
         print(f"FAIL: REST 面与声明契约不一致（{len(problems)} 处）：")
         for p in problems:
             print("  " + p)
         return 1
-    print(f"OK: {len(code)} 条实现端点与 {len(declared) + len(internal) + len(storefront)}"
+    print(f"OK: {len(code)} 条实现端点与 "
+          f"{len(declared) + len(internal) + len(storefront) + len(trade)}"
           f" 条契约声明双向一致（页集 {len(declared)} + 内部面 {len(internal)}"
-          f" + 店面 {len(storefront)}；基础设施端点 {len(INFRA_ENDPOINTS)} 条已登记理由）")
+          f" + 店面 {len(storefront)} + 协商 {len(trade)}；"
+          f"基础设施端点 {len(INFRA_ENDPOINTS)} 条已登记理由）")
     return 0
 
 
