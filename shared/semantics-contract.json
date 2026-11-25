@@ -24,7 +24,8 @@
     "AUTH_FAILED": "凭据无效或权限不足（去连接器重授权）",
     "RATE_LIMITED": "上游配额（可退避重试，归因「配额」非「无数据」）",
     "BAD_RESPONSE": "动作返回结构不符契约（契约漂移）",
-    "BOUNDARY_VIOLATION": "模板边界审计发现违规"
+    "BOUNDARY_VIOLATION": "模板边界审计发现违规",
+    "BUDGET_EXHAUSTED": "本次委托的授权额度不足以支付该笔订单（agent 自主下单的上限）；与信用额度 CREDIT_EXCEEDED 不同：后者是客户赊销额度，前者是委托人给 agent 的花钱上限。detail 带 limit/used/remaining/order_total，可解释拒绝。"
    },
    "fd-erp-vertical-api": {
     "CREDIT_NOT_REGISTERED": "该客户未在内核登记信用额度，无法受理订单；请运维登记额度（set_credit_limit）后重试。",
