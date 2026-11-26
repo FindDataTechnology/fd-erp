@@ -38,7 +38,8 @@
     "DATA_SCOPE_DENIED": "越权操作非名下/非本域数据（业务员-客户归属、代理身份越权校验失败）。",
     "STAFF_NOT_AUTHORIZED": "调用者不在财务任职名单内（或名单未配置）——财务后台按人授权，需管理员登记。",
     "RATE_LIMITED_PUBLIC": "公开读面（店面）按来源地址限流；匿名面无调用者身份可归因，故只能按地址计；retryable 表示退避后可过。",
-    "BUDGET_EXHAUSTED": "本次委托的授权额度不足以支付该笔订单（agent 自主下单的上限）；与信用额度 CREDIT_EXCEEDED 不同：后者是客户赊销额度，前者是委托人给 agent 的花钱上限。detail 带 limit/used/remaining/order_total，可解释拒绝。"
+    "BUDGET_EXHAUSTED": "本次委托的授权额度不足以支付该笔订单（agent 自主下单的上限）；与信用额度 CREDIT_EXCEEDED 不同：后者是客户赊销额度，前者是委托人给 agent 的花钱上限。detail 带 limit/used/remaining/order_total，可解释拒绝。",
+    "PAYMENT_NOT_CONFIRMED": "在线收款通道未确认到账（PayPal 捕获未完成）：如实拒登到账，订单停留待付款（未到账不倒流）；可重试或改线下人工确认。"
    }
   }
  },

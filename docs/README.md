@@ -80,8 +80,8 @@
 
 <!-- claim-gate:begin:not-claimable -->
 **不可宣称（数据派生，勿手改）**：以下条目由 `claims/claims.json` 与`publish-record.json` 派生，任何肯定句式出现即被 `scripts/claim_gate.py` 判红。
-- `invoice.self-built` 开票自研 / 支持开票——开票自研当前不提供（挂账）：票据本体由客户既有合规渠道处理，平台不伪造不代开
-- `invoice.tax-return` 税务申报——税务申报当前不提供（挂账）
+- `invoice.self-built` 开票自研 / 支持开票——开票自研当前不提供（挂账）：票据本体由客户既有合规渠道（电子税局/金蝶/线下）处理，平台只记开票回执、不代开不伪造（invoice_receipt 车道声明）
+- `invoice.tax-return` 税务申报——税务申报动作由客户在电子税局完成（外部事实）；平台只做申报数的带出处登记与账表对照（cn-filing 车道），不代报
 - `funds.execution` 资金执行（资金池 / 代收代付 / 分账执行 / 资金归集）——二清红线：平台只产出对账结果与核对指令，资金归集与分账走客户自选的持牌通道
 - `erp.monolith-ui` 单体 ERP 应用 / 表单式 UI——ERP 以「集群 + 供给包」组合交付，不是单体 ERP 应用或表单式 UI
 - `live.official-web-deploy` 官网已 deploy——官网 ERP 落地页为可发布工件 + 本地校验证据；site deploy 需真实凭据，属独立发布步骤

@@ -3,7 +3,7 @@
 > **Part of the [Base line (寻数·壹座)](https://www.finddatatech.cloud/products/base) of [FindData](https://www.finddatatech.cloud)** — the ERP board: an industry-neutral double-entry event core plus vertical template assets, served as REST and MCP surfaces.
 
 > 本文件由 `fd-erp/tools/gen_erp_docs.py` 从 `fd-erp/manifest.json` 与各仓机器可读产物派生，**不要手改**。
-> 生成日期：2026-11-25。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
+> 生成日期：2026-11-26。改归属/改资产位置请先改 `manifest.json` 再重跑生成器。
 
 ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同级；不是第六条产品线。章程 `openspec/specs/erp-board/spec.md`；对外口径唯一出处 `fd-erp/docs/README.md`。
 
@@ -60,7 +60,7 @@ ERP 是**板块**，一十百千万 ladder 之外，与营销/客服台板块同
 
 码表与指标名一律从源码 AST 现读，契约文件只写「必须逐字一致的部分」与「允许不同但必须声明的部分」。闸：`fd-erp/tools/check_semantics_contract.py`。
 
-- 错误码：内核封闭集 **25** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **13** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 12 个、模板层自有 9 个，均须在契约里声明并给理由
+- 错误码：内核封闭集 **25** 个，与 `tool-surface.json` 镜像逐一对照；跨仓共享 **13** 个（语义类别 / 可重试 / 默认提示必须逐字一致）；api 自有 13 个、模板层自有 9 个，均须在契约里声明并给理由
 - 指标：内核 11 个 / api 3 个，同一 Prometheus 下不得跨服务重名
 - 闸门状态：通过
 

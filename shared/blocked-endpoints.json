@@ -1,7 +1,7 @@
 {
   "schema": "erp-blocked-endpoints/v1",
   "note": "如实 501 端点的**阻塞归属**（唯一出处）。规则：每个 501 端点恰好属于一个接入包；包不得含已实现的端点；包的判据必须是**机器可读的**外部事实（连接器 provider 状态或内核工具面），依赖一旦解除而端点仍是 501，闸即判红（同 erp-board-coverage「跨仓事实已解除而本仓仍记缺口必须判红」）。写散文理由不算判据——散文没人核对，等于没有。",
-  "updated_at": "2026-11-12",
+  "updated_at": "2026-11-26",
   "criterion_kinds": {
     "connector-provider": "读 fd-erp-vertical-templates/connector-status.json：存在该 provider 且 state=connected 即视为依赖已解除",
     "tool-in-surface": "读 fd-erp-ledger-mcp/tool-surface.json 的工具名清单：出现该工具即视为依赖已解除"
@@ -13,38 +13,13 @@
       "criterion": {
         "kind": "connector-provider",
         "subject": "kingdee",
-        "note": "金蝶云星空 provider 需把 catalog → executor_tests → live 三档走完。往来面拉取到位后，应付对账单可由「金蝶 provider 往来流水 + 内核账本计算」逐单据派生出，结算进度也随之可读（只读，零支付操作面）。"
+        "note": "金蝶云星空 provider 需把 catalog → executor_tests → live 三档走完。往来面拉取到位后，应付对账单可由「金蝶 provider 往来流水 + 内核账本计算」逐单据派生出，结算进度也随之可读（只读，零支付操作面）。catalog+executor_tests 已到位（3.1），残余是 live 验收（真实金蝶实例，属 connector-live-acceptance 车道）。"
       },
       "endpoints": [
         {"method": "GET", "path": "/erp/supply-chain/v1/sp/statements"},
         {"method": "GET", "path": "/erp/supply-chain/v1/sp/statements/{statementId}"},
         {"method": "POST", "path": "/erp/supply-chain/v1/sp/statements/{statementId}/confirm"},
         {"method": "GET", "path": "/erp/supply-chain/v1/sp/settlements"}
-      ]
-    },
-    {
-      "id": "midplatform-file-and-invoice-check",
-      "title": "中台文件服务 + 发票查验/勾兑",
-      "criterion": {
-        "kind": "connector-provider",
-        "subject": "file-service",
-        "note": "当前 connector-status 里**没有**这个 provider——这正是缺口本身：发票影像件要落中台文件服务，查验/勾兑要有车道。provider 上线（state=connected）后可受理上传并回报核验进度，再经金蝶连接器回写。禁止在无车道时假实现。"
-      },
-      "endpoints": [
-        {"method": "POST", "path": "/erp/supply-chain/v1/sp/invoices"},
-        {"method": "GET", "path": "/erp/supply-chain/v1/sp/invoices"}
-      ]
-    },
-    {
-      "id": "platform-notify-lane",
-      "title": "底座端内消息通道（对账单推送留痕）",
-      "criterion": {
-        "kind": "connector-provider",
-        "subject": "inapp-notify",
-        "note": "SE 推送必须留痕，而消息通道归底座通知面（模板层无消息车道）。provider 上线后可实施「推送留痕 + 送达回执」；客户确认仍走 UE 端确认门，SE 不可代拍。"
-      },
-      "endpoints": [
-        {"method": "POST", "path": "/erp/supply-chain/v1/se/statements/{statementId}/push"}
       ]
     },
     {

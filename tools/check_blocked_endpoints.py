@@ -132,7 +132,13 @@ def check(mapping: dict[str, Any], live: dict[tuple[str, str], dict[str, Any]],
                 cleared = False
             else:
                 cleared = state == "connected"
-                summary.append(f"{pid}: {'依赖已解除' if cleared else '阻塞'}（{subject}={state}）")
+                # 「provider 未落地」（上面那支）= 真阻塞；「落地但 live 未验收」= 可实施
+                # （catalog+执行器测试已到位，剩余是 live 验收车道，不是没人开工）。
+                if cleared:
+                    summary.append(f"{pid}: 依赖已解除（{subject}={state}）")
+                else:
+                    summary.append(f"{pid}: 可实施（{subject} 已落地，live 待验收；"
+                                   f"state={state}）")
         elif kind == "tool-in-surface":
             cleared = subject in tools
             summary.append(f"{pid}: {'依赖已解除' if cleared else '阻塞'}"
