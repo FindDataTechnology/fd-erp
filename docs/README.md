@@ -119,3 +119,24 @@
 - 缺口 `channel-order-facts-not-wired`：渠道订单付款事实回流（Shopify admin / 国内电商只读面 → 事件层 marketing.channel.order_paid）（责任仓 open-connector-mt）——对外标注不可用
 - 缺口 `aftersale-disposition-lane-missing`：售后处置面（运营侧：接单/审核/退货入库/换货出库，推进 accepted→processing→completed/rejected）（责任仓 fd-erp-vertical-api）——对外标注不可用
 <!-- claim-gate:end:release-status -->
+
+## 7. 电商自主交易路线图（发现 → 协商 → 下单）
+
+Agent 在权限内自主完成一轮交易的三个阶段。每阶段「能宣称完成」的判据都是**线上真跑**，
+绿测试与部署成功不算——判据本体见各自 spec，探针见 `tools/trade_roundtrip.py`
+（登记于 `fd-infra-deploy/tools/chain-probes.json`，`chain-electrification` 要求闭环链
+必须有定时读者）。
+
+| 阶段 | 能力 | spec | 状态 |
+|---|---|---|---|
+| 0 · 建店 | 自建店面：匿名读商品、零售预付下单、收款到账事实、店面渲染 | `ecommerce-storefront` / `ecommerce-storefront-checkout` / `ecommerce-tenant-provisioning` | 已上产（2026-11-24） |
+| 1 · 委托 | 网关验签委托 Grant 并注入 `x-erp-grant-*`；预算闸按委托人给的额度拒/放 | `establish-ai-native-ecommerce-stack` 4.1 | 已上产（2026-11-25） |
+| 2 · 发现 | 店目录（只存指针与类目）+ 跨店检索；未收录 / 无匹配 / 不可用三态可区分 | `trade-discovery` | 已上产（2026-11-25） |
+| 3 · 协商 | 询价（不带价）→ 报价（有时效、总量承诺）→ 接受（成交价可回溯，仍过预算闸） | `trade-negotiation` | 已上产（2026-11-25） |
+| 4 · agent 工具面 | 聊天里可调：`trade_discover` / `trade_demand` / `trade_quote` / `trade_accept` | 本 change 5.x | 已上产（2026-11-26） |
+
+**红线（不变）**：平台只记事实与核对，不经手资金、不做归集/分账——协商全程零资金动作，
+收款只记「到账事实」（`retail_payment_received`，`requires_posting=false`），钱进商家自有账户。
+
+**下一步（未排期）**：交易撮合（多买方多卖方自动匹配成交）需先单独裁决资金红线——
+撮合天然靠近资金归集，与 `erp-board` 二清红线直接冲突；且需要订单簿与撮合规则，是另一个量级。
